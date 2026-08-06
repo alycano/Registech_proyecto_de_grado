@@ -1,32 +1,34 @@
-const express = require('express')
-const cors = require('cors')
-const bodyParser = require('body-parser')
+import 'dotenv/config'
+import express from 'express'
+import cors from 'cors'
+import bodyParser from 'body-parser'
+import cookieParser from 'cookie-parser'
 
-const usuariosRoutes = require('./usuariosRoutes')
-const areasRoutes = require('./areasRoutes')
-const equiposRoutes = require('./equiposRoutes')
-const productosRoutes = require('./productosRoutes')
-const ventasRoutes = require('./ventasRoutes')
+import usuariosRoutes from './usuariosRoutes.js'
+import areasRoutes from './areasRoutes.js'
+import equiposRoutes from './equiposRoutes.js'
+import productosRoutes from './productosRoutes.js'
+import ventasRoutes from './ventasRoutes.js'
+import googleAuthRoutes from './googleAuthRoutes.js'
 
-//CREAR INSTANCIA DE EXPRESS
-const app = express ()
+const app = express()
 
-//PERMITIR PETICIONES DE OTROS DOMINIOS
-app.use(cors())
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true
+}))
 
-//MIDDLEWARE PARA ANALIZAR JSON
 app.use(bodyParser.json())
+app.use(cookieParser())
 
-//IMPORTAMOS EL USO DE LAS RUTAS
-app.use ('/', usuariosRoutes)
-app.use ('/', areasRoutes)
-app.use ('/', equiposRoutes)
-app.use ('/', productosRoutes)
-app.use ('/', ventasRoutes)
+app.use('/', usuariosRoutes)
+app.use('/', areasRoutes)
+app.use('/', equiposRoutes)
+app.use('/', productosRoutes)
+app.use('/', ventasRoutes)
+app.use('/', googleAuthRoutes)
 
-//INICIAR EL SERVIDOR
 const port = 3000
 app.listen(port, () => {
   console.log(`Servidor escuchando en http://localhost:${port}`)
 })
-

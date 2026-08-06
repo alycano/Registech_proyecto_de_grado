@@ -309,3 +309,23 @@ El servidor estará disponible en `http://localhost:3000`
 
 - GitHub: [alycano](https://github.com/alycano)
 - Repositorio: [Registech_proyecto_de_grado](https://github.com/alycano/Registech_proyecto_de_grado)
+
+
+## Inicio de sesión con Googlecd 
+Se agregó la opción de iniciar sesión con la cuenta de Google, 
+además del login tradicional con usuario y contraseña.
+
+Backend: se agregó una nueva forma de validar que el usuario realmente
+tiene esa cuenta de Google antes de dejarlo entrar.
+
+Base de datos: se ajustó para poder guardar los usuarios que
+entran por Google (nombre, correo y foto de perfil).
+
+Frontend: se agregó el botón de "Iniciar sesión con Google" en la pantalla de login.
+
+Google Cloud Console: se configuraron las credenciales necesarias para que la aplicación pueda comunicarse con las cuentas de Google de forma segura.
+
+## Autor
+
+**Narilyn Bustamante**
+- Repositorio: [Registech_proyecto_de_grado](https://github.com/narilin/Registech_proyecto_de_grado.git)

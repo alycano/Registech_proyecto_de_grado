@@ -4,7 +4,7 @@ import Swal from "sweetalert2"
 
 import Tecnologia from './Tecnologia'
 import RecursosHumanos from "./RecursosHumano"
-import Almacen from ".Almacen/"
+import Almacen from "./Almacen";
 const Dashboard = () => {
     const location = useLocation()
     const navigate = useNavigate()

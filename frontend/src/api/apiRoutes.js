@@ -2,6 +2,7 @@ const BASE_URL = 'http://localhost:3000'
 
 export const API_ROUTES = {
     LOGIN: `${BASE_URL}/login`,
+    GOOGLE_LOGIN: `${BASE_URL}/auth/google`,
     EQUIPOS: `${BASE_URL}/equipos`,
     ASIGNAR_USUARIO: `${BASE_URL}/equipos/asignacion`,
     REPORTE_FALLA: `${BASE_URL}/equipos/reporte/add`,

@@ -2,17 +2,16 @@ import React, { useState } from "react"
 import axios from 'axios'
 import { useNavigate } from "react-router-dom"
 import Swal from 'sweetalert2'
+import { GoogleLogin } from '@react-oauth/google'
 import { API_ROUTES } from "../api/apiRoutes"
-
-
 
 const Login = () => {
     const [ usuario, setUsuario ] = useState("")
     const [ contrasena, setContrasena ] = useState("")
     const [ error, setError ] = useState("")
     const [ mensaje, setMensaje ] = useState("")
-    
-    const navigate =  useNavigate()
+
+    const navigate = useNavigate()
 
     const handleSubmit = async(e) => {
         e.preventDefault()
@@ -29,15 +28,11 @@ const Login = () => {
             return
         }
 
-        const loginData = {
-            usuario, contrasena
-        }
+        const loginData = { usuario, contrasena }
 
         try {
             const response = await axios.post(API_ROUTES.LOGIN, loginData, {
-                headers:{
-                    'Content-Type': 'application/json'
-                }
+                headers: { 'Content-Type': 'application/json' }
             })
 
             if(response.status == 200){
@@ -60,31 +55,49 @@ const Login = () => {
         } catch(err) {
             if(err.response) {
                 if(err.response.status === 400) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Usuario y contraseña son requeridos'
-                })
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'Usuario y contraseña son requeridos' })
                 } else if(err.response.status === 401){
-                    Swal.fire({
-                    icon: 'error',
-                    title: 'Error de autenticacion',
-                    text: err.response.data
-                })
+                    Swal.fire({ icon: 'error', title: 'Error de autenticacion', text: err.response.data })
                 } else if(err.response.status === 402) {
-                    Swal.fire({
-                    icon: 'error',
-                    title: 'Error de autenticacion',
-                    text: err.response.data
-                })
+                    Swal.fire({ icon: 'error', title: 'Error de autenticacion', text: err.response.data })
                 } else {
-                    Swal.fire({
-                    icon: 'error',
-                    title: 'Error en la conexion',
-                    text: 'Error en conexion al servidor'
-                })
+                    Swal.fire({ icon: 'error', title: 'Error en la conexion', text: 'Error en conexion al servidor' })
                 }
             }
+        }
+    }
+
+    // NUEVO: maneja el login exitoso con Google
+    const handleGoogleSuccess = async (credentialResponse) => {
+        try {
+            const response = await axios.post(
+                API_ROUTES.GOOGLE_LOGIN,
+                { credential: credentialResponse.credential },
+                { withCredentials: true } // importante para que se guarde la cookie de sesión
+            )
+
+            if (response.data.usuario.estado === 'inactivo') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Cuenta inactiva',
+                    text: 'Tu cuenta esta inactiva. Contacta al administrador'
+                })
+                return
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Bienvenido',
+                text: 'Inicio de sesion exitoso'
+            })
+            navigate('/dashboard', { state: { usuario: response.data.usuario } })
+        } catch (err) {
+            console.error(err)
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo iniciar sesion con Google'
+            })
         }
     }
 
@@ -123,6 +136,21 @@ const Login = () => {
                     Iniciar Sesion
                 </button>
             </form>
+
+            {/* NUEVO: separador y botón de Google */}
+            <div className="text-center my-3 text-muted">o</div>
+            <div className="d-flex justify-content-center">
+                <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={() => {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Fallo el inicio de sesion con Google'
+                        })
+                    }}
+                />
+            </div>
 
             {error && <div className="alert alert-danger mt-3">{error}</div>}
             {mensaje && <div className="alert alert-success mt-3">{mensaje}</div>}

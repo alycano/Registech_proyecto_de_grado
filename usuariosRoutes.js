@@ -1,18 +1,17 @@
-const express = require('express')
-const router = express.Router() // Simplificado para seguir el estándar
-const db = require('./conexion')
+import express from 'express'
+import db from './conexion.js'
+
+const router = express.Router()
 
 // RUTA PARA EL LOGIN
 router.post('/login', (req, res) => {
   const { usuario, contrasena } = req.body
   if (!usuario || !contrasena) {
-    return res.status(400).send('Usuario y contraseña son obligatorios') 
+    return res.status(400).send('Usuario y contraseña son obligatorios')
   }
 
-  // BUSCAR EL USUARIO EN LA BASE DE DATOS
   db.query('SELECT * FROM usuarios WHERE usuario = ? AND contrasena = ?', [usuario, contrasena], (err, results) => {
     if (err) {
-      // Ahora sí verás el motivo real en la consola de nodemon si falla
       console.error('Error detallado en el Login de MySQL:', err)
       return res.status(500).send('Error en la consulta: ' + err.message)
     }
@@ -25,7 +24,7 @@ router.post('/login', (req, res) => {
     res.status(200).send({
       mensaje: 'Login exitoso',
       usuario: {
-        usuario: usuarioEncontrado.usuario, 
+        usuario: usuarioEncontrado.usuario,
         nombre: usuarioEncontrado.nombre,
         area: usuarioEncontrado.area,
         estado: usuarioEncontrado.estado
@@ -41,7 +40,7 @@ router.get('/usuarios', (req, res) => {
       console.error('Error al obtener usuarios:', err)
       return res.status(500).send('Error en la consulta')
     }
-    res.json(results) 
+    res.json(results)
   })
 })
 
@@ -53,9 +52,8 @@ router.post('/usuarios', (req, res) => {
     return res.status(400).send('Todos los campos son obligatorios')
   }
 
-  // CORREGIDO: Se quita 'activo' fijo para mapear correctamente los 6 parámetros del arreglo
   const query = `INSERT INTO usuarios (usuario, contrasena, nombre, area, correo, estado) VALUES (?, ?, ?, ?, ?, ?)`
-  
+
   db.query(query, [usuario, contrasena, nombre, area, correo, estado || 'activo'], (err, results) => {
     if (err) {
       console.error('Error al agregar el usuario: ', err)
@@ -70,9 +68,9 @@ router.post('/usuarios', (req, res) => {
 
 // RUTA PARA EDITAR UN USUARIO
 router.put('/usuarios/:usuarioParam', (req, res) => {
-  const { usuarioParam } = req.params 
+  const { usuarioParam } = req.params
   const { usuario, contrasena, nombre, area, correo, estado } = req.body
-  
+
   const query = `UPDATE usuarios SET usuario = ?, contrasena = ?, nombre = ?, area = ?, correo = ?, estado = ? WHERE usuario = ?`
 
   db.query(query, [usuario, contrasena, nombre, area, correo, estado, usuarioParam], (err, result) => {
@@ -100,4 +98,4 @@ router.delete('/usuarios/:usuario', (req, res) => {
   })
 })
 
-module.exports = router
+export default router
