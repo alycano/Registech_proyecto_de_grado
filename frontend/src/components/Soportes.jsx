@@ -6,6 +6,7 @@ import { API_ROUTES } from "../api/apiRoutes"
 const Soportes = ({ usuario }) => {
     const [mantenimientos, setMantenimientos] = useState([])
     const [totalRegistros, setTotalRegistros] = useState(0)
+    const [loading, setLoading] = useState(true)
 
     const [modalVisible, setModalVisible] = useState(false)
     const [selectedFalla, setSelectedFalla] = useState("")
@@ -19,8 +20,10 @@ const Soportes = ({ usuario }) => {
             .then(response => {
                 setMantenimientos(response.data)
                 setTotalRegistros(response.data.length)
+                setLoading(false)
             })
             .catch(err => {
+                setLoading(false)
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
@@ -91,99 +94,126 @@ const Soportes = ({ usuario }) => {
     }
 
     return (
-        <div className="container mt-4">
-            <h3>Soportes - Mantenimientos Pendientes</h3>
-            <p>Total de reportes pendientes: <strong>{totalRegistros}</strong></p>
+        <div className="card">
+            <div className="card-body">
+                <div className="module-header">
+                    <h4 className="module-title mb-0">
+                        <i className="bi bi-tools"></i>
+                        Soportes - Mantenimientos Pendientes
+                    </h4>
+                    <span className="badge text-bg-warning">
+                        {totalRegistros} pendientes
+                    </span>
+                </div>
 
-            <div className="table-responsive">
-                <table className="table table-striped table-hover">
-                    <thead className="table-dark">
-                        <tr>
-                            <th>ID Historial</th>
-                            <th>Numero de Serie</th>
-                            <th>Fecha Reporte</th>
-                            <th>Falla</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {mantenimientos.length === 0 ? (
+                {loading ? (
+                    <div className="text-center py-5 text-secondary">
+                        <div className="spinner-border text-primary mb-2" role="status"></div>
+                        <div>Cargando reportes...</div>
+                    </div>
+                ) : (
+                <div className="table-responsive">
+                    <table className="table table-striped table-hover align-middle">
+                        <thead className="table-dark">
                             <tr>
-                                <td colSpan="5" className="text-center">No hay reportes pendientes</td>
+                                <th>ID Historial</th>
+                                <th>Numero de Serie</th>
+                                <th>Fecha Reporte</th>
+                                <th>Falla</th>
+                                <th>Acciones</th>
                             </tr>
-                        ) : (
-                            mantenimientos.map(m => (
-                                <tr key={m.id_historial}>
-                                    <td>{m.id_historial}</td>
-                                    <td>{m.num_serie}</td>
-                                    <td>{m.fecha_reporte}</td>
-                                    <td>{m.falla}</td>
-                                    <td>
-                                        <button
-                                            className="btn btn-sm btn-success"
-                                            onClick={() => handleOpenModal(m.falla, m.id_historial, m.num_serie)}
-                                        >
-                                            Resolver
-                                        </button>
+                        </thead>
+                        <tbody>
+                            {mantenimientos.length === 0 ? (
+                                <tr>
+                                    <td colSpan="5" className="text-center py-4 text-secondary">
+                                        No hay reportes pendientes
                                     </td>
                                 </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                            ) : (
+                                mantenimientos.map(m => (
+                                    <tr key={m.id_historial}>
+                                        <td className="fw-semibold">{m.id_historial}</td>
+                                        <td>{m.num_serie}</td>
+                                        <td>{m.fecha_reporte}</td>
+                                        <td>{m.falla}</td>
+                                        <td>
+                                            <button
+                                                className="btn btn-sm btn-success"
+                                                onClick={() => handleOpenModal(m.falla, m.id_historial, m.num_serie)}
+                                            >
+                                                <i className="bi bi-check2-circle"></i>
+                                                Resolver
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+                )}
 
-            {/* MODAL REGISTRAR SOLUCION */}
-            {modalVisible && (
-                <div
-                    className="modal fade show"
-                    tabIndex="-1"
-                    style={{ display: 'block' }}
-                >
-                    <div className="modal-dialog modal-dialog-centered">
-                        <div className="modal-content">
-                            <div className="modal-header">
-                                <h5 className="modal-title">Registrar solucion</h5>
-                                <button
-                                    type="button"
-                                    className="btn-close"
-                                    onClick={handleCloseModal}
-                                >
-                                </button>
-                            </div>
+                {/* MODAL REGISTRAR SOLUCION */}
+                {modalVisible && (
+                    <div
+                        className="modal fade show d-block"
+                        tabIndex="-1"
+                        style={{ display: 'block', zIndex: '1050' }}
+                        onClick={handleCloseModal}
+                    >
+                        <div
+                            className="modal-dialog modal-dialog-centered"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="modal-content">
+                                <div className="modal-header">
+                                    <h5 className="modal-title">
+                                        <i className="bi bi-wrench-adjustable me-1"></i>
+                                        Registrar solucion
+                                    </h5>
+                                    <button
+                                        type="button"
+                                        className="btn-close"
+                                        onClick={handleCloseModal}
+                                    >
+                                    </button>
+                                </div>
 
-                            <div className="modal-body">
-                                <p><strong>Falla: </strong>{selectedFalla}</p>
-                                <p><strong>Numero de Serie: </strong>{selectedNumSerie}</p>
-                                <p><strong>Tecnico: </strong>{usuario}</p>
+                                <div className="modal-body">
+                                    <p><strong>Falla: </strong>{selectedFalla}</p>
+                                    <p><strong>Numero de Serie: </strong>{selectedNumSerie}</p>
+                                    <p><strong>Tecnico: </strong>{usuario}</p>
 
-                                <form onSubmit={registrarSolucion}>
-                                    <div className="mb-3">
-                                        <label htmlFor="solucion" className="form-label">Solucion</label>
-                                        <textarea
-                                            className="form-control"
-                                            id="solucion"
-                                            value={solucion}
-                                            onChange={(e) => setSolucion(e.target.value)}
-                                            required
-                                        >
-                                        </textarea>
-                                    </div>
+                                    <form onSubmit={registrarSolucion}>
+                                        <div className="mb-3">
+                                            <label htmlFor="solucion" className="form-label">Solucion</label>
+                                            <textarea
+                                                className="form-control"
+                                                id="solucion"
+                                                value={solucion}
+                                                onChange={(e) => setSolucion(e.target.value)}
+                                                required
+                                            >
+                                            </textarea>
+                                        </div>
 
-                                    <div className="text-center">
-                                        <button
-                                            className="btn btn-primary"
-                                            type="submit"
-                                        >
-                                            Registrar Solucion
-                                        </button>
-                                    </div>
-                                </form>
+                                        <div className="text-center">
+                                            <button
+                                                className="btn btn-primary"
+                                                type="submit"
+                                            >
+                                                <i className="bi bi-check-lg"></i>
+                                                Registrar Solucion
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     )
 }

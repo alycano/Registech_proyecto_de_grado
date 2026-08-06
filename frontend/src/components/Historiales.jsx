@@ -49,54 +49,75 @@ const Historiales = ({ usuario }) => {
     }
 
     return (
-        <div className="container mt-4">
-            <h5 className="text-center mb-4">Historial de Mantenimientos</h5>
-
-            {/* CONTENEDOR ADICIONAL PARA CENTAR EL INPUT Y LOS BOTONES */}
-            <div className="d-flex justify-content-center">
-                <div className="input-group mb-3" style={{ maxWidth: '600px', width: '100%' }}>
-                    <input
-                        type="text"
-                        className="form-control"
-                        placeholder="Filtrar por id mantenimiento, numero de serie o tecnico"
-                        value={filter}
-                        onChange={handleFilterChange}
-                    />
-                    <button
-                        className="btn btn-primary"
-                        onClick={obtenerHistorial}
-                    >
-                        Buscar
-                    </button>
+        <div className="card">
+            <div className="card-body">
+                <div className="module-header">
+                    <h4 className="module-title mb-0">
+                        <i className="bi bi-clock-history"></i>
+                        Historial de Mantenimientos
+                    </h4>
                 </div>
-            </div>
 
-            <table className="table table-bordered table-striped">
-                <thead>
-                    <tr className="text-center" style={{ textTransform: 'uppercase' }}>
-                        <th>ID MANTENIMIENTO</th>
-                        <th>NUMERO SERIE</th>
-                        <th>FALLA</th>
-                        <th>SOLUCION</th>
-                        <th>TECNICO</th>
-                        <th>FECHA REPORTE</th>
-                        <th>FECHA SOLUCION</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {mantenimientos.map((equipo, index) => (
-                        <tr key={index}>
-                            <td>{equipo.id_historial}</td>
-                            <td>{equipo.num_serie}</td>
-                            <td>{equipo.falla}</td>
-                            <td>{equipo.solucion}</td>
-                            <td>{equipo.usuario_tecnico}</td>
-                            <td>{equipo.fecha_reporte.slice(0, 10)}</td>
-                            <td>{equipo.fecha_solucion.slice(0, 10)}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+                {/* CONTENEDOR ADICIONAL PARA CENTAR EL INPUT Y LOS BOTONES */}
+                <div className="d-flex justify-content-center mb-3">
+                    <div className="input-group" style={{ maxWidth: '600px', width: '100%' }}>
+                        <span className="input-group-text"><i className="bi bi-search"></i></span>
+                        <input
+                            type="text"
+                            className="form-control"
+                            placeholder="Filtrar por id mantenimiento, numero de serie o tecnico"
+                            value={filter}
+                            onChange={handleFilterChange}
+                            onKeyDown={(e) => { if (e.key === 'Enter') obtenerHistorial() }}
+                        />
+                        <button
+                            className="btn btn-primary"
+                            onClick={obtenerHistorial}
+                        >
+                            <i className="bi bi-filter"></i>
+                            Buscar
+                        </button>
+                    </div>
+                </div>
+
+                {mantenimientos.length === 0 ? (
+                    <div className="empty-state">
+                        <i className="bi bi-inbox"></i>
+                        <p className="mb-0">
+                            Aun no hay resultados. Usa el buscador para consultar el historial.
+                        </p>
+                    </div>
+                ) : (
+                <div className="table-responsive">
+                    <table className="table table-bordered table-striped table-hover align-middle">
+                        <thead className="table-dark">
+                            <tr className="text-center">
+                                <th>ID Mantenimiento</th>
+                                <th>Numero Serie</th>
+                                <th>Falla</th>
+                                <th>Solucion</th>
+                                <th>Tecnico</th>
+                                <th>Fecha Reporte</th>
+                                <th>Fecha Solucion</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {mantenimientos.map((equipo, index) => (
+                                <tr key={index}>
+                                    <td className="fw-semibold">{equipo.id_historial}</td>
+                                    <td>{equipo.num_serie}</td>
+                                    <td>{equipo.falla}</td>
+                                    <td>{equipo.solucion || 'Pendiente'}</td>
+                                    <td>{equipo.usuario_tecnico || '-'}</td>
+                                    <td>{equipo.fecha_reporte ? equipo.fecha_reporte.slice(0, 10) : '-'}</td>
+                                    <td>{equipo.fecha_solucion ? equipo.fecha_solucion.slice(0, 10) : '-'}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+                )}
+            </div>
         </div>
     )
 }

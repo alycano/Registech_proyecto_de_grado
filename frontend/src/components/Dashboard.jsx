@@ -4,14 +4,15 @@ import Swal from "sweetalert2"
 
 import Tecnologia from './Tecnologia'
 import RecursosHumanos from "./RecursosHumano"
-import Almacen from ".Almacen/"
+import Soportes from "./Soportes"
+
 const Dashboard = () => {
     const location = useLocation()
     const navigate = useNavigate()
 
-    const { usuario } = location.state || { }
+    const { usuario } = location.state || {}
 
-    if(!usuario) {
+    if (!usuario) {
         navigate('/login')
         return null
     }
@@ -27,48 +28,79 @@ const Dashboard = () => {
             cancelButtonText: 'Cancelar'
         })
         .then((result) => {
-            if(result.isConfirmed) {
-            Swal.fire({
-            icon: 'success',
-            title: 'Hasta Luego',
-            text: 'Gracias por usar la aplicacion',
-            timer: 2000, // espera dos segundos antes de redirigir
-            showConfirmButton: false
-            })
-            .then(() => {
-                navigate('/login')
-            })
+            if (result.isConfirmed) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Hasta Luego',
+                    text: 'Gracias por usar la aplicacion',
+                    timer: 2000,
+                    showConfirmButton: false
+                })
+                .then(() => {
+                    navigate('/login')
+                })
             }
         })
     }
 
+    const iniciales = usuario.nombre
+        ? usuario.nombre.split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase()
+        : 'US'
+
     const renderAreaComponent = () => {
-        switch(usuario.area) {
-        case 'tecnologia': return <Tecnologia usuario= { usuario.usuario } /> // Pasamos el usuario como prop
-        case 'recursos Humanos': return <RecursosHumanos />
-        case 'almacen': return <Almacen/>
+        switch (usuario.area) {
+            case 'Tecnologia': return <Tecnologia usuario={usuario.usuario} />
+            case 'Recursos Humanos': return <RecursosHumanos />
+            case 'Soporte': return <Soportes usuario={usuario.usuario} />
+            default: return (
+                <div className="empty-state">
+                    <i className="bi bi-tools"></i>
+                    <h5 className="fw-bold text-secondary mb-1">Modulo en desarrollo</h5>
+                    <p className="mb-0">
+                        El modulo de tu area (<strong>{usuario.area}</strong>) se esta construyendo.
+                    </p>
+                </div>
+            )
         }
     }
 
     return (
-        <div>
+        <div className="min-vh-100 d-flex flex-column">
             {/* BARRA SUPERIOR */}
-        <div className="d-flex justify-content-between align-items-center bg-dark text text-white p-3" >
-            <div className="text-Center w-100">
-                <p className="m-0">{usuario.nombre}</p> {/* Nombre centrado */}
-                <p className="m-0">{usuario.area}</p>  {/* Area centrada de bajo del nombre */}
-            </div>
+            <nav className="navbar navbar-expand app-navbar px-3 px-md-4 py-2">
+                <div className="container-fluid">
+                    <span className="navbar-brand d-flex align-items-center gap-2">
+                        <i className="bi bi-cpu-fill"></i>
+                        Registech
+                    </span>
 
-            <button className="btn btn-danger" onClick={handleLogout}>
-                <i className="bi bi box-arrow-rigth"></i> {/* Icono de Bootstrap */}
+                    <div className="d-flex align-items-center gap-2">
+                        <span className="user-chip">
+                            <span className="user-avatar">{iniciales}</span>
+                            <span>
+                                <strong>{usuario.nombre}</strong>
+                                <small>{usuario.area}</small>
+                            </span>
+                        </span>
 
-            </button>
-    </div>
+                        <button
+                            className="btn btn-danger btn-sm rounded-pill px-3"
+                            onClick={handleLogout}
+                            title="Cerrar sesion"
+                        >
+                            <i className="bi bi-box-arrow-right"></i>
+                            Salir
+                        </button>
+                    </div>
+                </div>
+            </nav>
 
-    { renderAreaComponent() }
-</div>
+            {/* CONTENIDO DEL AREA */}
+            <main className="container py-4 flex-grow-1">
+                {renderAreaComponent()}
+            </main>
+        </div>
     )
-
 }
 
 export default Dashboard
