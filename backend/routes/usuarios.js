@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router()
 const {
     login,
+    loginGoogle,
     getUsuarios,
     createUsuario,
     updateUsuario,
@@ -9,6 +10,7 @@ const {
 } = require('../controllers/usuariosController')
 
 router.post('/login', login)
+router.post('/auth/google', loginGoogle)
 router.get('/usuarios', getUsuarios)
 router.post('/usuarios', createUsuario)
 router.put('/usuarios/:usuario', updateUsuario)

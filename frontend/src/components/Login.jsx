@@ -2,6 +2,7 @@ import React, { useState } from "react"
 import axios from 'axios'
 import { useNavigate } from "react-router-dom"
 import Swal from 'sweetalert2'
+import { GoogleLogin } from '@react-oauth/google'
 import { API_ROUTES } from "../api/apiRoutes"
 
 const Login = () => {
@@ -67,6 +68,40 @@ const Login = () => {
         }
     }
 
+    // MANEJA EL LOGIN EXITOSO CON GOOGLE
+    const handleGoogleSuccess = async (credentialResponse) => {
+        try {
+            const response = await axios.post(
+                API_ROUTES.GOOGLE_LOGIN,
+                { credential: credentialResponse.credential },
+                { withCredentials: true } // importante para que se guarde la cookie de sesión
+            )
+
+            if (response.data.usuario.estado === 'inactivo') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Cuenta inactiva',
+                    text: 'Tu cuenta esta inactiva. Contacta al administrador'
+                })
+                return
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Bienvenido',
+                text: 'Inicio de sesion exitoso'
+            })
+            navigate('/dashboard', { state: { usuario: response.data.usuario } })
+        } catch (err) {
+            console.error(err)
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo iniciar sesion con Google'
+            })
+        }
+    }
+
     return (
         <div className="auth-page">
             <div className="card auth-card">
@@ -121,6 +156,21 @@ const Login = () => {
                             Iniciar Sesion
                         </button>
                     </form>
+
+                    {/* SEPARADOR Y BOTON DE GOOGLE */}
+                    <div className="text-center my-3 text-muted">o</div>
+                    <div className="d-flex justify-content-center">
+                        <GoogleLogin
+                            onSuccess={handleGoogleSuccess}
+                            onError={() => {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: 'Fallo el inicio de sesion con Google'
+                                })
+                            }}
+                        />
+                    </div>
                 </div>
             </div>
         </div>
