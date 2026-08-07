@@ -8,18 +8,13 @@ import { API_ROUTES } from "../api/apiRoutes"
 const Login = () => {
     const [ usuario, setUsuario ] = useState("")
     const [ contrasena, setContrasena ] = useState("")
-    const [ error, setError ] = useState("")
-    const [ mensaje, setMensaje ] = useState("")
 
     const navigate = useNavigate()
 
-    const handleSubmit = async(e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
 
-        setError("")
-        setMensaje("")
-
-        if(!usuario || !contrasena){
+        if (!usuario || !contrasena) {
             Swal.fire({
                 icon: 'error',
                 title: 'Oops...',
@@ -32,42 +27,48 @@ const Login = () => {
 
         try {
             const response = await axios.post(API_ROUTES.LOGIN, loginData, {
-                headers: { 'Content-Type': 'application/json' }
+                headers: {
+                    'Content-Type': 'application/json'
+                }
             })
 
-            if(response.status == 200){
-                if(response.data.usuario.estado === 'inactivo') {
+            if (response.status == 200) {
+                if (response.data.usuario.estado === 'inactivo') {
                     Swal.fire({
                         icon: 'error',
                         title: 'Cuenta inactiva',
                         text: 'Tu cuenta esta inactiva. Contacta al administrador'
                     })
                     return
+                }
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Bienvenido',
+                    text: 'Inicio de sesion exitoso'
+                })
+                navigate('/dashboard', { state: { usuario: response.data.usuario } })
+            }
+        } catch (err) {
+            if (err.response) {
+                if (err.response.status === 400 || err.response.status === 401 || err.response.status === 402) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error de autenticacion',
+                        text: err.response.data
+                    })
                 } else {
                     Swal.fire({
-                        icon: 'success',
-                        title: 'Bienvenido',
-                        text: 'Inicio de sesion exitoso'
+                        icon: 'error',
+                        title: 'Error en la conexion',
+                        text: 'Error en conexion al servidor'
                     })
-                    navigate('/dashboard', { state: { usuario: response.data.usuario}})
-                }
-            }
-        } catch(err) {
-            if(err.response) {
-                if(err.response.status === 400) {
-                    Swal.fire({ icon: 'error', title: 'Error', text: 'Usuario y contraseña son requeridos' })
-                } else if(err.response.status === 401){
-                    Swal.fire({ icon: 'error', title: 'Error de autenticacion', text: err.response.data })
-                } else if(err.response.status === 402) {
-                    Swal.fire({ icon: 'error', title: 'Error de autenticacion', text: err.response.data })
-                } else {
-                    Swal.fire({ icon: 'error', title: 'Error en la conexion', text: 'Error en conexion al servidor' })
                 }
             }
         }
     }
 
-    // NUEVO: maneja el login exitoso con Google
+    // MANEJA EL LOGIN EXITOSO CON GOOGLE
     const handleGoogleSuccess = async (credentialResponse) => {
         try {
             const response = await axios.post(
@@ -101,61 +102,78 @@ const Login = () => {
         }
     }
 
-    return(
-    <div className="container d-flex justify-content-center align-items-center min-vh-100">
-        <div className="card shadow-lg p-4" style={{width: '100%', maxWidth: '400px'}}>
-            <h2 className="text-center mb-4"> Iniciar Sesion</h2>
-            <form onSubmit={handleSubmit}>
-                <div className="form-group">
-                <label htmlFor="usuario">Usuario:</label>
-                <input
-                type="text"
-                autoComplete="username"
-                className="form-control"
-                id="usuario"
-                value={usuario}
-                onChange={ (e) => setUsuario(e.target.value) }
-                placeholder="Ingresa tu usuario"
-                />
+    return (
+        <div className="auth-page">
+            <div className="card auth-card">
+                <div className="card-body p-4 p-md-5">
+                    <div className="text-center mb-4">
+                        <h2 className="auth-title mb-1">Registech</h2>
+                        <p className="auth-subtitle mb-0">Sistema de inventario y gestión de TI</p>
+                    </div>
+
+                    <form onSubmit={handleSubmit}>
+                        <div className="mb-3">
+                            <label className="form-label fw-semibold" htmlFor="usuario">
+                                Usuario
+                            </label>
+                            <div className="auth-input-group">
+                                <i className="bi bi-person"></i>
+                                <input
+                                    type="text"
+                                    autoComplete="username"
+                                    className="form-control"
+                                    id="usuario"
+                                    value={usuario}
+                                    onChange={(e) => setUsuario(e.target.value)}
+                                    placeholder="Ingresa tu usuario"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="form-label fw-semibold" htmlFor="contrasena">
+                                Contraseña
+                            </label>
+                            <div className="auth-input-group">
+                                <i className="bi bi-lock"></i>
+                                <input
+                                    type="password"
+                                    autoComplete="current-password"
+                                    className="form-control"
+                                    id="contrasena"
+                                    value={contrasena}
+                                    onChange={(e) => setContrasena(e.target.value)}
+                                    placeholder="Ingresa tu contraseña"
+                                />
+                            </div>
+                        </div>
+
+                        <button
+                            type="submit"
+                            className="btn btn-primary w-100 py-2 fw-semibold"
+                        >
+                            <i className="bi bi-box-arrow-in-right"></i>
+                            Iniciar Sesion
+                        </button>
+                    </form>
+
+                    {/* SEPARADOR Y BOTON DE GOOGLE */}
+                    <div className="text-center my-3 text-muted">o</div>
+                    <div className="d-flex justify-content-center">
+                        <GoogleLogin
+                            onSuccess={handleGoogleSuccess}
+                            onError={() => {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: 'Fallo el inicio de sesion con Google'
+                                })
+                            }}
+                        />
+                    </div>
                 </div>
-
-                <div className="form-group">
-                    <label htmlFor="contrasena">Contraseña:</label>
-                    <input
-                    type="password"
-                    autoComplete="current-password"
-                    className="form-control"
-                    id="contrasena"
-                    value={contrasena}
-                    onChange={ (e) => setContrasena(e.target.value)}
-                    placeholder="Ingresa tu contraseña"
-                    />
-                </div>
-
-                <button type="submit" className="btn btn-primary btn-block mt-3">
-                    Iniciar Sesion
-                </button>
-            </form>
-
-            {/* NUEVO: separador y botón de Google */}
-            <div className="text-center my-3 text-muted">o</div>
-            <div className="d-flex justify-content-center">
-                <GoogleLogin
-                    onSuccess={handleGoogleSuccess}
-                    onError={() => {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Fallo el inicio de sesion con Google'
-                        })
-                    }}
-                />
             </div>
-
-            {error && <div className="alert alert-danger mt-3">{error}</div>}
-            {mensaje && <div className="alert alert-success mt-3">{mensaje}</div>}
         </div>
-    </div>
     )
 }
 

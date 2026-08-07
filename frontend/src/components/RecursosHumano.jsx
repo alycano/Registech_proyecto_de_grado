@@ -200,85 +200,114 @@ const RecursosHumanos = () => {
     // FUNCION PARA ASIGNAR CLASES DE COLOR SEGUN EL ESTADO
     const getEstadoClass = (estado) => {
         switch(estado.toLowerCase()) {
-            case 'inactivo': return 'bg-danger text-white'
-            case 'activo': return 'bg-success text-white'
-            default: return ''
+            case 'inactivo': return 'text-bg-danger'
+            case 'activo': return 'text-bg-success'
+            default: return 'text-bg-light'
         }
     }
 
     if (loading) {
-        return <div className="text-center"> Cargando ... </div>
+        return (
+            <div className="text-center py-5 text-secondary">
+                <div className="spinner-border text-primary mb-2" role="status"></div>
+                <div>Cargando usuarios...</div>
+            </div>
+        )
     }
 
     if (error) {
-        return <div className="text-center">{error}</div>
+        return <div className="alert alert-danger text-center">{error}</div>
     }
 
     return (
-        <div className="container mt-4">
-            <h3 className="text-center mb-4">Listado de asociados</h3>
+        <div className="card">
+            <div className="card-body">
+                <div className="module-header">
+                    <h4 className="module-title mb-0">
+                        <i className="bi bi-people-fill"></i>
+                        Listado de asociados
+                    </h4>
+                    <span className="badge text-bg-primary">{filteredUsuarios.length} usuarios</span>
+                </div>
 
-            {/* INPUT PARA FILTRAR USUARIOS */}
-            <div className="d-flex justify-content-start mb-3">
-                <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Filtrar por nombre, usuario, area o estado"
-                    value={filter}
-                    onChange={handleFilterChange}
-                />
-            </div>
+                {/* INPUT PARA FILTRAR USUARIOS */}
+                <div className="d-flex justify-content-start mb-3">
+                    <div className="input-group" style={{ maxWidth: '400px' }}>
+                        <span className="input-group-text"><i className="bi bi-search"></i></span>
+                        <input
+                            type="text"
+                            className="form-control"
+                            placeholder="Filtrar por nombre, usuario, area o estado"
+                            value={filter}
+                            onChange={handleFilterChange}
+                        />
+                    </div>
+                </div>
 
-            {/* BOTON PARA AGREGAR UN NUEVO USUARIO */}
-            <div className="d-flex justify-content-end mb-3">
-                <button
-                    className="btn btn-primary"
-                    onClick={nuevoUsuario}
-                >
-                    <i className="bi bi-plus-circle"></i> Nuevo Usuario
-                </button>
-            </div>
+                {/* BOTON PARA AGREGAR UN NUEVO USUARIO */}
+                <div className="d-flex justify-content-end mb-3">
+                    <button
+                        className="btn btn-primary"
+                        onClick={nuevoUsuario}
+                    >
+                        <i className="bi bi-person-plus"></i> Nuevo Usuario
+                    </button>
+                </div>
 
-            <table className="table table-bordered table-striped">
-                <thead>
-                    <tr>
-                        <th>Nombre</th>
-                        <th>Usuario</th>
-                        <th>Area</th>
-                        <th>Correo</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {filteredUsuarios.map((usuario, index) => (
-                        <tr key={index}>
-                            <td>{usuario.nombre}</td>
-                            <td>{usuario.usuario}</td>
-                            <td>{usuario.area}</td>
-                            <td>{usuario.correo}</td>
-                            <td className={`text-center ${getEstadoClass(usuario.estado)}`}>
-                                {usuario.estado}
-                            </td>
-                            <td className="text-center">
-                                <button
-                                    className="btn btn-warning btn-sm me-2"
-                                    onClick={() => editarUsuario(usuario)}
-                                >
-                                    <i className="bi bi-pencil-square"></i>
-                                </button>
+                <div className="table-responsive">
+                    <table className="table table-bordered table-striped table-hover align-middle">
+                        <thead className="table-dark">
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Usuario</th>
+                                <th>Area</th>
+                                <th>Correo</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredUsuarios.length === 0 ? (
+                                <tr>
+                                    <td colSpan="6" className="text-center py-4 text-secondary">
+                                        No se encontraron usuarios
+                                    </td>
+                                </tr>
+                            ) : (
+                            filteredUsuarios.map((usuario, index) => (
+                                <tr key={index}>
+                                    <td>{usuario.nombre}</td>
+                                    <td>{usuario.usuario}</td>
+                                    <td>{usuario.area}</td>
+                                    <td>{usuario.correo}</td>
+                                    <td>
+                                        <span className={`badge ${getEstadoClass(usuario.estado)}`}>
+                                            {usuario.estado}
+                                        </span>
+                                    </td>
+                                    <td className="text-center">
+                                        <button
+                                            className="btn btn-warning btn-sm me-1"
+                                            onClick={() => editarUsuario(usuario)}
+                                            title="Editar"
+                                        >
+                                            <i className="bi bi-pencil-square"></i>
+                                        </button>
 
-                                <button
-                                    className="btn btn-danger btn-sm"
-                                    onClick={() => borrarUsuario(usuario)}
-                                >
-                                    <i className="bi bi-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+                                        <button
+                                            className="btn btn-danger btn-sm"
+                                            onClick={() => borrarUsuario(usuario)}
+                                            title="Eliminar"
+                                        >
+                                            <i className="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
 
             {/* MODAL DE USUARIO */}
             {modalUsuario && (
@@ -391,6 +420,7 @@ const RecursosHumanos = () => {
                     </div>
                 </div>
             )}
+            </div>
         </div>
     )
 }
