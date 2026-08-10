@@ -5,6 +5,9 @@ import Swal from "sweetalert2"
 import Tecnologia from './Tecnologia'
 import RecursosHumanos from "./RecursosHumano"
 import Soportes from "./Soportes"
+import Almacen from "./Almacen"
+import Ventas from "./Ventas"
+import Finanzas from "./Finanzas"
 
 const Dashboard = () => {
     const location = useLocation()
@@ -52,6 +55,9 @@ const Dashboard = () => {
             case 'Tecnologia': return <Tecnologia usuario={usuario.usuario} />
             case 'Recursos Humanos': return <RecursosHumanos />
             case 'Soporte': return <Soportes usuario={usuario.usuario} />
+            case 'Almacen': return <Almacen />
+            case 'Ventas': return <Ventas />
+            case 'Fianzas': return <Finanzas />
             default: return (
                 <div className="empty-state">
                     <i className="bi bi-tools"></i>
@@ -69,8 +75,7 @@ const Dashboard = () => {
             {/* BARRA SUPERIOR */}
             <nav className="navbar navbar-expand app-navbar px-3 px-md-4 py-2">
                 <div className="container-fluid">
-                    <span className="navbar-brand d-flex align-items-center gap-2">
-                        <i className="bi bi-cpu-fill"></i>
+                    <span className="navbar-brand">
                         Registech
                     </span>
 

@@ -255,8 +255,8 @@ const RecursosHumanos = () => {
                 </div>
 
                 <div className="table-responsive">
-                    <table className="table table-bordered table-striped table-hover align-middle">
-                        <thead className="table-dark">
+                    <table className="table table-striped table-hover align-middle">
+                        <thead className="table-header">
                             <tr>
                                 <th>Nombre</th>
                                 <th>Usuario</th>

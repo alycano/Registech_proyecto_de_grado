@@ -114,7 +114,7 @@ const Soportes = ({ usuario }) => {
                 ) : (
                 <div className="table-responsive">
                     <table className="table table-striped table-hover align-middle">
-                        <thead className="table-dark">
+                        <thead className="table-header">
                             <tr>
                                 <th>ID Historial</th>
                                 <th>Numero de Serie</th>

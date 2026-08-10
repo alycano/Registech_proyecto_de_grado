@@ -6,6 +6,7 @@ const areasRoutes = require('./routes/areas')
 const equiposRoutes = require('./routes/equipos')
 const productosRoutes = require('./routes/productos')
 const ventasRoutes = require('./routes/ventas')
+const finanzasRoutes = require('./routes/finanzas')
 
 // CREAR INSTANCIA DE EXPRESS
 const app = express()
@@ -22,6 +23,7 @@ app.use('/api', areasRoutes)
 app.use('/api', equiposRoutes)
 app.use('/api', productosRoutes)
 app.use('/api', ventasRoutes)
+app.use('/api', finanzasRoutes)
 
 // RUTA DE SALUD DEL SERVIDOR
 app.get('/api/health', (req, res) => {
