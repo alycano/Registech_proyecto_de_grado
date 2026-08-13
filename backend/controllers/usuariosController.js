@@ -1,6 +1,7 @@
 const db = require('../config/db')
+const bcrypt = require('bcryptjs')
 const { OAuth2Client } = require('google-auth-library')
-const jwt = require('jsonwebtoken')
+const { signToken } = require('../utils/jwt')
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 
@@ -8,30 +9,58 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 exports.login = (req, res) => {
     const { usuario, contrasena } = req.body
 
-    if (!usuario || !contrasena) {
-        return res.status(400).send('Usuario y contraseña son obligatorios')
+    if (typeof usuario !== 'string' || typeof contrasena !== 'string' || !usuario.trim() || !contrasena) {
+        return res.status(400).json({ error: 'Usuario y contraseña son obligatorios' })
     }
 
     db.query(
-        'SELECT * FROM usuarios WHERE usuario = ? AND contrasena = ?',
-        [usuario, contrasena],
+        'SELECT * FROM usuarios WHERE usuario = ?',
+        [usuario.trim()],
         (err, results) => {
             if (err) {
                 console.error('Error detallado en el Login de MySQL:', err)
-                return res.status(500).send('Error en la consulta: ' + err.message)
+                return res.status(500).json({ error: 'Error interno del servidor' })
             }
 
             if (results.length === 0) {
-                return res.status(401).send('Usuario o contraseña incorrectos')
+                return res.status(401).json({ error: 'Usuario o contraseña incorrectos' })
             }
 
             const usuarioEncontrado = results[0]
-            res.status(200).send({
+
+            let contrasenaValida
+            if (usuarioEncontrado.contrasena_hash) {
+                contrasenaValida = bcrypt.compareSync(contrasena, usuarioEncontrado.contrasena_hash)
+            } else {
+                contrasenaValida = contrasena === usuarioEncontrado.contrasena
+            }
+
+            if (!contrasenaValida) {
+                return res.status(401).json({ error: 'Usuario o contraseña incorrectos' })
+            }
+
+            const token = signToken({
+                id: usuarioEncontrado.id_usuario,
+                usuario: usuarioEncontrado.usuario,
+                correo: usuarioEncontrado.correo,
+                area: usuarioEncontrado.area
+            })
+
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                maxAge: 7 * 24 * 60 * 60 * 1000
+            })
+
+            res.status(200).json({
                 mensaje: 'Login exitoso',
+                token,
                 usuario: {
                     usuario: usuarioEncontrado.usuario,
                     nombre: usuarioEncontrado.nombre,
                     area: usuarioEncontrado.area,
+                    correo: usuarioEncontrado.correo,
                     estado: usuarioEncontrado.estado
                 }
             })
@@ -66,11 +95,11 @@ exports.loginGoogle = async (req, res) => {
                 }
 
                 const generarTokenYResponder = (usuario) => {
-                    const token = jwt.sign(
-                        { id: usuario.id_usuario, correo: usuario.correo },
-                        process.env.JWT_SECRET,
-                        { expiresIn: '7d' }
-                    )
+                    const token = signToken({
+                        id: usuario.id_usuario,
+                        correo: usuario.correo,
+                        area: usuario.area
+                    })
 
                     res.cookie('token', token, {
                         httpOnly: true,
@@ -80,6 +109,7 @@ exports.loginGoogle = async (req, res) => {
                     })
 
                     res.json({
+                        token,
                         usuario: {
                             id: usuario.id_usuario,
                             correo: usuario.correo,

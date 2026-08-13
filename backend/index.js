@@ -1,5 +1,7 @@
 const express = require('express')
 const cors = require('cors')
+const helmet = require('helmet')
+const rateLimit = require('express-rate-limit')
 
 const usuariosRoutes = require('./routes/usuarios')
 const areasRoutes = require('./routes/areas')
@@ -9,6 +11,19 @@ const ventasRoutes = require('./routes/ventas')
 
 // CREAR INSTANCIA DE EXPRESS
 const app = express()
+
+// PROTEGER HEADERS HTTP
+app.use(helmet())
+
+// LIMITE DE INTENTOS EN EL LOGIN (ANTI FUERZA BRUTA)
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Demasiados intentos de inicio de sesion. Intenta de nuevo en 15 minutos' }
+})
+app.use('/api/login', loginLimiter)
 
 // PERMITIR PETICIONES DE OTROS DOMINIOS
 app.use(cors({

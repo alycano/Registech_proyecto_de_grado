@@ -42,6 +42,9 @@ const Login = () => {
                     return
                 }
 
+                localStorage.setItem('token', response.data.token)
+                localStorage.setItem('usuario', JSON.stringify(response.data.usuario))
+
                 Swal.fire({
                     icon: 'success',
                     title: 'Bienvenido',
@@ -85,6 +88,9 @@ const Login = () => {
                 })
                 return
             }
+
+            localStorage.setItem('token', response.data.token)
+            localStorage.setItem('usuario', JSON.stringify(response.data.usuario))
 
             Swal.fire({
                 icon: 'success',
