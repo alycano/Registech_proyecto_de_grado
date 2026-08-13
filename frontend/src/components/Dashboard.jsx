@@ -8,8 +8,9 @@ import Soportes from "./Soportes"
 const Dashboard = () => {
     const location = useLocation()
     const navigate = useNavigate()
-    const { usuario } = location.state || {}
-    if (!usuario) {
+    const usuarioGuardado = localStorage.getItem('usuario')
+    const { usuario } = location.state || (usuarioGuardado ? JSON.parse(usuarioGuardado) : {})
+    if (!usuario || !localStorage.getItem('token')) {
         navigate('/login')
         return null
     }
@@ -33,6 +34,8 @@ const Dashboard = () => {
                     showConfirmButton: false
                 })
                 .then(() => {
+                    localStorage.removeItem('token')
+                    localStorage.removeItem('usuario')
                     navigate('/login')
                 })
             }
