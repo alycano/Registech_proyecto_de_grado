@@ -1,5 +1,6 @@
 const db = require('../config/db')
 const { formatDate } = require('../utils/date')
+const { sanitizarTexto, sanitizarNumero } = require('../utils/sanitize')
 
 // OBTENER LAS VENTAS EN UN RANGO DE FECHAS
 exports.getVentas = (req, res) => {
@@ -42,8 +43,8 @@ exports.getVentas = (req, res) => {
 exports.createVenta = (req, res) => {
     const { venta } = req.body
 
-    if (!venta) {
-        return res.status(400).send('No se recibio la venta')
+    if (typeof venta !== 'string' || !venta) {
+        return res.status(400).json({ error: 'No se recibio la venta' })
     }
 
     const fecha_venta = formatDate()
@@ -51,23 +52,30 @@ exports.createVenta = (req, res) => {
 
     // SEPARAR LOS PRODUCTOS, EL TOTAL Y EL VENDEDOR
     const partes = venta.split('_')
-    const productos = partes[0]
-    const total_venta = parseFloat(partes[1])
-    const vendedor = partes[2]
-
-    // VALIDAR EL TOTAL DE LA VENTA
-    if (isNaN(total_venta)) {
-        return res.status(400).send('El total de la venta no es valido')
+    if (partes.length < 3) {
+        return res.status(400).json({ error: 'El formato de la venta es invalido' })
     }
 
-    const query = `INSERT INTO ventas (id_venta, productos, total_venta, fecha_venta, vendedor) VALUES (?, ?, ?, ?, ?)`
-    db.query(query, [id_venta, productos, total_venta, fecha_venta, vendedor], (err, results) => {
+    const productos = sanitizarTexto(partes[0], 500)
+    const total_venta = sanitizarNumero(partes[1])
+    const vendedor = sanitizarTexto(partes[2], 50)
+
+    // VALIDAR EL TOTAL DE LA VENTA
+    if (total_venta === null || total_venta < 0) {
+        return res.status(400).json({ error: 'El total de la venta no es valido' })
+    }
+    if (!productos || !vendedor) {
+        return res.status(400).json({ error: 'El formato de la venta es invalido' })
+    }
+
+    const query = 'INSERT INTO ventas (id_venta, productos, total_venta, fecha_venta, vendedor) VALUES (?, ?, ?, ?, ?)'
+    db.query(query, [id_venta, productos, total_venta, fecha_venta, vendedor], (err) => {
         if (err) {
             console.error(err)
-            return res.status(500).send('Error al insertar la venta')
+            return res.status(500).json({ error: 'Error al insertar la venta' })
         }
 
-        res.status(201).send({
+        res.status(201).json({
             mensaje: 'Venta registrada con exito',
             id_venta
         })

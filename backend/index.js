@@ -31,8 +31,8 @@ app.use(cors({
     credentials: true
 }))
 
-// MIDDLEWARE PARA ANALIZAR JSON
-app.use(express.json())
+// MIDDLEWARE PARA ANALIZAR JSON (CON LIMITE DE TAMAÑO)
+app.use(express.json({ limit: '100kb' }))
 
 // IMPORTAMOS EL USO DE LAS RUTAS
 app.use('/api', usuariosRoutes)
@@ -44,6 +44,26 @@ app.use('/api', ventasRoutes)
 // RUTA DE SALUD DEL SERVIDOR
 app.get('/api/health', (req, res) => {
     res.json({ ok: true, servicio: 'Registech API' })
+})
+
+// RUTA NO ENCONTRADA (RESPUESTA JSON SIN DETALLES INTERNOS)
+app.use((req, res) => {
+    res.status(404).json({ error: 'Ruta no encontrada' })
+})
+
+// MANEJO CENTRALIZADO DE ERRORES
+app.use((err, req, res, next) => {
+    if (err.type === 'entity.parse.failed') {
+        return res.status(400).json({ error: 'JSON inválido en el cuerpo de la petición' })
+    }
+    if (err.type === 'entity.too.large') {
+        return res.status(413).json({ error: 'El cuerpo de la petición supera el tamaño permitido' })
+    }
+    if (err.type === 'request.aborted') {
+        return res.status(400).json({ error: 'Petición cancelada' })
+    }
+    console.error('Error no controlado:', err)
+    res.status(500).json({ error: 'Error interno del servidor' })
 })
 
 // INICIAR EL SERVIDOR
