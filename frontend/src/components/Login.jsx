@@ -58,7 +58,7 @@ const Login = () => {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error de autenticacion',
-                        text: err.response.data
+                        text: err.response.data.error || err.response.data
                     })
                 } else {
                     Swal.fire({
