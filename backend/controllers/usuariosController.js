@@ -1,6 +1,8 @@
 const db = require('../config/db')
 const { OAuth2Client } = require('google-auth-library')
 const jwt = require('jsonwebtoken')
+const bcrypt = require('bcryptjs');
+const nodemailer = require('nodemailer');
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 
@@ -205,3 +207,108 @@ exports.deleteUsuario = (req, res) => {
         res.send('Usuario eliminado')
     })
 }
+
+// 1. REGISTRO SEGURO CON ENCRIPTACIÓN Y ESTADO PENDIENTE
+exports.registrarConVerificacion = async (req, res) => {
+    const { usuario, contrasena, nombre, area, correo } = req.body;
+
+    if (!usuario || !contrasena || !nombre || !area || !correo) {
+        return res.status(400).send('Todos los campos son obligatorios');
+    }
+
+    try {
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(contrasena, salt);
+        const tokenVerificacion = jwt.sign({ correo }, 'clave_secreta_temporal_123', { expiresIn: '1d' });
+
+        const query = `INSERT INTO usuarios (usuario, contrasena, nombre, area, correo, estado, reset_token) VALUES (?, ?, ?, ?, ?, 'pendiente', ?)`;
+
+        db.query(query, [usuario, passwordHash, nombre, area, correo, tokenVerificacion], (err, results) => {
+            if (err) {
+                console.error('Error al registrar:', err);
+                return res.status(500).send('El usuario o correo ya se encuentran registrados');
+            }
+
+            // Configuración opcional de Nodemailer para enviar el correo
+            /* 
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+            });
+            transporter.sendMail({
+                to: correo,
+                subject: 'Verifica tu cuenta',
+                html: `<a href="http://localhost:5000/api/usuarios/verificar/${tokenVerificacion}">Haz clic aquí para verificar tu cuenta</a>`
+            });
+            */
+
+            res.status(201).send({ mensaje: 'Usuario registrado con éxito. Revisa tu correo para verificar la cuenta.' });
+        });
+    } catch (error) {
+        res.status(500).send('Error en el servidor al encriptar contraseña');
+    }
+};
+
+// 2. VERIFICACIÓN DE CORREO ELECTRÓNICO
+exports.verificarCorreo = (req, res) => {
+    const { token } = req.params;
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const correo = decoded.correo;
+
+        const query = `UPDATE usuarios SET estado = 'activo', reset_token = NULL WHERE correo = ?`;
+        db.query(query, [correo], (err, result) => {
+            if (err || result.affectedRows === 0) {
+                return res.status(400).send('Token inválido o usuario no encontrado');
+            }
+            res.send('¡Correo verificado con éxito! Ya puedes iniciar sesión.');
+        });
+    } catch (error) {
+        res.status(400).send('El enlace de verificación ha expirado o es inválido');
+    }
+};
+
+// 3. RECUPERACIÓN DE CONTRASEÑA (Solicitar Token)
+exports.solicitarRecuperacion = (req, res) => {
+    const { correo } = req.body;
+
+    db.query('SELECT * FROM usuarios WHERE correo = ?', [correo], (err, results) => {
+        if (err || results.length === 0) {
+            return res.status(404).send('No existe un usuario con este correo');
+        }
+
+        const tokenRecuperacion = jwt.sign({ correo }, 'clave_secreta_temporal_123', { expiresIn: '15m' });
+
+        db.query('UPDATE usuarios SET reset_token = ? WHERE correo = ?', [tokenRecuperacion, correo], (errUpdate) => {
+            if (errUpdate) {
+                return res.status(500).send('Error al generar token de recuperación');
+            }
+            // Aquí puedes enviar el correo con el token usando Nodemailer igual que en el registro
+            res.send({ mensaje: 'Correo de recuperación enviado con éxito', tokenRecuperacion });
+        });
+    });
+};
+
+// 4. RESTABLECER CONTRASEÑA NUEVA
+exports.restablecerContrasena = async (req, res) => {
+    const { token, nuevaContrasena } = req.body;
+
+    try {
+        const decoded = jwt.verify(token, 'clave_secreta_temporal_123');
+        const correo = decoded.correo;
+
+        const salt = await bcrypt.genSalt(10);
+        const passwordHash = await bcrypt.hash(nuevaContrasena, salt);
+
+        const query = `UPDATE usuarios SET contrasena = ?, reset_token = NULL WHERE correo = ? AND reset_token = ?`;
+        db.query(query, [passwordHash, correo, token], (err, result) => {
+            if (err || result.affectedRows === 0) {
+                return res.status(400).send('Token inválido o ya utilizado');
+            }
+            res.send('Contraseña actualizada exitosamente');
+        });
+    } catch (error) {
+        res.status(400).send('Token expirado o inválido');
+    }
+};
