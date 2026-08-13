@@ -2,11 +2,12 @@ const express = require('express')
 const cors = require('cors')
 const bodyParser = require('body-parser')
 
-const usuariosRoutes = require('./usuariosRoutes')
-const areasRoutes = require('./areasRoutes')
-const equiposRoutes = require('./equiposRoutes')
-const productosRoutes = require('./productosRoutes')
-const ventasRoutes = require('./ventasRoutes')
+const usuariosRoutes = require('./routes/usuarios')
+const areasRoutes = require('./routes/areas')
+const equiposRoutes = require('./routes/equipos')
+const productosRoutes = require('./routes/productos')
+const ventasRoutes = require('./routes/ventas')
+const finanzasRoutes = require('./routes/finanzas')
 
 //CREAR INSTANCIA DE EXPRESS
 const app = express ()
@@ -18,16 +19,18 @@ app.use(cors())
 app.use(bodyParser.json())
 
 //IMPORTAMOS EL USO DE LAS RUTAS
-app.use ('/', usuariosRoutes)
-app.use ('/', areasRoutes)
-app.use ('/', equiposRoutes)
-app.use ('/', productosRoutes)
-app.use ('/', ventasRoutes)
+app.use ('/api', usuariosRoutes)
+app.use ('/api', areasRoutes)
+app.use ('/api', equiposRoutes)
+app.use ('/api', productosRoutes)
+app.use ('/api', ventasRoutes)
+app.use ('/api', finanzasRoutes)
 
-//INICIAR EL SERVIDOR
-const port = 3000
+
+// INICIAR EL SERVIDOR
+const port = process.env.PORT || 3000
 app.listen(port, () => {
-  console.log(`Servidor escuchando en http://localhost:${port}`)
+    console.log(`Servidor escuchando en http://localhost:${port}`)
 })
 
 module.exports = app;

@@ -30,11 +30,16 @@ const Equipos = ({ usuario }) => {
     }, [])
 
     if(loading){
-        return <div className="text-center">Cargando . . .</div>
+        return (
+            <div className="text-center py-5 text-secondary">
+                <div className="spinner-border text-primary mb-2" role="status"></div>
+                <div>Cargando equipos...</div>
+            </div>
+        )
     }
 
     if(error){
-        return <div className="text-center text-danger">{error}</div>
+        return <div className="alert alert-danger text-center">{error}</div>
     }
 
     const handleFilterChange = (e) => {
@@ -147,81 +152,93 @@ const Equipos = ({ usuario }) => {
     // FUNCION PARA ASIGNAR CLASES DE COLOR SEGUN EL ESTADO
     const getEstadoClass = (estado) => {
         switch(estado?.toLowerCase()) {
-            case 'baja': return 'bg-danger text-white'
-            case 'activo': return 'bg-success text-white'
-            case 'mantenimiento': return 'bg-warning text-white'
-            default: return ''
+            case 'baja': case 'inactivo': return 'text-bg-danger'
+            case 'activo': case 'asignado': return 'text-bg-success'
+            case 'mantenimiento': case 'en mantenimiento': return 'text-bg-warning'
+            case 'disponible': return 'text-bg-info'
+            case 'reservado': return 'text-bg-secondary'
+            default: return 'text-bg-light'
         }
     }
 
     return (
-        <div className="container mt-4">
-            <h3>Equipos</h3>
+        <div className="card">
+            <div className="card-body">
+                <div className="module-header">
+                    <h4 className="module-title mb-0">
+                        <i className="bi bi-hdd-stack"></i>
+                        Inventario de Equipos
+                    </h4>
+                    <span className="badge text-bg-primary">{equipos.length} registros</span>
+                </div>
 
-            <div className="mb-3">
-                <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Buscar por numero de serie o responsable..."
-                    value={filter}
-                    onChange={handleFilterChange}
-                />
-            </div>
+                <div className="mb-3">
+                    <div className="input-group">
+                        <span className="input-group-text"><i className="bi bi-search"></i></span>
+                        <input
+                            type="text"
+                            className="form-control"
+                            placeholder="Buscar por numero de serie o responsable..."
+                            value={filter}
+                            onChange={handleFilterChange}
+                        />
+                    </div>
+                </div>
 
-            <div className="table-responsive">
-                <table className="table table-striped table-hover">
-                    <thead className="table-dark">
-                        <tr>
-                            <th>Numero de Serie</th>
-                            <th>Tipo</th>
-                            <th>Marca</th>
-                            <th>Modelo</th>
-                            <th>Estado</th>
-                            <th>Responsable</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filteredEquipos.length === 0 ? (
+                <div className="table-responsive">
+                    <table className="table table-striped table-hover align-middle">
+                        <thead className="table-dark">
                             <tr>
-                                <td colSpan="7" className="text-center">No se encontraron equipos</td>
+                                <th>Numero de Serie</th>
+                                <th>Equipo</th>
+                                <th>Area</th>
+                                <th>Estado</th>
+                                <th>Responsable</th>
+                                <th>Acciones</th>
                             </tr>
-                        ) : (
-                            filteredEquipos.map(equipo => (
-                                <tr key={equipo.num_serie}>
-                                    <td>{equipo.num_serie}</td>
-                                    <td>{equipo.tipo || '-'}</td>
-                                    <td>{equipo.marca || '-'}</td>
-                                    <td>{equipo.modelo || '-'}</td>
-                                    <td>
-                                        <span className={`badge ${getEstadoClass(equipo.estado)}`}>
-                                            {equipo.estado}
-                                        </span>
-                                    </td>
-                                    <td>{equipo.responsable || 'Sin asignar'}</td>
-                                    <td>
-                                        <button
-                                            className="btn btn-sm btn-primary"
-                                            onClick={() => asignarUsuario(equipo)}
-                                        >
-                                            <i className="bi-bi-person-plus"></i>
-                                            Asignar
-                                        </button>
-
-                                        <button
-                                            className="btn warning btn-sm me-2"
-                                            onClick={() => reportarFalla(equipo)}
-                                        >
-                                            <i className="bi-bi-pencil-square"></i>
-                                            Reportar
-                                        </button>
+                        </thead>
+                        <tbody>
+                            {filteredEquipos.length === 0 ? (
+                                <tr>
+                                    <td colSpan="6" className="text-center py-4 text-secondary">
+                                        No se encontraron equipos
                                     </td>
                                 </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                            ) : (
+                                filteredEquipos.map(equipo => (
+                                    <tr key={equipo.num_serie}>
+                                        <td className="fw-semibold">{equipo.num_serie}</td>
+                                        <td>{equipo.equipo || '-'}</td>
+                                        <td>{equipo.area || '-'}</td>
+                                        <td>
+                                            <span className={`badge ${getEstadoClass(equipo.estado)}`}>
+                                                {equipo.estado}
+                                            </span>
+                                        </td>
+                                        <td>{equipo.responsable || 'Sin asignar'}</td>
+                                        <td>
+                                            <button
+                                                className="btn btn-sm btn-outline-primary me-1"
+                                                onClick={() => asignarUsuario(equipo)}
+                                            >
+                                                <i className="bi bi-person-plus"></i>
+                                                Asignar
+                                            </button>
+
+                                            <button
+                                                className="btn btn-sm btn-outline-warning"
+                                                onClick={() => reportarFalla(equipo)}
+                                            >
+                                                <i className="bi bi-wrench"></i>
+                                                Reportar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
 
             {/* MODAL ASIGNACION DE USUARIO */}
             {modalAsignacion && (
@@ -368,6 +385,7 @@ const Equipos = ({ usuario }) => {
                     </div>
                 </div>
             )}
+            </div>
         </div>
     )
 }

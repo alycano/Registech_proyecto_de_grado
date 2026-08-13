@@ -12,7 +12,6 @@
   },
   "license": "ISC",
   "author": "Aly.dev.1208",
-  "type": "commonjs",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -20,13 +19,14 @@
     "dev": "nodemon index.js"
   },
   "dependencies": {
-    "body-parser": "^2.3.0",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "google-auth-library": "^11.0.0",
+    "jsonwebtoken": "^9.0.3",
     "mysql2": "^3.22.6",
-    "nodemon": "^3.1.14",
-    "pg": "^8.22.0"
+    "nodemon": "^3.1.14"
   },
   "devDependencies": {
     "jest": "^30.4.2",
