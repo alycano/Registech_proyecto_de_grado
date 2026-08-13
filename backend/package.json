@@ -14,8 +14,9 @@
   "author": "Aly.dev.1208",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "test": "jest --forceExit ",
+    "dev": "nodemon index.js"
   },
   "dependencies": {
     "cookie-parser": "^1.4.7",
@@ -27,5 +28,8 @@
     "mysql2": "^3.22.6",
     "nodemon": "^3.1.14"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "jest": "^30.4.2",
+    "supertest": "^7.2.2"
+  }
 }
