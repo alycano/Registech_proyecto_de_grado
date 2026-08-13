@@ -11,7 +11,10 @@ const ventasRoutes = require('./routes/ventas')
 const app = express()
 
 // PERMITIR PETICIONES DE OTROS DOMINIOS
-app.use(cors())
+app.use(cors({
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    credentials: true
+}))
 
 // MIDDLEWARE PARA ANALIZAR JSON
 app.use(express.json())
