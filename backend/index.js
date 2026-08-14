@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express')
 const cors = require('cors')
 const helmet = require('helmet')
@@ -35,7 +36,7 @@ app.use(cors({
 app.use(express.json({ limit: '100kb' }))
 
 // IMPORTAMOS EL USO DE LAS RUTAS
-app.use('/api', usuariosRoutes)
+app.use('/api/usuarios', usuariosRoutes)
 app.use('/api', areasRoutes)
 app.use('/api', equiposRoutes)
 app.use('/api', productosRoutes)
