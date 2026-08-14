@@ -1,8 +1,7 @@
 const db = require('../config/db')
+const bcrypt = require('bcryptjs')
 const { OAuth2Client } = require('google-auth-library')
 const jwt = require('jsonwebtoken')
-const bcrypt = require('bcryptjs');
-const nodemailer = require('nodemailer');
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 
@@ -10,30 +9,58 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 exports.login = (req, res) => {
     const { usuario, contrasena } = req.body
 
-    if (!usuario || !contrasena) {
-        return res.status(400).send('Usuario y contraseña son obligatorios')
+    const usuarioLimpio = sanitizarTexto(usuario, 50)
+
+    if (!usuarioLimpio || typeof contrasena !== 'string' || !contrasena) {
+        return res.status(400).json({ error: 'Usuario y contraseña son obligatorios' })
+    }
+    if (contrasena.length > 128) {
+        return res.status(400).json({ error: 'Credenciales inválidas' })
     }
 
     db.query(
-        'SELECT * FROM usuarios WHERE usuario = ? AND contrasena = ?',
-        [usuario, contrasena],
+        'SELECT * FROM usuarios WHERE usuario = ?',
+        [usuarioLimpio],
         (err, results) => {
             if (err) {
                 console.error('Error detallado en el Login de MySQL:', err)
-                return res.status(500).send('Error en la consulta: ' + err.message)
+                return res.status(500).json({ error: 'Error interno del servidor' })
             }
 
             if (results.length === 0) {
-                return res.status(401).send('Usuario o contraseña incorrectos')
+                return res.status(401).json({ error: 'Usuario o contraseña incorrectos' })
             }
 
             const usuarioEncontrado = results[0]
-            res.status(200).send({
+
+            const contrasenaValida = compararContrasena(contrasena, usuarioEncontrado)
+
+            if (!contrasenaValida) {
+                return res.status(401).json({ error: 'Usuario o contraseña incorrectos' })
+            }
+
+            const token = signToken({
+                id: usuarioEncontrado.id_usuario,
+                usuario: usuarioEncontrado.usuario,
+                correo: usuarioEncontrado.correo,
+                area: usuarioEncontrado.area
+            })
+
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                maxAge: 7 * 24 * 60 * 60 * 1000
+            })
+
+            res.status(200).json({
                 mensaje: 'Login exitoso',
+                token,
                 usuario: {
                     usuario: usuarioEncontrado.usuario,
                     nombre: usuarioEncontrado.nombre,
                     area: usuarioEncontrado.area,
+                    correo: usuarioEncontrado.correo,
                     estado: usuarioEncontrado.estado
                 }
             })
@@ -45,7 +72,7 @@ exports.login = (req, res) => {
 exports.loginGoogle = async (req, res) => {
     const { credential } = req.body
 
-    if (!credential) {
+    if (typeof credential !== 'string' || !credential) {
         return res.status(400).json({ error: 'Falta el credential' })
     }
 
@@ -68,11 +95,11 @@ exports.loginGoogle = async (req, res) => {
                 }
 
                 const generarTokenYResponder = (usuario) => {
-                    const token = jwt.sign(
-                        { id: usuario.id_usuario, correo: usuario.correo },
-                        process.env.JWT_SECRET,
-                        { expiresIn: '7d' }
-                    )
+                    const token = signToken({
+                        id: usuario.id_usuario,
+                        correo: usuario.correo,
+                        area: usuario.area
+                    })
 
                     res.cookie('token', token, {
                         httpOnly: true,
@@ -82,6 +109,7 @@ exports.loginGoogle = async (req, res) => {
                     })
 
                     res.json({
+                        token,
                         usuario: {
                             id: usuario.id_usuario,
                             correo: usuario.correo,
@@ -147,54 +175,104 @@ exports.getUsuarios = (req, res) => {
 
 // AGREGAR UN NUEVO USUARIO
 exports.createUsuario = (req, res) => {
-    const { usuario, contrasena, nombre, area, correo, estado } = req.body
+    const campos = req.body || {}
 
-    if (!usuario || !contrasena || !nombre || !area || !correo) {
-        return res.status(400).send('Todos los campos son obligatorios')
+    const usuarioLimpio = sanitizarTexto(campos.usuario, 50)
+    const nombreLimpio = sanitizarTexto(campos.nombre, 100)
+    const areaLimpia = sanitizarTexto(campos.area, 50)
+    const correoLimpio = sanitizarTexto(campos.correo, 100)
+    const contrasenaPlana = typeof campos.contrasena === 'string' ? campos.contrasena : ''
+    const estadoFinal = sanitizarTexto(campos.estado, 10) || 'activo'
+
+    if (!usuarioLimpio || !contrasenaPlana || !nombreLimpio || !areaLimpia || !correoLimpio) {
+        return res.status(400).json({ error: 'Todos los campos son obligatorios' })
+    }
+    if (contrasenaPlana.length < 6) {
+        return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' })
+    }
+    if (contrasenaPlana.length > 128) {
+        return res.status(400).json({ error: 'La contraseña es demasiado larga' })
+    }
+    if (!esCorreoValido(correoLimpio)) {
+        return res.status(400).json({ error: 'El correo no es válido' })
+    }
+    if (!AREAS.includes(areaLimpia)) {
+        return res.status(400).json({ error: 'El área no es válida' })
+    }
+    if (!['activo', 'inactivo'].includes(estadoFinal)) {
+        return res.status(400).json({ error: 'El estado no es válido' })
     }
 
-    const estadoFinal = estado || 'activo'
-    const query = `INSERT INTO usuarios (usuario, contrasena, nombre, area, correo, estado) VALUES (?, ?, ?, ?, ?, ?)`
+    const contrasenaHash = bcrypt.hashSync(contrasenaPlana, 10)
+    const query = 'INSERT INTO usuarios (usuario, contrasena, nombre, area, correo, estado) VALUES (?, ?, ?, ?, ?, ?)'
 
-    db.query(query, [usuario, contrasena, nombre, area, correo, estadoFinal], (err, results) => {
+    db.query(query, [usuarioLimpio, contrasenaHash, nombreLimpio, areaLimpia, correoLimpio, estadoFinal], (err) => {
         if (err) {
             console.error('Error al agregar el usuario: ', err)
-            return res.status(500).send('Error al agregar el usuario')
+            return res.status(500).json({ error: 'Error al agregar el usuario' })
         }
 
-        res.status(201).send({
-            usuario, nombre, area, correo, estado: estadoFinal
-        })
+        res.status(201).json({ usuario: usuarioLimpio, nombre: nombreLimpio, area: areaLimpia, correo: correoLimpio, estado: estadoFinal })
     })
 }
 
 // EDITAR UN USUARIO
 exports.updateUsuario = (req, res) => {
     const { usuario: usuarioParam } = req.params
-    const { usuario, contrasena, nombre, area, correo, estado } = req.body
+    const campos = req.body || {}
 
-    const query = `UPDATE usuarios SET usuario = ?, contrasena = ?, nombre = ?, area = ?, correo = ?, estado = ? WHERE usuario = ?`
+    const usuarioLimpio = sanitizarTexto(campos.usuario, 50)
+    const nombreLimpio = sanitizarTexto(campos.nombre, 100)
+    const areaLimpia = sanitizarTexto(campos.area, 50)
+    const correoLimpio = sanitizarTexto(campos.correo, 100)
+    const contrasenaPlana = typeof campos.contrasena === 'string' ? campos.contrasena : ''
+    const estadoFinal = sanitizarTexto(campos.estado, 10)
 
-    db.query(query, [usuario, contrasena, nombre, area, correo, estado, usuarioParam], (err, result) => {
+    if (!usuarioLimpio || !contrasenaPlana || !nombreLimpio || !areaLimpia || !correoLimpio || !estadoFinal) {
+        return res.status(400).json({ error: 'Todos los campos son obligatorios' })
+    }
+    if (contrasenaPlana.length < 6) {
+        return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' })
+    }
+    if (!esCorreoValido(correoLimpio)) {
+        return res.status(400).json({ error: 'El correo no es válido' })
+    }
+    if (!AREAS.includes(areaLimpia)) {
+        return res.status(400).json({ error: 'El área no es válida' })
+    }
+    if (!['activo', 'inactivo'].includes(estadoFinal)) {
+        return res.status(400).json({ error: 'El estado no es válido' })
+    }
+
+    const contrasenaHash = bcrypt.hashSync(contrasenaPlana, 10)
+    const query = 'UPDATE usuarios SET usuario = ?, contrasena = ?, nombre = ?, area = ?, correo = ?, estado = ? WHERE usuario = ?'
+
+    db.query(query, [usuarioLimpio, contrasenaHash, nombreLimpio, areaLimpia, correoLimpio, estadoFinal, usuarioParam], (err, result) => {
         if (err) {
             console.error('Error al editar: ', err)
-            return res.status(500).send('Error al editar el usuario')
+            return res.status(500).json({ error: 'Error al editar el usuario' })
         }
 
         if (result.affectedRows === 0) {
-            return res.status(404).send('Usuario no encontrado')
+            return res.status(404).json({ error: 'Usuario no encontrado' })
         }
 
-        res.send('Usuario actualizado')
+        res.json({ mensaje: 'Usuario actualizado' })
     })
 }
 
 // ELIMINAR UN USUARIO
 exports.deleteUsuario = (req, res) => {
     const { usuario } = req.params
+    const usuarioLimpio = sanitizarTexto(usuario, 50)
+
+    if (!usuarioLimpio) {
+        return res.status(400).json({ error: 'Usuario inválido' })
+    }
+
     const query = `DELETE FROM usuarios WHERE usuario = ?`
 
-    db.query(query, [usuario], (err, result) => {
+    db.query(query, [usuarioLimpio], (err, result) => {
         if (err) {
             console.error('Error al eliminar usuario:', err)
             return res.status(500).send('Error al eliminar el usuario')

@@ -9,13 +9,14 @@ const {
     resolverReporte,
     buscarMantenimientos
 } = require('../controllers/equiposController')
+const { authMiddleware } = require('../middlewares/auth')
 
-router.get('/estados_equipo', getEstadosEquipo)
-router.get('/equipos', getEquipos)
-router.post('/equipos/asignacion', asignarUsuario)
-router.post('/equipos/reporte/add', reporteFalla)
-router.get('/equipos/reporte', getReportes)
-router.post('/equipos/reporte/solucion', resolverReporte)
-router.post('/equipos/mantenimientos/find', buscarMantenimientos)
+router.get('/estados_equipo', authMiddleware, getEstadosEquipo)
+router.get('/equipos', authMiddleware, getEquipos)
+router.post('/equipos/asignacion', authMiddleware, asignarUsuario)
+router.post('/equipos/reporte/add', authMiddleware, reporteFalla)
+router.get('/equipos/reporte', authMiddleware, getReportes)
+router.post('/equipos/reporte/solucion', authMiddleware, resolverReporte)
+router.post('/equipos/mantenimientos/find', authMiddleware, buscarMantenimientos)
 
 module.exports = router
