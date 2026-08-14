@@ -1,50 +1,101 @@
 const db = require('../config/db')
 const { OAuth2Client } = require('google-auth-library')
 const jwt = require('jsonwebtoken')
+const axios = require('axios')
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 
-// LOGIN DE USUARIO
-exports.login = (req, res) => {
-    const { usuario, contrasena } = req.body
+// ======================================================
+// LOGIN DE USUARIO CON reCAPTCHA
+// ======================================================
+exports.login = async (req, res) => {
+    const { usuario, contrasena, captchaToken } = req.body
 
+    // Validar usuario y contraseña
     if (!usuario || !contrasena) {
         return res.status(400).send('Usuario y contraseña son obligatorios')
     }
 
-    db.query(
-        'SELECT * FROM usuarios WHERE usuario = ? AND contrasena = ?',
-        [usuario, contrasena],
-        (err, results) => {
-            if (err) {
-                console.error('Error detallado en el Login de MySQL:', err)
-                return res.status(500).send('Error en la consulta: ' + err.message)
-            }
+    // Validar CAPTCHA
+    if (!captchaToken) {
+        return res.status(400).send('Debes completar el CAPTCHA')
+    }
 
-            if (results.length === 0) {
-                return res.status(401).send('Usuario o contraseña incorrectos')
-            }
-
-            const usuarioEncontrado = results[0]
-            res.status(200).send({
-                mensaje: 'Login exitoso',
-                usuario: {
-                    usuario: usuarioEncontrado.usuario,
-                    nombre: usuarioEncontrado.nombre,
-                    area: usuarioEncontrado.area,
-                    estado: usuarioEncontrado.estado
+    try {
+        // Verificar CAPTCHA con Google
+        const captchaResponse = await axios.post(
+            'https://www.google.com/recaptcha/api/siteverify',
+            null,
+            {
+                params: {
+                    secret: process.env.RECAPTCHA_SECRET_KEY,
+                    response: captchaToken
                 }
-            })
+            }
+        )
+
+        if (!captchaResponse.data.success) {
+            return res.status(400).send('CAPTCHA inválido')
         }
-    )
+
+        // Buscar usuario en MySQL
+        db.query(
+            'SELECT * FROM usuarios WHERE usuario = ? AND contrasena = ?',
+            [usuario, contrasena],
+            (err, results) => {
+                if (err) {
+                    console.error(
+                        'Error detallado en el Login de MySQL:',
+                        err
+                    )
+
+                    return res
+                        .status(500)
+                        .send('Error en la consulta: ' + err.message)
+                }
+
+                // Usuario no encontrado
+                if (results.length === 0) {
+                    return res
+                        .status(401)
+                        .send('Usuario o contraseña incorrectos')
+                }
+
+                const usuarioEncontrado = results[0]
+
+                // Login exitoso
+                res.status(200).send({
+                    mensaje: 'Login exitoso',
+                    usuario: {
+                        usuario: usuarioEncontrado.usuario,
+                        nombre: usuarioEncontrado.nombre,
+                        area: usuarioEncontrado.area,
+                        estado: usuarioEncontrado.estado
+                    }
+                })
+            }
+        )
+
+    } catch (error) {
+        console.error('Error verificando reCAPTCHA:', error)
+
+        return res
+            .status(500)
+            .send('Error al verificar el CAPTCHA')
+    }
 }
 
+
+// ======================================================
 // LOGIN CON GOOGLE
+// ======================================================
 exports.loginGoogle = async (req, res) => {
     const { credential } = req.body
 
     if (!credential) {
-        return res.status(400).json({ error: 'Falta el credential' })
+        return res.status(400).json({
+            error: 'Falta el credential'
+        })
     }
 
     try {
@@ -54,27 +105,48 @@ exports.loginGoogle = async (req, res) => {
         })
 
         const payload = ticket.getPayload()
-        const { sub: googleId, email, name, picture } = payload
+
+        const {
+            sub: googleId,
+            email,
+            name,
+            picture
+        } = payload
 
         db.query(
             'SELECT * FROM usuarios WHERE google_id = ? OR correo = ?',
             [googleId, email],
             (err, results) => {
+
                 if (err) {
-                    console.error('Error buscando usuario de Google:', err)
-                    return res.status(500).json({ error: 'Error en la consulta' })
+                    console.error(
+                        'Error buscando usuario de Google:',
+                        err
+                    )
+
+                    return res.status(500).json({
+                        error: 'Error en la consulta'
+                    })
                 }
 
+                // Generar JWT y responder
                 const generarTokenYResponder = (usuario) => {
+
                     const token = jwt.sign(
-                        { id: usuario.id_usuario, correo: usuario.correo },
+                        {
+                            id: usuario.id_usuario,
+                            correo: usuario.correo
+                        },
                         process.env.JWT_SECRET,
-                        { expiresIn: '7d' }
+                        {
+                            expiresIn: '7d'
+                        }
                     )
 
                     res.cookie('token', token, {
                         httpOnly: true,
-                        secure: process.env.NODE_ENV === 'production',
+                        secure:
+                            process.env.NODE_ENV === 'production',
                         sameSite: 'lax',
                         maxAge: 7 * 24 * 60 * 60 * 1000
                     })
@@ -86,35 +158,81 @@ exports.loginGoogle = async (req, res) => {
                             nombre: usuario.nombre,
                             area: usuario.area,
                             estado: usuario.estado,
-                            foto: usuario.foto_url || picture
+                            foto:
+                                usuario.foto_url ||
+                                picture
                         }
                     })
                 }
 
+                // Usuario existente
                 if (results.length > 0) {
+
                     const usuarioExistente = results[0]
+
                     db.query(
-                        'UPDATE usuarios SET google_id = ?, nombre = ?, foto_url = ? WHERE id_usuario = ?',
-                        [googleId, name, picture, usuarioExistente.id_usuario],
+                        `UPDATE usuarios
+                         SET google_id = ?, nombre = ?, foto_url = ?
+                         WHERE id_usuario = ?`,
+                        [
+                            googleId,
+                            name,
+                            picture,
+                            usuarioExistente.id_usuario
+                        ],
                         (errUpdate) => {
+
                             if (errUpdate) {
-                                console.error('Error actualizando usuario de Google:', errUpdate)
-                                return res.status(500).json({ error: 'Error al actualizar usuario' })
+                                console.error(
+                                    'Error actualizando usuario de Google:',
+                                    errUpdate
+                                )
+
+                                return res.status(500).json({
+                                    error:
+                                        'Error al actualizar usuario'
+                                })
                             }
-                            generarTokenYResponder({ ...usuarioExistente, nombre: name, foto_url: picture })
+
+                            generarTokenYResponder({
+                                ...usuarioExistente,
+                                nombre: name,
+                                foto_url: picture
+                            })
                         }
                     )
+
                 } else {
+
+                    // Crear usuario nuevo
                     db.query(
-                        'INSERT INTO usuarios (google_id, correo, nombre, foto_url, estado) VALUES (?, ?, ?, ?, ?)',
-                        [googleId, email, name, picture, 'activo'],
+                        `INSERT INTO usuarios
+                        (google_id, correo, nombre, foto_url, estado)
+                        VALUES (?, ?, ?, ?, ?)`,
+                        [
+                            googleId,
+                            email,
+                            name,
+                            picture,
+                            'activo'
+                        ],
                         (errInsert, resultInsert) => {
+
                             if (errInsert) {
-                                console.error('Error creando usuario de Google:', errInsert)
-                                return res.status(500).json({ error: 'Error al crear usuario' })
+                                console.error(
+                                    'Error creando usuario de Google:',
+                                    errInsert
+                                )
+
+                                return res.status(500).json({
+                                    error:
+                                        'Error al crear usuario'
+                                })
                             }
+
                             generarTokenYResponder({
-                                id_usuario: resultInsert.insertId,
+                                id_usuario:
+                                    resultInsert.insertId,
                                 correo: email,
                                 nombre: name,
                                 area: null,
@@ -126,82 +244,216 @@ exports.loginGoogle = async (req, res) => {
                 }
             }
         )
+
     } catch (error) {
-        console.error('Error en login con Google:', error)
-        res.status(401).json({ error: 'Token inválido' })
+
+        console.error(
+            'Error en login con Google:',
+            error
+        )
+
+        res.status(401).json({
+            error: 'Token inválido'
+        })
     }
 }
 
+
+// ======================================================
 // OBTENER TODOS LOS USUARIOS
+// ======================================================
 exports.getUsuarios = (req, res) => {
-    db.query('SELECT usuario, nombre, area, correo, estado FROM usuarios', (err, results) => {
-        if (err) {
-            console.error('Error al obtener usuarios:', err)
-            return res.status(500).send('Error en la consulta')
+
+    db.query(
+        'SELECT usuario, nombre, area, correo, estado FROM usuarios',
+        (err, results) => {
+
+            if (err) {
+                console.error(
+                    'Error al obtener usuarios:',
+                    err
+                )
+
+                return res
+                    .status(500)
+                    .send('Error en la consulta')
+            }
+
+            res.json(results)
         }
-        res.json(results)
-    })
+    )
 }
 
-// AGREGAR UN NUEVO USUARIO
-exports.createUsuario = (req, res) => {
-    const { usuario, contrasena, nombre, area, correo, estado } = req.body
 
-    if (!usuario || !contrasena || !nombre || !area || !correo) {
-        return res.status(400).send('Todos los campos son obligatorios')
+// ======================================================
+// AGREGAR NUEVO USUARIO
+// ======================================================
+exports.createUsuario = (req, res) => {
+
+    const {
+        usuario,
+        contrasena,
+        nombre,
+        area,
+        correo,
+        estado
+    } = req.body
+
+    if (
+        !usuario ||
+        !contrasena ||
+        !nombre ||
+        !area ||
+        !correo
+    ) {
+        return res
+            .status(400)
+            .send('Todos los campos son obligatorios')
     }
 
     const estadoFinal = estado || 'activo'
-    const query = `INSERT INTO usuarios (usuario, contrasena, nombre, area, correo, estado) VALUES (?, ?, ?, ?, ?, ?)`
 
-    db.query(query, [usuario, contrasena, nombre, area, correo, estadoFinal], (err, results) => {
-        if (err) {
-            console.error('Error al agregar el usuario: ', err)
-            return res.status(500).send('Error al agregar el usuario')
+    const query = `
+        INSERT INTO usuarios
+        (usuario, contrasena, nombre, area, correo, estado)
+        VALUES (?, ?, ?, ?, ?, ?)
+    `
+
+    db.query(
+        query,
+        [
+            usuario,
+            contrasena,
+            nombre,
+            area,
+            correo,
+            estadoFinal
+        ],
+        (err) => {
+
+            if (err) {
+                console.error(
+                    'Error al agregar el usuario:',
+                    err
+                )
+
+                return res
+                    .status(500)
+                    .send('Error al agregar el usuario')
+            }
+
+            res.status(201).send({
+                usuario,
+                nombre,
+                area,
+                correo,
+                estado: estadoFinal
+            })
         }
-
-        res.status(201).send({
-            usuario, nombre, area, correo, estado: estadoFinal
-        })
-    })
+    )
 }
 
-// EDITAR UN USUARIO
+
+// ======================================================
+// EDITAR USUARIO
+// ======================================================
 exports.updateUsuario = (req, res) => {
-    const { usuario: usuarioParam } = req.params
-    const { usuario, contrasena, nombre, area, correo, estado } = req.body
 
-    const query = `UPDATE usuarios SET usuario = ?, contrasena = ?, nombre = ?, area = ?, correo = ?, estado = ? WHERE usuario = ?`
+    const {
+        usuario: usuarioParam
+    } = req.params
 
-    db.query(query, [usuario, contrasena, nombre, area, correo, estado, usuarioParam], (err, result) => {
-        if (err) {
-            console.error('Error al editar: ', err)
-            return res.status(500).send('Error al editar el usuario')
+    const {
+        usuario,
+        contrasena,
+        nombre,
+        area,
+        correo,
+        estado
+    } = req.body
+
+    const query = `
+        UPDATE usuarios
+        SET usuario = ?,
+            contrasena = ?,
+            nombre = ?,
+            area = ?,
+            correo = ?,
+            estado = ?
+        WHERE usuario = ?
+    `
+
+    db.query(
+        query,
+        [
+            usuario,
+            contrasena,
+            nombre,
+            area,
+            correo,
+            estado,
+            usuarioParam
+        ],
+        (err, result) => {
+
+            if (err) {
+                console.error(
+                    'Error al editar:',
+                    err
+                )
+
+                return res
+                    .status(500)
+                    .send('Error al editar el usuario')
+            }
+
+            if (result.affectedRows === 0) {
+                return res
+                    .status(404)
+                    .send('Usuario no encontrado')
+            }
+
+            res.send('Usuario actualizado')
         }
-
-        if (result.affectedRows === 0) {
-            return res.status(404).send('Usuario no encontrado')
-        }
-
-        res.send('Usuario actualizado')
-    })
+    )
 }
 
-// ELIMINAR UN USUARIO
+
+// ======================================================
+// ELIMINAR USUARIO
+// ======================================================
 exports.deleteUsuario = (req, res) => {
+
     const { usuario } = req.params
-    const query = `DELETE FROM usuarios WHERE usuario = ?`
 
-    db.query(query, [usuario], (err, result) => {
-        if (err) {
-            console.error('Error al eliminar usuario:', err)
-            return res.status(500).send('Error al eliminar el usuario')
+    const query = `
+        DELETE FROM usuarios
+        WHERE usuario = ?
+    `
+
+    db.query(
+        query,
+        [usuario],
+        (err, result) => {
+
+            if (err) {
+                console.error(
+                    'Error al eliminar usuario:',
+                    err
+                )
+
+                return res
+                    .status(500)
+                    .send('Error al eliminar el usuario')
+            }
+
+            if (result.affectedRows === 0) {
+                return res
+                    .status(404)
+                    .send('Usuario no encontrado')
+            }
+
+            res.send('Usuario eliminado')
         }
-
-        if (result.affectedRows === 0) {
-            return res.status(404).send('Usuario no encontrado')
-        }
-
-        res.send('Usuario eliminado')
-    })
+    )
 }
