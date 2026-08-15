@@ -154,14 +154,6 @@ La aplicación estará disponible en `http://localhost:5173`.
 
 ---
 
-## Autor
-
-**Aly.dev.1208** (Aly Santiago Cano)
-
-- GitHub: [alycano](https://github.com/alycano)
-- Repositorio: [Registech_proyecto_de_grado](https://github.com/alycano/Registech_proyecto_de_grado)
-
-
 ## Inicio de sesión con Google
 Se agregó la opción de iniciar sesión con la cuenta de Google, 
 además del login tradicional con usuario y contraseña.
@@ -176,7 +168,14 @@ Frontend: se agregó el botón de "Iniciar sesión con Google" en la pantalla de
 
 Google Cloud Console: se configuraron las credenciales necesarias para que la aplicación pueda comunicarse con las cuentas de Google de forma segura.
 
+**Autor: Narilyn Bustamante**
+- Repositorio: [Registech_proyecto_de_grado](https://github.com/narilin/Registech_proyecto_de_grado.git)
+
+---
+
 ## Autor
 
-**Narilyn Bustamante**
-- Repositorio: [Registech_proyecto_de_grado](https://github.com/narilin/Registech_proyecto_de_grado.git)
+**Aly.dev.1208** (Aly Santiago Cano)
+
+- GitHub: [alycano](https://github.com/alycano)
+- Repositorio: [Registech_proyecto_de_grado](https://github.com/alycano/Registech_proyecto_de_grado)
