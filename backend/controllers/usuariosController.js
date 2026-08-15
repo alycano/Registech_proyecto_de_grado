@@ -2,8 +2,21 @@ const db = require('../config/db')
 const bcrypt = require('bcryptjs')
 const { OAuth2Client } = require('google-auth-library')
 const jwt = require('jsonwebtoken')
+const { sanitizarTexto, sanitizarHtml, esCorreoValido, AREAS } = require('../utils/sanitize')
+const { signToken } = require('../utils/jwt')
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
+
+// COMPARAR LA CONTRASEÑA INGRESADA CON LA GUARDADA (BCRYPT O TEXTO PLANO)
+function compararContrasena(contrasena, usuarioEncontrado) {
+    const guardada = usuarioEncontrado.contrasena || usuarioEncontrado.contrasena_hash
+
+    if (typeof guardada === 'string' && guardada.startsWith('$2')) {
+        return bcrypt.compareSync(contrasena, guardada)
+    }
+
+    return guardada === contrasena
+}
 
 // LOGIN DE USUARIO
 exports.login = (req, res) => {
