@@ -3,7 +3,14 @@ const { OAuth2Client } = require('google-auth-library')
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
 const axios = require('axios')
-const { sanitizarTexto, sanitizarHtml, esCorreoValido, AREAS } = require('../utils/sanitize')
+
+const {
+    sanitizarTexto,
+    sanitizarHtml,
+    esCorreoValido,
+    AREAS
+} = require('../utils/sanitize')
+
 const { signToken } = require('../utils/jwt')
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
@@ -14,10 +21,19 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
 // ======================================================
 
 function compararContrasena(contrasena, usuarioEncontrado) {
-    const guardada = usuarioEncontrado.contrasena || usuarioEncontrado.contrasena_hash
 
-    if (typeof guardada === 'string' && guardada.startsWith('$2')) {
-        return bcrypt.compareSync(contrasena, guardada)
+    const guardada =
+        usuarioEncontrado.contrasena ||
+        usuarioEncontrado.contrasena_hash
+
+    if (
+        typeof guardada === 'string' &&
+        guardada.startsWith('$2')
+    ) {
+        return bcrypt.compareSync(
+            contrasena,
+            guardada
+        )
     }
 
     return guardada === contrasena
@@ -41,7 +57,10 @@ exports.login = async (req, res) => {
     // VALIDAR USUARIO Y CONTRASEÑA
     // ==================================================
 
-    const usuarioLimpio = sanitizarTexto(usuario, 50)
+    const usuarioLimpio = sanitizarTexto(
+        usuario,
+        50
+    )
 
     if (
         !usuarioLimpio ||
@@ -52,6 +71,7 @@ exports.login = async (req, res) => {
             error: 'Usuario y contraseña son obligatorios'
         })
     }
+
 
     if (contrasena.length > 128) {
         return res.status(400).json({
@@ -106,6 +126,7 @@ exports.login = async (req, res) => {
             (err, results) => {
 
                 if (err) {
+
                     console.error(
                         'Error detallado en el Login de MySQL:',
                         err
@@ -122,6 +143,7 @@ exports.login = async (req, res) => {
                 // ==================================================
 
                 if (results.length === 0) {
+
                     return res.status(401).json({
                         error: 'Usuario o contraseña incorrectos'
                     })
@@ -135,12 +157,15 @@ exports.login = async (req, res) => {
                 // COMPROBAR CONTRASEÑA
                 // ==================================================
 
-                const contrasenaValida = compararContrasena(
-                    contrasena,
-                    usuarioEncontrado
-                )
+                const contrasenaValida =
+                    compararContrasena(
+                        contrasena,
+                        usuarioEncontrado
+                    )
+
 
                 if (!contrasenaValida) {
+
                     return res.status(401).json({
                         error: 'Usuario o contraseña incorrectos'
                     })
@@ -152,10 +177,17 @@ exports.login = async (req, res) => {
                 // ==================================================
 
                 const token = signToken({
+
                     id: usuarioEncontrado.id_usuario,
-                    usuario: usuarioEncontrado.usuario,
-                    correo: usuarioEncontrado.correo,
-                    area: usuarioEncontrado.area
+
+                    usuario:
+                        usuarioEncontrado.usuario,
+
+                    correo:
+                        usuarioEncontrado.correo,
+
+                    area:
+                        usuarioEncontrado.area
                 })
 
 
@@ -163,12 +195,21 @@ exports.login = async (req, res) => {
                 // GUARDAR TOKEN EN COOKIE
                 // ==================================================
 
-                res.cookie('token', token, {
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === 'production',
-                    sameSite: 'lax',
-                    maxAge: 7 * 24 * 60 * 60 * 1000
-                })
+                res.cookie(
+                    'token',
+                    token,
+                    {
+                        httpOnly: true,
+
+                        secure:
+                            process.env.NODE_ENV === 'production',
+
+                        sameSite: 'lax',
+
+                        maxAge:
+                            7 * 24 * 60 * 60 * 1000
+                    }
+                )
 
 
                 // ==================================================
@@ -176,14 +217,27 @@ exports.login = async (req, res) => {
                 // ==================================================
 
                 return res.status(200).json({
+
                     mensaje: 'Login exitoso',
+
                     token,
+
                     usuario: {
-                        usuario: usuarioEncontrado.usuario,
-                        nombre: usuarioEncontrado.nombre,
-                        area: usuarioEncontrado.area,
-                        correo: usuarioEncontrado.correo,
-                        estado: usuarioEncontrado.estado
+
+                        usuario:
+                            usuarioEncontrado.usuario,
+
+                        nombre:
+                            usuarioEncontrado.nombre,
+
+                        area:
+                            usuarioEncontrado.area,
+
+                        correo:
+                            usuarioEncontrado.correo,
+
+                        estado:
+                            usuarioEncontrado.estado
                     }
                 })
             }
@@ -211,20 +265,37 @@ exports.loginGoogle = async (req, res) => {
 
     const { credential } = req.body
 
-    if (typeof credential !== 'string' || !credential) {
+
+    if (
+        typeof credential !== 'string' ||
+        !credential
+    ) {
+
         return res.status(400).json({
             error: 'Falta el credential'
         })
     }
 
+
     try {
 
-        const ticket = await client.verifyIdToken({
-            idToken: credential,
-            audience: process.env.GOOGLE_CLIENT_ID
-        })
+        // ==================================================
+        // VALIDAR TOKEN DE GOOGLE
+        // ==================================================
 
-        const payload = ticket.getPayload()
+        const ticket =
+            await client.verifyIdToken({
+
+                idToken: credential,
+
+                audience:
+                    process.env.GOOGLE_CLIENT_ID
+            })
+
+
+        const payload =
+            ticket.getPayload()
+
 
         const {
             sub: googleId,
@@ -234,12 +305,20 @@ exports.loginGoogle = async (req, res) => {
         } = payload
 
 
+        // ==================================================
+        // BUSCAR USUARIO
+        // ==================================================
+
         db.query(
             'SELECT * FROM usuarios WHERE google_id = ? OR correo = ?',
-            [googleId, email],
+            [
+                googleId,
+                email
+            ],
             (err, results) => {
 
                 if (err) {
+
                     console.error(
                         'Error buscando usuario de Google:',
                         err
@@ -251,80 +330,126 @@ exports.loginGoogle = async (req, res) => {
                 }
 
 
-                const generarTokenYResponder = (usuario) => {
+                // ==================================================
+                // GENERAR TOKEN Y RESPONDER
+                // ==================================================
 
-                    const token = signToken({
-                        id: usuario.id_usuario,
-                        correo: usuario.correo
-                    })
+                const generarTokenYResponder =
+                    (usuario) => {
 
+                        const token =
+                            signToken({
 
-                    res.cookie('token', token, {
-                        httpOnly: true,
-                        secure: process.env.NODE_ENV === 'production',
-                        sameSite: 'lax',
-                        maxAge: 7 * 24 * 60 * 60 * 1000
-                    })
+                                id:
+                                    usuario.id_usuario,
 
-
-                    res.json({
-                        usuario: {
-                            id: usuario.id_usuario,
-                            correo: usuario.correo,
-                            nombre: usuario.nombre,
-                            area: usuario.area,
-                            estado: usuario.estado,
-                            foto: usuario.foto_url || picture
-                        }
-                    })
-                }
+                                correo:
+                                    usuario.correo
+                            })
 
 
-                // ==========================================
+                        res.cookie(
+                            'token',
+                            token,
+                            {
+                                httpOnly: true,
+
+                                secure:
+                                    process.env.NODE_ENV === 'production',
+
+                                sameSite: 'lax',
+
+                                maxAge:
+                                    7 * 24 * 60 * 60 * 1000
+                            }
+                        )
+
+
+                        res.json({
+
+                            usuario: {
+
+                                id:
+                                    usuario.id_usuario,
+
+                                correo:
+                                    usuario.correo,
+
+                                nombre:
+                                    usuario.nombre,
+
+                                area:
+                                    usuario.area,
+
+                                estado:
+                                    usuario.estado,
+
+                                foto:
+                                    usuario.foto_url ||
+                                    picture
+                            }
+                        })
+                    }
+
+
+                // ==================================================
                 // USUARIO EXISTENTE
-                // ==========================================
+                // ==================================================
 
                 if (results.length > 0) {
 
-                    const usuarioExistente = results[0]
+                    const usuarioExistente =
+                        results[0]
 
-                    db.query(x|x|
+
+                    db.query(
                         'UPDATE usuarios SET google_id = ?, nombre = ?, foto_url = ? WHERE id_usuario = ?',
+
                         [
                             googleId,
                             name,
                             picture,
                             usuarioExistente.id_usuario
                         ],
+
                         (errUpdate) => {
 
                             if (errUpdate) {
+
                                 console.error(
                                     'Error actualizando usuario de Google:',
                                     errUpdate
                                 )
 
                                 return res.status(500).json({
-                                    error: 'Error al actualizar usuario'
+                                    error:
+                                        'Error al actualizar usuario'
                                 })
                             }
 
+
                             generarTokenYResponder({
+
                                 ...usuarioExistente,
-                                nombre: name,
-                                foto_url: picture
+
+                                nombre:
+                                    name,
+
+                                foto_url:
+                                    picture
                             })
                         }
                     )
 
                 } else {
 
-                    // ==========================================
+                    // ==================================================
                     // CREAR USUARIO NUEVO DE GOOGLE
-                    // ==========================================
+                    // ==================================================
 
                     db.query(
                         'INSERT INTO usuarios (google_id, correo, nombre, foto_url, estado) VALUES (?, ?, ?, ?, ?)',
+
                         [
                             googleId,
                             email,
@@ -332,26 +457,45 @@ exports.loginGoogle = async (req, res) => {
                             picture,
                             'activo'
                         ],
-                        (errInsert, resultInsert) => {
+
+                        (
+                            errInsert,
+                            resultInsert
+                        ) => {
 
                             if (errInsert) {
+
                                 console.error(
                                     'Error creando usuario de Google:',
                                     errInsert
                                 )
 
                                 return res.status(500).json({
-                                    error: 'Error al crear usuario'
+                                    error:
+                                        'Error al crear usuario'
                                 })
                             }
 
+
                             generarTokenYResponder({
-                                id_usuario: resultInsert.insertId,
-                                correo: email,
-                                nombre: name,
-                                area: null,
-                                estado: 'activo',
-                                foto_url: picture
+
+                                id_usuario:
+                                    resultInsert.insertId,
+
+                                correo:
+                                    email,
+
+                                nombre:
+                                    name,
+
+                                area:
+                                    null,
+
+                                estado:
+                                    'activo',
+
+                                foto_url:
+                                    picture
                             })
                         }
                     )
@@ -381,9 +525,11 @@ exports.getUsuarios = (req, res) => {
 
     db.query(
         'SELECT usuario, nombre, area, correo, estado FROM usuarios',
+
         (err, results) => {
 
             if (err) {
+
                 console.error(
                     'Error al obtener usuarios:',
                     err
@@ -423,23 +569,34 @@ exports.createUsuario = (req, res) => {
         !area ||
         !correo
     ) {
+
         return res.status(400).json({
             error: 'Todos los campos son obligatorios'
         })
     }
 
 
-    const estadoFinal = estado || 'activo'
+    const estadoFinal =
+        estado || 'activo'
+
 
     const query = `
         INSERT INTO usuarios
-        (usuario, contrasena, nombre, area, correo, estado)
+        (
+            usuario,
+            contrasena,
+            nombre,
+            area,
+            correo,
+            estado
+        )
         VALUES (?, ?, ?, ?, ?, ?)
     `
 
 
     db.query(
         query,
+
         [
             usuario,
             contrasena,
@@ -448,26 +605,35 @@ exports.createUsuario = (req, res) => {
             correo,
             estadoFinal
         ],
+
         (err, results) => {
 
             if (err) {
+
                 console.error(
                     'Error al agregar el usuario:',
                     err
                 )
 
                 return res.status(500).json({
-                    error: 'Error al agregar el usuario'
+                    error:
+                        'Error al agregar el usuario'
                 })
             }
 
 
             res.status(201).json({
+
                 usuario,
+
                 nombre,
+
                 area,
+
                 correo,
-                estado: estadoFinal
+
+                estado:
+                    estadoFinal
             })
         }
     )
@@ -484,6 +650,7 @@ exports.updateUsuario = (req, res) => {
         usuario: usuarioParam
     } = req.params
 
+
     const {
         usuario,
         contrasena,
@@ -496,7 +663,8 @@ exports.updateUsuario = (req, res) => {
 
     const query = `
         UPDATE usuarios
-        SET usuario = ?,
+        SET
+            usuario = ?,
             contrasena = ?,
             nombre = ?,
             area = ?,
@@ -508,6 +676,7 @@ exports.updateUsuario = (req, res) => {
 
     db.query(
         query,
+
         [
             usuario,
             contrasena,
@@ -517,29 +686,35 @@ exports.updateUsuario = (req, res) => {
             estado,
             usuarioParam
         ],
+
         (err, result) => {
 
             if (err) {
+
                 console.error(
                     'Error al editar:',
                     err
                 )
 
                 return res.status(500).json({
-                    error: 'Error al editar el usuario'
+                    error:
+                        'Error al editar el usuario'
                 })
             }
 
 
             if (result.affectedRows === 0) {
+
                 return res.status(404).json({
-                    error: 'Usuario no encontrado'
+                    error:
+                        'Usuario no encontrado'
                 })
             }
 
 
             res.json({
-                mensaje: 'Usuario actualizado'
+                mensaje:
+                    'Usuario actualizado'
             })
         }
     )
@@ -554,6 +729,7 @@ exports.deleteUsuario = (req, res) => {
 
     const { usuario } = req.params
 
+
     const query = `
         DELETE FROM usuarios
         WHERE usuario = ?
@@ -562,30 +738,37 @@ exports.deleteUsuario = (req, res) => {
 
     db.query(
         query,
+
         [usuario],
+
         (err, result) => {
 
             if (err) {
+
                 console.error(
                     'Error al eliminar usuario:',
                     err
                 )
 
                 return res.status(500).json({
-                    error: 'Error al eliminar el usuario'
+                    error:
+                        'Error al eliminar el usuario'
                 })
             }
 
 
             if (result.affectedRows === 0) {
+
                 return res.status(404).json({
-                    error: 'Usuario no encontrado'
+                    error:
+                        'Usuario no encontrado'
                 })
             }
 
 
             res.json({
-                mensaje: 'Usuario eliminado'
+                mensaje:
+                    'Usuario eliminado'
             })
         }
     )
