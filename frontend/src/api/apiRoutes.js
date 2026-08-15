@@ -1,3 +1,13 @@
+import axios from 'axios'
+
+axios.interceptors.request.use((config) => {
+    const token = localStorage.getItem('token')
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+})
+
 const BASE_URL = 'http://localhost:3000/api'
 
 export const API_ROUTES = {
@@ -17,6 +27,7 @@ export const API_ROUTES = {
     OBTENER_PRODUCTO_POR_CODIGO: (codigo) => `${BASE_URL}/producto?codigo=${codigo}`,
     OBTENER_VENTAS: `${BASE_URL}/ventas`,
     REGISTRAR_VENTA: `${BASE_URL}/ventas`,
+    OBTENER_FINANZAS: `${BASE_URL}/finanzas`,
     OBTENER_USUARIOS: `${BASE_URL}/usuarios`,
     CREAR_USUARIO: `${BASE_URL}/usuarios`,
     ACTUALIZAR_USUARIO: (usuario) => `${BASE_URL}/usuarios/${usuario}`,

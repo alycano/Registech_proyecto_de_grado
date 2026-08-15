@@ -63,6 +63,9 @@ const Login = () => {
                     return
                 }
 
+                localStorage.setItem('token', response.data.token)
+                localStorage.setItem('usuario', JSON.stringify(response.data.usuario))
+
                 Swal.fire({
                     icon: 'success',
                     title: 'Bienvenido',
@@ -87,7 +90,7 @@ const Login = () => {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error de autenticacion',
-                        text: err.response.data
+                        text: err.response.data.error || err.response.data
                     })
                 } else {
                     Swal.fire({
@@ -128,6 +131,9 @@ const Login = () => {
                 })
                 return
             }
+
+            localStorage.setItem('token', response.data.token)
+            localStorage.setItem('usuario', JSON.stringify(response.data.usuario))
 
             Swal.fire({
                 icon: 'success',
