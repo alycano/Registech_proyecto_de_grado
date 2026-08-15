@@ -26,13 +26,16 @@ backend/
 ├── db_inv_ti.sql       # Script SQL - estructura e inserción de datos
 ├── package.json        # Configuración y dependencias
 ├── config/
-│   └── db.js           # Conexión a la base de datos MySQL
+│   ├── db.js           # Conexión a la base de datos MySQL (o stub si DB_STUB=1)
+│   └── db.stub.js      # Base de datos en memoria para desarrollo sin MySQL
 ├── controllers/        # Lógica de negocio por recurso
 │   ├── areasController.js
 │   ├── equiposController.js
 │   ├── productosController.js
 │   ├── usuariosController.js
 │   └── ventasController.js
+├── middlewares/
+│   └── auth.js         # Autenticación por JWT y autorización por área
 ├── routes/             # Rutas HTTP por recurso
 │   ├── areas.js
 │   ├── equipos.js
@@ -40,10 +43,51 @@ backend/
 │   ├── usuarios.js
 │   └── ventas.js
 └── utils/
-    └── date.js         # Helpers reutilizables
+    ├── date.js         # Helpers de fechas
+    ├── jwt.js          # Firma y verificación de tokens JWT
+    └── sanitize.js     # Sanitización y validación de entradas
 ```
 
 Todos los endpoints se exponen bajo el prefijo `/api` (ej: `POST http://localhost:3000/api/login`). La documentación detallada de cada endpoint está en [`backend/README.md`](backend/README.md).
+
+---
+
+## Seguridad implementada
+
+El módulo de seguridad cubre autenticación, autorización y protección del servidor:
+
+### Autenticación con bcrypt y JWT
+- Las contraseñas se guardan **hashadas con bcrypt** (costo 10). Al crear o editar un usuario, la contraseña se encripta antes de almacenarse; nunca se guarda en texto plano.
+- El login emite un **token JWT** firmado con `JWT_SECRET` y expiración de 7 días. El token se devuelve en el cuerpo de la respuesta y también se guarda en una cookie `httpOnly`.
+- El login por Google verifica el `credential` contra Google y emite el mismo tipo de token.
+
+### Autorización
+- `authMiddleware` exige un encabezado `Authorization: Bearer <token>` válido en todas las rutas protegidas (devuelve `401` si falta o es inválido).
+- `requireArea(...)` limita el acceso según el área del usuario (devuelve `403` si no tiene permiso). Ej.: la gestión de usuarios requiere el área `Recursos Humanos` o `Tecnologia`.
+
+### Protección del servidor
+- **helmet**: establece cabeceras HTTP seguras.
+- **Rate limit** en `/api/login`: máximo 10 intentos por 15 minutos por IP (devuelve `429`).
+- **CORS** restringido al origen del frontend (`CLIENT_URL`) con `credentials: true`.
+- **Límite de tamaño** del cuerpo JSON (100 KB) para evitar abusos.
+
+### Validación y sanitización de entradas
+- Todas las consultas usan **parámetros preparados (`?`)**, evitando inyección SQL.
+- Los textos se sanitizan (se eliminan bloques `<script>` y atributos de eventos) y se truncan según su longitud máxima.
+- Se validan formatos: correo electrónico, áreas permitidas, estados de usuario y números (precios y existencias no negativos, existencias enteras).
+
+### Manejo de errores
+- Respuestas **JSON** uniformes, sin filtrar detalles internos ni stack traces.
+- `400` JSON inválido, `404` ruta no encontrada, `413` cuerpo demasiado grande y `500` genérico.
+
+### Variables de entorno relevantes
+| Variable | Descripción |
+|----------|-------------|
+| `JWT_SECRET` | Clave para firmar los tokens JWT (cambiar en producción) |
+| `CLIENT_URL` | Origen permitido para CORS |
+| `DB_STUB` | `1` activa la base de datos en memoria (desarrollo sin MySQL) |
+
+**Nota:** para desarrollo local sin MySQL, el archivo `.env` incluye `DB_STUB=1`, que activa el stub en memoria con los usuarios de prueba de la tabla de abajo. Con la base de datos real se omite `DB_STUB` o se pone en `0`.
 
 ---
 
@@ -118,7 +162,7 @@ La aplicación estará disponible en `http://localhost:5173`.
 - Repositorio: [Registech_proyecto_de_grado](https://github.com/alycano/Registech_proyecto_de_grado)
 
 
-## Inicio de sesión con Googlecd 
+## Inicio de sesión con Google
 Se agregó la opción de iniciar sesión con la cuenta de Google, 
 además del login tradicional con usuario y contraseña.
 

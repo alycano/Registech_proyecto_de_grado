@@ -1,5 +1,6 @@
 const db = require('../config/db')
 const { formatDate } = require('../utils/date')
+const { sanitizarTexto, sanitizarHtml } = require('../utils/sanitize')
 
 // OBTENER TODOS LOS ESTADOS DE LOS EQUIPOS
 exports.getEstadosEquipo = (req, res) => {
@@ -25,25 +26,27 @@ exports.getEquipos = (req, res) => {
 exports.asignarUsuario = (req, res) => {
     const { num_serie, usuario } = req.body
 
-    if (!num_serie) {
-        return res.status(400).send('El numero de serie es requerido')
+    const numSerieLimpio = sanitizarTexto(num_serie, 50)
+
+    if (!numSerieLimpio) {
+        return res.status(400).json({ error: 'El numero de serie es requerido' })
     }
 
     // SI EL USUARIO NO EXISTE O ESTA VACIO, ASIGNAMOS NULL
-    const responsable = usuario && usuario.trim() !== '' ? usuario : null
+    const responsable = sanitizarTexto(usuario, 50) || null
     const query = 'UPDATE equipos SET responsable = ? WHERE num_serie = ?'
 
-    db.query(query, [responsable, num_serie], (err, results) => {
+    db.query(query, [responsable, numSerieLimpio], (err, results) => {
         if (err) {
             console.error('Error al asignar usuario al equipo', err)
-            return res.status(500).send('Error al asignar usuario al equipo')
+            return res.status(500).json({ error: 'Error al asignar usuario al equipo' })
         }
 
         if (results.affectedRows === 0) {
-            return res.status(404).send('Equipo no encontrado')
+            return res.status(404).json({ error: 'Equipo no encontrado' })
         }
 
-        res.status(200).send('Se asigno exitosamente el usuario al equipo correspondiente')
+        res.status(200).json({ mensaje: 'Se asigno exitosamente el usuario al equipo correspondiente' })
     })
 }
 
@@ -51,8 +54,11 @@ exports.asignarUsuario = (req, res) => {
 exports.reporteFalla = (req, res) => {
     const { num_serie, falla } = req.body
 
-    if (!num_serie || !falla) {
-        return res.status(400).send('El numero de serie y la falla son requeridos')
+    const numSerieLimpio = sanitizarTexto(num_serie, 50)
+    const fallaLimpia = sanitizarHtml(falla, 500)
+
+    if (!numSerieLimpio || !fallaLimpia) {
+        return res.status(400).json({ error: 'El numero de serie y la falla son requeridos' })
     }
 
     const fecha_reporte = formatDate()
@@ -62,41 +68,41 @@ exports.reporteFalla = (req, res) => {
     db.getConnection((err, connection) => {
         if (err) {
             console.error('Error al obtener la conexion', err)
-            return res.status(500).send('Error al obtener la conexion')
+            return res.status(500).json({ error: 'Error al obtener la conexion' })
         }
 
         connection.beginTransaction((err) => {
             if (err) {
                 connection.release()
-                return res.status(500).send('Error al iniciar la transaccion')
+                return res.status(500).json({ error: 'Error al iniciar la transaccion' })
             }
 
             // ACTUALIZAR EL ESTADO DEL EQUIPO A MANTENIMIENTO
             const updateEstadoQuery = 'UPDATE equipos SET estado="Mantenimiento" WHERE num_serie=?'
-            connection.query(updateEstadoQuery, [num_serie], (err, result) => {
+            connection.query(updateEstadoQuery, [numSerieLimpio], (err, result) => {
                 if (err) {
                     return connection.rollback(() => {
                         connection.release()
                         console.error('Error al actualizar el estado del equipo', err)
-                        return res.status(500).send('Error al actualizar el estado del equipo')
+                        return res.status(500).json({ error: 'Error al actualizar el estado del equipo' })
                     })
                 }
 
                 if (result.affectedRows === 0) {
                     return connection.rollback(() => {
                         connection.release()
-                        return res.status(404).send('Equipo no encontrado')
+                        return res.status(404).json({ error: 'Equipo no encontrado' })
                     })
                 }
 
                 // INSERTAR EL NUEVO REGISTRO EN LA TABLA HISTORIAL_MANTENIMIENTOS
                 const insertHistorialQuery = 'INSERT INTO historial_mantenimientos(id_historial, num_serie, fecha_reporte, falla) VALUES(?, ?, ?, ?)'
-                connection.query(insertHistorialQuery, [id_historial, num_serie, fecha_reporte, falla], (err, result) => {
+                connection.query(insertHistorialQuery, [id_historial, numSerieLimpio, fecha_reporte, fallaLimpia], (err) => {
                     if (err) {
                         return connection.rollback(() => {
                             connection.release()
                             console.error('Error al insertar el registro en la tabla historial de mantenimientos', err)
-                            return res.status(500).send('Error al insertar el registro en la tabla historial de mantenimientos')
+                            return res.status(500).json({ error: 'Error al insertar el registro en la tabla historial de mantenimientos' })
                         })
                     }
 
@@ -106,11 +112,11 @@ exports.reporteFalla = (req, res) => {
                             return connection.rollback(() => {
                                 connection.release()
                                 console.error('Error al confirmar la transaccion', err)
-                                return res.status(500).send('Error al confirmar la transaccion')
+                                return res.status(500).json({ error: 'Error al confirmar la transaccion' })
                             })
                         }
                         connection.release()
-                        res.status(200).send('Estado actualizado a mantenimiento y reporte registrado exitosamente')
+                        res.status(200).json({ mensaje: 'Estado actualizado a mantenimiento y reporte registrado exitosamente' })
                     })
                 })
             })
@@ -134,8 +140,13 @@ exports.getReportes = (req, res) => {
 exports.resolverReporte = (req, res) => {
     const { num_serie, id_historial, tecnico, solucion } = req.body
 
-    if (!num_serie || !id_historial || !tecnico || !solucion) {
-        return res.status(400).send('El numero de serie, id_historial, tecnico y solucion son requeridos')
+    const numSerieLimpio = sanitizarTexto(num_serie, 50)
+    const idHistorialLimpio = sanitizarTexto(id_historial, 30)
+    const tecnicoLimpio = sanitizarTexto(tecnico, 50)
+    const solucionLimpia = sanitizarHtml(solucion, 1000)
+
+    if (!numSerieLimpio || !idHistorialLimpio || !tecnicoLimpio || !solucionLimpia) {
+        return res.status(400).json({ error: 'El numero de serie, id_historial, tecnico y solucion son requeridos' })
     }
 
     const fecha_solucion = formatDate()
@@ -144,41 +155,41 @@ exports.resolverReporte = (req, res) => {
     db.getConnection((err, connection) => {
         if (err) {
             console.error('Error al obtener la conexion', err)
-            return res.status(500).send('Error al obtener la conexion')
+            return res.status(500).json({ error: 'Error al obtener la conexion' })
         }
 
         connection.beginTransaction((err) => {
             if (err) {
                 connection.release()
-                return res.status(500).send('Error al iniciar la transaccion')
+                return res.status(500).json({ error: 'Error al iniciar la transaccion' })
             }
 
             // ACTUALIZAR EL ESTADO DEL EQUIPO A ACTIVO
             const updateEstadoQuery = 'UPDATE equipos SET estado="Activo" WHERE num_serie=?'
-            connection.query(updateEstadoQuery, [num_serie], (err, result) => {
+            connection.query(updateEstadoQuery, [numSerieLimpio], (err, result) => {
                 if (err) {
                     return connection.rollback(() => {
                         connection.release()
                         console.error('Error al actualizar el estado del equipo', err)
-                        return res.status(500).send('Error al actualizar el estado del equipo')
+                        return res.status(500).json({ error: 'Error al actualizar el estado del equipo' })
                     })
                 }
 
                 if (result.affectedRows === 0) {
                     return connection.rollback(() => {
                         connection.release()
-                        return res.status(404).send('Equipo no encontrado')
+                        return res.status(404).json({ error: 'Equipo no encontrado' })
                     })
                 }
 
                 // ACTUALIZAR EL REGISTRO EN LA TABLA HISTORIAL_MANTENIMIENTOS
                 const updateHistorialQuery = 'UPDATE historial_mantenimientos SET fecha_solucion=?, usuario_tecnico=?, solucion=? WHERE id_historial=?'
-                connection.query(updateHistorialQuery, [fecha_solucion, tecnico, solucion, id_historial], (err, result) => {
+                connection.query(updateHistorialQuery, [fecha_solucion, tecnicoLimpio, solucionLimpia, idHistorialLimpio], (err) => {
                     if (err) {
                         return connection.rollback(() => {
                             connection.release()
                             console.error('Error al actualizar el historial', err)
-                            return res.status(500).send('Error al actualizar el historial')
+                            return res.status(500).json({ error: 'Error al actualizar el historial' })
                         })
                     }
 
@@ -188,12 +199,12 @@ exports.resolverReporte = (req, res) => {
                             return connection.rollback(() => {
                                 connection.release()
                                 console.error('Error al confirmar la transaccion', err)
-                                return res.status(500).send('Error al confirmar la transaccion')
+                                return res.status(500).json({ error: 'Error al confirmar la transaccion' })
                             })
                         }
 
                         connection.release()
-                        res.status(200).send('Estado del equipo actualizado a activo y mantenimiento actualizado')
+                        res.status(200).json({ mensaje: 'Estado del equipo actualizado a activo y mantenimiento actualizado' })
                     })
                 })
             })
@@ -205,7 +216,9 @@ exports.resolverReporte = (req, res) => {
 exports.buscarMantenimientos = (req, res) => {
     const { filter } = req.body
 
-    if (!filter) {
+    const filtroLimpio = sanitizarTexto(filter, 100)
+
+    if (!filtroLimpio) {
         return res.status(400).json({
             error: 'Se debe proporcionar al menos uno de los elementos'
         })
@@ -216,9 +229,9 @@ exports.buscarMantenimientos = (req, res) => {
     OR usuario_tecnico = ?)
     AND solucion IS NOT NULL`
 
-    db.query(query, [filter, filter, filter], (err, result) => {
+    db.query(query, [filtroLimpio, filtroLimpio, filtroLimpio], (err, result) => {
         if (err) {
-            return res.status(500).send('Error en la consulta')
+            return res.status(500).json({ error: 'Error en la consulta' })
         }
         res.json(result)
     })

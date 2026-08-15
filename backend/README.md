@@ -16,6 +16,11 @@ API REST para el sistema de inventario y gestión de equipos de TI de la empresa
 | dotenv | ^17.4.2 | Variables de entorno |
 | cors | ^2.8.6 | Habilitar peticiones cross-origin |
 | nodemon | ^3.1.14 | Auto-reinicio en desarrollo |
+| bcryptjs | - | Encriptación de contraseñas |
+| jsonwebtoken | - | Firma y verificación de tokens JWT |
+| helmet | - | Cabeceras HTTP seguras |
+| express-rate-limit | - | Límite de intentos de login |
+| google-auth-library | - | Verificación de credenciales de Google |
 
 ---
 
@@ -30,13 +35,16 @@ Registech_proyecto_de_grado/
 │   ├── index.js            # Punto de entrada - servidor Express
 │   ├── db_inv_ti.sql       # Script SQL - estructura e inserción de datos
 │   ├── config/
-│   │   └── db.js           # Conexión a la base de datos MySQL
+│   │   ├── db.js           # Conexión a MySQL (o stub si DB_STUB=1)
+│   │   └── db.stub.js      # Base de datos en memoria para desarrollo sin MySQL
 │   ├── controllers/        # Lógica de negocio de cada recurso
 │   │   ├── areasController.js
 │   │   ├── equiposController.js
 │   │   ├── productosController.js
 │   │   ├── usuariosController.js
 │   │   └── ventasController.js
+│   ├── middlewares/
+│   │   └── auth.js         # Autenticación por JWT y autorización por área
 │   ├── routes/             # Definición de rutas HTTP por recurso
 │   │   ├── areas.js
 │   │   ├── equipos.js
@@ -44,7 +52,9 @@ Registech_proyecto_de_grado/
 │   │   ├── usuarios.js
 │   │   └── ventas.js
 │   └── utils/
-│       └── date.js         # Helpers reutilizables (formato de fechas)
+│       ├── date.js         # Helpers reutilizables (formato de fechas)
+│       ├── jwt.js          # Firma y verificación de tokens JWT
+│       └── sanitize.js     # Sanitización y validación de entradas
 └── frontend/               # Aplicación React + Vite
 ```
 
@@ -73,7 +83,13 @@ DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=
 DB_NAME=proyecto_final
+JWT_SECRET=registech_dev_secret_cambiar_en_produccion
+GOOGLE_CLIENT_ID=
+CLIENT_URL=http://localhost:5173
+DB_STUB=1
 ```
+
+> `DB_STUB=1` activa una base de datos en memoria con usuarios de prueba, útil para desarrollo sin MySQL. Con la base real, se omite o se pone en `0`.
 
 ---
 
@@ -114,9 +130,13 @@ DB_NAME=proyecto_final
 **Propósito:** Punto de entrada del servidor. Configura Express y levanta el servidor.
 
 - Crea instancia de Express
-- Habilita CORS para peticiones de otros dominios
-- Configura `express.json()` para parsear JSON
+- Aplica **helmet** para cabeceras HTTP seguras
+- Configura **rate limit** en `/api/login` (10 intentos / 15 min por IP)
+- Habilita CORS solo para el origen del frontend (`CLIENT_URL`) con `credentials: true`
+- Configura `express.json({ limit: '100kb' })` para parsear JSON con límite de tamaño
 - Registra todas las rutas bajo el prefijo `/api`
+- Responde `404` en JSON para rutas inexistentes
+- Manejo centralizado de errores (JSON limpio, sin detalles internos)
 - Inicia el servidor en el puerto 3000
 
 ---
@@ -127,19 +147,23 @@ DB_NAME=proyecto_final
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | `POST` | `/login` | Autenticar usuario (usuario + contraseña) |
-| `GET` | `/usuarios` | Obtener todos los usuarios |
-| `POST` | `/usuarios` | Crear nuevo usuario |
-| `PUT` | `/usuarios/:usuarioParam` | Editar usuario existente |
-| `DELETE` | `/usuarios/:usuario` | Eliminar usuario |
+| `POST` | `/auth/google` | Autenticar con credencial de Google |
+| `GET` | `/usuarios` | Obtener todos los usuarios (RRHH o Tecnología) |
+| `POST` | `/usuarios` | Crear nuevo usuario (RRHH o Tecnología) |
+| `PUT` | `/usuarios/:usuarioParam` | Editar usuario existente (RRHH o Tecnología) |
+| `DELETE` | `/usuarios/:usuario` | Eliminar usuario (RRHH o Tecnología) |
 
 **Lógica del Login:**
-- Valida que usuario y contraseña no estén vacíos
-- Busca en la tabla `usuarios` por ambas credenciales
-- Retorna datos del usuario (nombre, área, estado) si es exitoso
+- Valida que usuario y contraseña estén presentes
+- Busca al usuario solo por `usuario` (consulta parametrizada)
+- Compara la contraseña con `bcrypt.compareSync` contra el hash guardado
+- Emite un **token JWT** firmado con `JWT_SECRET` (expira en 7 días)
+- Guarda el token en una cookie `httpOnly` y lo devuelve en el body
 - Retorna 401 si las credenciales son incorrectas
 
 **Lógica de Crear Usuario:**
-- Valida que todos los campos obligatorios estén presentes
+- Valida campos obligatorios, formato de correo, área permitida y estado
+- Encripta la contraseña con bcrypt antes de guardarla
 - Si no se especifica estado, asigna `'activo'` por defecto
 
 ---
@@ -227,6 +251,35 @@ DB_NAME=proyecto_final
 
 ---
 
+## Seguridad
+
+### `middlewares/auth.js`
+**Propósito:** Proteger los endpoints de la API.
+
+- `authMiddleware`: exige `Authorization: Bearer <token>` válido en las rutas protegidas (devuelve `401` si falta o es inválido) y adjunta `req.usuario` con el payload del JWT.
+- `requireArea(...)`: limita el acceso según el área del usuario (devuelve `403` si no tiene permiso). Ej.: `requireArea('Recursos Humanos', 'Tecnologia')`.
+
+### `utils/jwt.js`
+**Propósito:** Firma y verificación de tokens JWT con `JWT_SECRET`.
+
+### `utils/sanitize.js`
+**Propósito:** Sanitización y validación de entradas.
+
+- `sanitizarTexto`: recorta, elimina caracteres de control y limita longitud.
+- `sanitizarHtml`: además elimina bloques `<script>` y atributos de eventos (`onerror`, `onload`, etc.).
+- `esCorreoValido`: valida formato de correo electrónico.
+- `sanitizarNumero`: convierte a número y valida que sea finito.
+
+### Medidas aplicadas
+- Contraseñas hashadas con **bcrypt** (nunca en texto plano).
+- Tokens **JWT** con expiración para las sesiones.
+- Consultas SQL **parametrizadas** (anti inyección SQL).
+- **Sanitización** de textos (anti XSS) y validación de tipos/formatos.
+- **helmet** + **rate limit** en login + **CORS** restringido + límite de tamaño de body.
+- Errores respondidos en **JSON** sin detalles internos.
+
+---
+
 ## Orden de Creación de Archivos
 
 El proyecto fue creado en el siguiente orden lógico:
@@ -286,6 +339,9 @@ npm run dev
 | Método | Ruta | Body |
 |--------|------|------|
 | `POST` | `/login` | `{ "usuario": "...", "contrasena": "..." }` |
+| `POST` | `/auth/google` | `{ "credential": "..." }` |
+
+> Todas las demás rutas requieren el encabezado `Authorization: Bearer <token>` obtenido en el login.
 
 ### Usuarios
 | Método | Ruta | Body/Params |

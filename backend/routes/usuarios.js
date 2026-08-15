@@ -1,5 +1,6 @@
 const express = require('express')
 const router = express.Router()
+const usuariosController = require('../controllers/usuariosController');
 const {
     login,
     loginGoogle,
@@ -8,6 +9,7 @@ const {
     updateUsuario,
     deleteUsuario
 } = require('../controllers/usuariosController')
+const { authMiddleware, requireArea } = require('../middlewares/auth')
 
 router.post('/login', login)
 router.post('/auth/google', loginGoogle)
