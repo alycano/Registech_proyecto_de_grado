@@ -187,7 +187,7 @@ const Equipos = ({ usuario }) => {
 
                 <div className="table-responsive">
                     <table className="table table-striped table-hover align-middle">
-                        <thead className="table-dark">
+                        <thead className="table-header">
                             <tr>
                                 <th>Numero de Serie</th>
                                 <th>Equipo</th>

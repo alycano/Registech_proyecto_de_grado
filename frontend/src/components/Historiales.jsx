@@ -89,8 +89,8 @@ const Historiales = ({ usuario }) => {
                     </div>
                 ) : (
                 <div className="table-responsive">
-                    <table className="table table-bordered table-striped table-hover align-middle">
-                        <thead className="table-dark">
+                    <table className="table table-striped table-hover align-middle">
+                        <thead className="table-header">
                             <tr className="text-center">
                                 <th>ID Mantenimiento</th>
                                 <th>Numero Serie</th>

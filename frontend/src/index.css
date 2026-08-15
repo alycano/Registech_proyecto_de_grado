@@ -29,14 +29,44 @@ body {
 }
 
 /* Tablas */
+.table {
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 0.5rem 1.5rem rgba(2, 132, 199, 0.10);
+  background: #fff;
+  margin-bottom: 0;
+}
 .table thead th {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.09em;
   white-space: nowrap;
+  border: none;
+  padding: 0.9rem 1.05rem;
+  font-weight: 700;
+}
+.table thead.table-header th {
+  background: linear-gradient(135deg, #0369a1, #0284c7, #0ea5e9);
+  color: #fff;
+}
+.table tbody td {
+  padding: 0.85rem 1.05rem;
+  border-color: #eef2f7;
+  vertical-align: middle;
+}
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+.table-striped {
+  --bs-table-striped-bg: rgba(2, 132, 199, 0.05);
+}
+.table-hover {
+  --bs-table-hover-bg: rgba(2, 132, 199, 0.09);
 }
 .table-hover tbody tr:hover {
-  background-color: rgba(2, 132, 199, 0.05);
+  background-color: rgba(2, 132, 199, 0.09);
 }
 
 /* Badges de estado */
@@ -194,6 +224,28 @@ body {
   border: none;
   border-radius: 1rem;
   box-shadow: var(--card-shadow);
+}
+
+/* Tarjetas de resumen (finanzas) */
+.stat-card {
+  border: 1px solid #e2e8f0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.75rem 2rem rgba(2, 132, 199, 0.2);
+}
+.stat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, #0284c7, #38bdf8);
+  color: #fff;
+  font-size: 1.25rem;
+  flex-shrink: 0;
 }
 
 /* ============================================================
