@@ -1,8 +1,7 @@
 const db = require('../config/db')
 const { OAuth2Client } = require('google-auth-library')
-const jwt = require('jsonwebtoken')
-const bcrypt = require('bcrypt')
 const axios = require('axios')
+const bcrypt = require('bcryptjs')
 
 const {
     sanitizarTexto,
@@ -13,7 +12,9 @@ const {
 
 const { signToken } = require('../utils/jwt')
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
+const client = new OAuth2Client(
+    process.env.GOOGLE_CLIENT_ID
+)
 
 
 // ======================================================
@@ -72,7 +73,6 @@ exports.login = async (req, res) => {
         })
     }
 
-
     if (contrasena.length > 128) {
         return res.status(400).json({
             error: 'Credenciales inválidas'
@@ -102,8 +102,10 @@ exports.login = async (req, res) => {
             null,
             {
                 params: {
-                    secret: process.env.RECAPTCHA_SECRET_KEY,
-                    response: captchaToken
+                    secret:
+                        process.env.RECAPTCHA_SECRET_KEY,
+                    response:
+                        captchaToken
                 }
             }
         )
@@ -133,7 +135,8 @@ exports.login = async (req, res) => {
                     )
 
                     return res.status(500).json({
-                        error: 'Error interno del servidor'
+                        error:
+                            'Error interno del servidor'
                     })
                 }
 
@@ -145,12 +148,14 @@ exports.login = async (req, res) => {
                 if (results.length === 0) {
 
                     return res.status(401).json({
-                        error: 'Usuario o contraseña incorrectos'
+                        error:
+                            'Usuario o contraseña incorrectos'
                     })
                 }
 
 
-                const usuarioEncontrado = results[0]
+                const usuarioEncontrado =
+                    results[0]
 
 
                 // ==================================================
@@ -167,7 +172,8 @@ exports.login = async (req, res) => {
                 if (!contrasenaValida) {
 
                     return res.status(401).json({
-                        error: 'Usuario o contraseña incorrectos'
+                        error:
+                            'Usuario o contraseña incorrectos'
                     })
                 }
 
@@ -178,7 +184,8 @@ exports.login = async (req, res) => {
 
                 const token = signToken({
 
-                    id: usuarioEncontrado.id_usuario,
+                    id:
+                        usuarioEncontrado.id_usuario,
 
                     usuario:
                         usuarioEncontrado.usuario,
@@ -218,7 +225,8 @@ exports.login = async (req, res) => {
 
                 return res.status(200).json({
 
-                    mensaje: 'Login exitoso',
+                    mensaje:
+                        'Login exitoso',
 
                     token,
 
@@ -251,7 +259,8 @@ exports.login = async (req, res) => {
         )
 
         return res.status(500).json({
-            error: 'Error al verificar el CAPTCHA'
+            error:
+                'Error al verificar el CAPTCHA'
         })
     }
 }
@@ -286,7 +295,8 @@ exports.loginGoogle = async (req, res) => {
         const ticket =
             await client.verifyIdToken({
 
-                idToken: credential,
+                idToken:
+                    credential,
 
                 audience:
                     process.env.GOOGLE_CLIENT_ID
@@ -325,7 +335,8 @@ exports.loginGoogle = async (req, res) => {
                     )
 
                     return res.status(500).json({
-                        error: 'Error en la consulta'
+                        error:
+                            'Error en la consulta'
                     })
                 }
 
@@ -511,7 +522,8 @@ exports.loginGoogle = async (req, res) => {
         )
 
         return res.status(401).json({
-            error: 'Token inválido'
+            error:
+                'Token inválido'
         })
     }
 }
@@ -536,7 +548,8 @@ exports.getUsuarios = (req, res) => {
                 )
 
                 return res.status(500).json({
-                    error: 'Error en la consulta'
+                    error:
+                        'Error en la consulta'
                 })
             }
 
@@ -571,7 +584,8 @@ exports.createUsuario = (req, res) => {
     ) {
 
         return res.status(400).json({
-            error: 'Todos los campos son obligatorios'
+            error:
+                'Todos los campos son obligatorios'
         })
     }
 
