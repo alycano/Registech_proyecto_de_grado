@@ -11,15 +11,13 @@ const {
 } = require('../utils/sanitize')
 
 const { signToken } = require('../utils/jwt')
-
 const client = new OAuth2Client(
     process.env.GOOGLE_CLIENT_ID
 )
 
 
-// ======================================================
 // COMPARAR CONTRASEÑA
-// ======================================================
+
 
 function compararContrasena(contrasena, usuarioEncontrado) {
 
@@ -41,9 +39,9 @@ function compararContrasena(contrasena, usuarioEncontrado) {
 }
 
 
-// ======================================================
+
 // LOGIN DE USUARIO CON reCAPTCHA
-// ======================================================
+
 
 exports.login = async (req, res) => {
 
@@ -266,9 +264,9 @@ exports.login = async (req, res) => {
 }
 
 
-// ======================================================
+
 // LOGIN CON GOOGLE
-// ======================================================
+
 
 exports.loginGoogle = async (req, res) => {
 
@@ -529,9 +527,9 @@ exports.loginGoogle = async (req, res) => {
 }
 
 
-// ======================================================
+
 // OBTENER TODOS LOS USUARIOS
-// ======================================================
+
 
 exports.getUsuarios = (req, res) => {
 
@@ -559,9 +557,9 @@ exports.getUsuarios = (req, res) => {
 }
 
 
-// ======================================================
+
 // AGREGAR UN NUEVO USUARIO
-// ======================================================
+
 
 exports.createUsuario = (req, res) => {
 
@@ -654,9 +652,9 @@ exports.createUsuario = (req, res) => {
 }
 
 
-// ======================================================
+
 // EDITAR UN USUARIO
-// ======================================================
+
 
 exports.updateUsuario = (req, res) => {
 
@@ -735,9 +733,9 @@ exports.updateUsuario = (req, res) => {
 }
 
 
-// ======================================================
+
 // ELIMINAR UN USUARIO
-// ======================================================
+
 
 exports.deleteUsuario = (req, res) => {
 
