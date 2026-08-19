@@ -7,9 +7,7 @@ const rateLimit = require('express-rate-limit')
 const usuariosRoutes = require('./routes/usuarios')
 const areasRoutes = require('./routes/areas')
 const equiposRoutes = require('./routes/equipos')
-const productosRoutes = require('./routes/productos')
-const ventasRoutes = require('./routes/ventas')
-const finanzasRoutes = require('./routes/finanzas')
+const prestamosRoutes = require('./routes/prestamos')
 
 // CREAR INSTANCIA DE EXPRESS
 const app = express()
@@ -40,9 +38,7 @@ app.use(express.json({ limit: '100kb' }))
 app.use('/api', usuariosRoutes)
 app.use('/api', areasRoutes)
 app.use('/api', equiposRoutes)
-app.use('/api', productosRoutes)
-app.use('/api', ventasRoutes)
-app.use('/api', finanzasRoutes)
+app.use('/api', prestamosRoutes)
 
 // RUTA DE SALUD DEL SERVIDOR
 app.get('/api/health', (req, res) => {

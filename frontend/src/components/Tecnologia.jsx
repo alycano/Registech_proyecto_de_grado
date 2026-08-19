@@ -1,14 +1,14 @@
-import { useState } from "react";
+import { useState } from "react"
 
 import Equipos from './Equipos'
-import Soportes from './Soportes'
+import Usuarios from './RecursosHumano'
+import Prestamos from './Prestamos'
+import HistorialPrestamos from './HistorialPrestamos'
 import Historiales from './Historiales'
+import Soportes from './Soportes'
 
-const Tecnologia = ({ usuario }) => { //recibimos el usuario como prop
+const Tecnologia = ({ usuario }) => {
     const [vista, setVista] = useState('equipos')
-    const mostrarEquipos = () => setVista('equipos')
-    const mostrarSoportes = () => setVista('soportes')
-    const mostrarHistoriales = () => setVista('historiales')
 
     return (
         <div>
@@ -16,20 +16,20 @@ const Tecnologia = ({ usuario }) => { //recibimos el usuario como prop
             <div className="module-header">
                 <h2 className="module-title">
                     <i className="bi bi-laptop-fill"></i>
-                    Gestion Tecnologia
+                    Panel de Administracion
                 </h2>
                 <div className="badge bg-primary-subtle text-primary-emphasis">
                     <i className="bi bi-person-badge"></i>
-                    Usuario: {usuario}
+                    Admin: {usuario}
                 </div>
             </div>
 
-            {/* PESTAÑAS PARA CAMBIAR DE VISTA */}
-            <ul className="nav nav-pills mb-4 gap-2">
+            {/* PESTANAS PARA CAMBIAR DE VISTA */}
+            <ul className="nav nav-pills mb-4 gap-2 flex-wrap">
                 <li className="nav-item">
                     <button
                         className={`nav-link ${vista === 'equipos' ? 'active' : ''}`}
-                        onClick={mostrarEquipos}
+                        onClick={() => setVista('equipos')}
                     >
                         <i className="bi bi-hdd-stack"></i>
                         Equipos
@@ -37,8 +37,26 @@ const Tecnologia = ({ usuario }) => { //recibimos el usuario como prop
                 </li>
                 <li className="nav-item">
                     <button
+                        className={`nav-link ${vista === 'prestamos' ? 'active' : ''}`}
+                        onClick={() => setVista('prestamos')}
+                    >
+                        <i className="bi bi-arrow-left-right"></i>
+                        Prestamos
+                    </button>
+                </li>
+                <li className="nav-item">
+                    <button
+                        className={`nav-link ${vista === 'historial-prestamos' ? 'active' : ''}`}
+                        onClick={() => setVista('historial-prestamos')}
+                    >
+                        <i className="bi bi-clock-history"></i>
+                        Historial Prestamos
+                    </button>
+                </li>
+                <li className="nav-item">
+                    <button
                         className={`nav-link ${vista === 'soportes' ? 'active' : ''}`}
-                        onClick={mostrarSoportes}
+                        onClick={() => setVista('soportes')}
                     >
                         <i className="bi bi-tools"></i>
                         Soportes
@@ -47,10 +65,19 @@ const Tecnologia = ({ usuario }) => { //recibimos el usuario como prop
                 <li className="nav-item">
                     <button
                         className={`nav-link ${vista === 'historiales' ? 'active' : ''}`}
-                        onClick={mostrarHistoriales}
+                        onClick={() => setVista('historiales')}
                     >
-                        <i className="bi bi-clock-history"></i>
-                        Historiales
+                        <i className="bi bi-clipboard-data"></i>
+                        Historial Mantenimientos
+                    </button>
+                </li>
+                <li className="nav-item">
+                    <button
+                        className={`nav-link ${vista === 'usuarios' ? 'active' : ''}`}
+                        onClick={() => setVista('usuarios')}
+                    >
+                        <i className="bi bi-people-fill"></i>
+                        Usuarios
                     </button>
                 </li>
             </ul>
@@ -58,12 +85,14 @@ const Tecnologia = ({ usuario }) => { //recibimos el usuario como prop
             {/* MOSTRAR EL COMPONENTE CORRESPONDIENTE */}
             <div>
                 {vista === 'equipos' && <Equipos />}
+                {vista === 'prestamos' && <Prestamos />}
+                {vista === 'historial-prestamos' && <HistorialPrestamos />}
                 {vista === 'soportes' && <Soportes usuario={usuario} />}
                 {vista === 'historiales' && <Historiales usuario={usuario} />}
+                {vista === 'usuarios' && <Usuarios />}
             </div>
         </div>
     )
-
 }
 
 export default Tecnologia

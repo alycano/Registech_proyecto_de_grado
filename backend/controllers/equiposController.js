@@ -78,7 +78,7 @@ exports.reporteFalla = (req, res) => {
             }
 
             // ACTUALIZAR EL ESTADO DEL EQUIPO A MANTENIMIENTO
-            const updateEstadoQuery = 'UPDATE equipos SET estado="Mantenimiento" WHERE num_serie=?'
+            const updateEstadoQuery = 'UPDATE equipos SET estado="En mantenimiento" WHERE num_serie=?'
             connection.query(updateEstadoQuery, [numSerieLimpio], (err, result) => {
                 if (err) {
                     return connection.rollback(() => {
@@ -165,7 +165,7 @@ exports.resolverReporte = (req, res) => {
             }
 
             // ACTUALIZAR EL ESTADO DEL EQUIPO A ACTIVO
-            const updateEstadoQuery = 'UPDATE equipos SET estado="Activo" WHERE num_serie=?'
+            const updateEstadoQuery = 'UPDATE equipos SET estado="Disponible" WHERE num_serie=?'
             connection.query(updateEstadoQuery, [numSerieLimpio], (err, result) => {
                 if (err) {
                     return connection.rollback(() => {

@@ -15,7 +15,8 @@ const Equipos = ({ usuario }) => {
 
     const [ modalEquipo, setModalEquipo] = useState(false)
 
-    const [ filter, setFilter] = useState('')
+    const [filter, setFilter] = useState('')
+    const [filtroEstado, setFiltroEstado] = useState('')
 
     useEffect(() => {
         axios.get(API_ROUTES.EQUIPOS)
@@ -46,10 +47,13 @@ const Equipos = ({ usuario }) => {
         setFilter(e.target.value)
     }
 
-    const filteredEquipos = equipos.filter(equipo =>
-        equipo.num_serie?.toLowerCase().includes(filter.toLowerCase()) ||
-        equipo.responsable?.toLowerCase().includes(filter.toLowerCase())
-    )
+    const filteredEquipos = equipos.filter(equipo => {
+        const matchTexto = equipo.num_serie?.toLowerCase().includes(filter.toLowerCase()) ||
+            equipo.responsable?.toLowerCase().includes(filter.toLowerCase()) ||
+            equipo.equipo?.toLowerCase().includes(filter.toLowerCase())
+        const matchEstado = !filtroEstado || equipo.estado === filtroEstado
+        return matchTexto && matchEstado
+    })
 
     // FUNCION PARA ABRIR EL MODAL DE ASIGNACION DE USUARIO AL EQUIPO
     const asignarUsuario = (equipo) => {
@@ -172,15 +176,33 @@ const Equipos = ({ usuario }) => {
                 </div>
 
                 <div className="mb-3">
-                    <div className="input-group">
-                        <span className="input-group-text"><i className="bi bi-search"></i></span>
-                        <input
-                            type="text"
-                            className="form-control"
-                            placeholder="Buscar por numero de serie o responsable..."
-                            value={filter}
-                            onChange={handleFilterChange}
-                        />
+                    <div className="row g-2">
+                        <div className="col-md-8">
+                            <div className="input-group">
+                                <span className="input-group-text"><i className="bi bi-search"></i></span>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    placeholder="Buscar por numero de serie, equipo o responsable..."
+                                    value={filter}
+                                    onChange={handleFilterChange}
+                                />
+                            </div>
+                        </div>
+                        <div className="col-md-4">
+                            <select
+                                className="form-select"
+                                value={filtroEstado}
+                                onChange={(e) => setFiltroEstado(e.target.value)}
+                            >
+                                <option value="">Todos los estados</option>
+                                <option value="Disponible">Disponible</option>
+                                <option value="Asignado">Asignado</option>
+                                <option value="En mantenimiento">En mantenimiento</option>
+                                <option value="Baja">Baja</option>
+                                <option value="Inactivo">Inactivo</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 

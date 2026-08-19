@@ -697,6 +697,8 @@ exports.updateUsuario = (req, res) => {
     } = req.body
 
 
+    const contrasenaHash = bcrypt.hashSync(contrasena, 10)
+
     const query = `
         UPDATE usuarios
         SET
@@ -715,7 +717,7 @@ exports.updateUsuario = (req, res) => {
 
         [
             usuario,
-            contrasena,
+            contrasenaHash,
             nombre,
             area,
             correo,

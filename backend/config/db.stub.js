@@ -1,11 +1,11 @@
 const bcrypt = require('bcryptjs')
 
 const areas = [
-  'Tecnologia', 'Administración', 'Recursos Humanos', 'Fianzas', 'Soporte', 'Almacen', 'Ventas'
+  'Tecnologia', 'Recursos Humanos', 'Soporte'
 ].map((area) => ({ area }))
 
 const estados_equipos = [
-  'Activo', 'En mantenimiento', 'Baja', 'Inactivo', 'Reservado'
+  'Disponible', 'Asignado', 'En mantenimiento', 'Baja', 'Inactivo'
 ].map((estado) => ({ estado }))
 
 function crearUsuario(id, usuario, contrasena, nombre, area, correo) {
@@ -26,29 +26,20 @@ function crearUsuario(id, usuario, contrasena, nombre, area, correo) {
 const usuarios = [
   crearUsuario(1, 'admin', 'admin123', 'Administrador del Sistema', 'Tecnologia', 'admin@registech.com'),
   crearUsuario(2, 'rh', 'rh123', 'Gestion Recursos Humanos', 'Recursos Humanos', 'rh@registech.com'),
-  crearUsuario(3, 'soporte', 'soporte123', 'Soporte Tecnico', 'Soporte', 'soporte@registech.com'),
-  crearUsuario(4, 'almacen', 'almacen123', 'Encargado de Almacen', 'Almacen', 'almacen@registech.com'),
-  crearUsuario(5, 'ventas', 'ventas123', 'Asesor de Ventas', 'Ventas', 'ventas@registech.com'),
-  crearUsuario(6, 'fianzas', 'fianzas123', 'Area de Fianzas', 'Fianzas', 'fianzas@registech.com'),
-  crearUsuario(7, 'administracion', 'administracion123', 'Area Administrativa', 'Administración', 'administracion@registech.com')
+  crearUsuario(3, 'soporte', 'soporte123', 'Soporte Tecnico', 'Soporte', 'soporte@registech.com')
 ]
 
 const equipos = [
-  { num_serie: 'EQ-S26-001', equipo: 'Portátil ASUS Zenbook S 16', area: 'Desarrollo', descripcion: 'AMD Ryzen AI 9, 32GB RAM, 1TB SSD', estado: 'Asignado', responsable: '1017244321', fecha_adquisicion: '2025-02-15', fecha_asignacion: '2025-02-18', fecha_baja: null },
+  { num_serie: 'EQ-S26-001', equipo: 'Portatil ASUS Zenbook S 16', area: 'Desarrollo', descripcion: 'AMD Ryzen AI 9, 32GB RAM, 1TB SSD', estado: 'Asignado', responsable: '1017244321', fecha_adquisicion: '2025-02-15', fecha_asignacion: '2025-02-18', fecha_baja: null },
   { num_serie: 'EQ-S26-004', equipo: 'Servidor NAS Synology 4-Bay', area: 'Sistemas', descripcion: 'Almacenamiento en red local', estado: 'Disponible', responsable: null, fecha_adquisicion: '2024-08-14', fecha_asignacion: '2024-08-14', fecha_baja: null },
+  { num_serie: 'EQ-S26-007', equipo: 'Portatil Lenovo ThinkPad E14', area: 'Sistemas', descripcion: 'AMD Ryzen 5 7530U, 16GB RAM', estado: 'Disponible', responsable: null, fecha_adquisicion: '2024-06-15', fecha_asignacion: '2024-06-15', fecha_baja: null },
   { num_serie: 'EQ-S26-009', equipo: 'Router Cisco ISR 4331', area: 'Infraestructura', descripcion: 'Router de servicios integrados', estado: 'Baja', responsable: null, fecha_adquisicion: '2020-04-12', fecha_asignacion: '2020-04-12', fecha_baja: '2025-11-30' },
-  { num_serie: 'EQ-S26-012', equipo: 'Access Point Aruba AP-515', area: 'Infraestructura', descripcion: 'Punto de acceso inalámbrico Wi-Fi 6', estado: 'Mantenimiento', responsable: null, fecha_adquisicion: '2022-10-14', fecha_asignacion: '2022-10-15', fecha_baja: null },
-  { num_serie: 'EQ-S26-026', equipo: 'Tablet Samsung Galaxy Tab S9', area: 'Ventas', descripcion: 'Pantalla 11 pulgadas con S-Pen', estado: 'Asignado', responsable: '71554128', fecha_adquisicion: '2024-02-28', fecha_asignacion: '2024-03-02', fecha_baja: null }
-]
-
-const productos = [
-  { codigo: 'HOG-001', nom_producto: 'Cobija Térmica Flanela Finlandek', desc_producto: 'Cobija térmica para cama doble', pre_publico: 69900, pre_proveedor: 45000, existencias: 45 },
-  { codigo: 'HOG-005', nom_producto: 'Licuadora Oster Monterrey 2 Velocidades', desc_producto: 'Licuadora con jarra de vidrio de 1.25 litros', pre_publico: 189900, pre_proveedor: 135000, existencias: 30 },
-  { codigo: 'HOG-020', nom_producto: 'Freidora de Aire Digital Kalley 3.5L', desc_producto: 'Airfryer con panel táctil', pre_publico: 249900, pre_proveedor: 175000, existencias: 28 }
+  { num_serie: 'EQ-S26-012', equipo: 'Access Point Aruba AP-515', area: 'Infraestructura', descripcion: 'Punto de acceso inalambrico Wi-Fi 6', estado: 'En mantenimiento', responsable: null, fecha_adquisicion: '2022-10-14', fecha_asignacion: '2022-10-15', fecha_baja: null },
+  { num_serie: 'EQ-S26-013', equipo: 'Portatil Acer Nitro V15', area: 'Soporte', descripcion: 'Intel Core i5, 16GB RAM, RTX 3050', estado: 'Disponible', responsable: null, fecha_adquisicion: '2024-10-10', fecha_asignacion: '2024-10-10', fecha_baja: null }
 ]
 
 const historial_mantenimientos = []
-const ventas = []
+const prestamos = []
 
 const tablas = {
   areas,
@@ -56,8 +47,7 @@ const tablas = {
   usuarios,
   equipos,
   historial_mantenimientos,
-  productos,
-  ventas
+  prestamos
 }
 
 function splitTopLevel(texto, separador) {
@@ -204,9 +194,12 @@ function ejecutarInsert(sql, params) {
   if (tabla === 'usuarios') {
     fila.id_usuario = filas.reduce((max, f) => Math.max(max, Number(f.id_usuario) || 0), 0) + 1
   }
+  if (tabla === 'prestamos') {
+    fila.id_prestamo = filas.reduce((max, f) => Math.max(max, Number(f.id_prestamo) || 0), 0) + 1
+  }
   filas.push(fila)
 
-  return { affectedRows: 1, insertId: fila.id_usuario || Date.now() }
+  return { affectedRows: 1, insertId: fila.id_usuario || fila.id_prestamo || Date.now() }
 }
 
 function ejecutarUpdate(sql, params) {
@@ -290,8 +283,11 @@ function query(sql, paramsOrCallback, maybeCallback) {
   }
 }
 
+function getConnection(cb) {
+  cb(null, { query, beginTransaction, commit, rollback, release: () => {} })
+}
 function beginTransaction(callback) { callback(null) }
 function commit(callback) { callback(null) }
 function rollback(callback) { callback(null) }
 
-module.exports = { query, beginTransaction, commit, rollback }
+module.exports = { query, getConnection, beginTransaction, commit, rollback }
