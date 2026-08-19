@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 import axios from "axios"
 import Swal from "sweetalert2"
 import { API_ROUTES } from "../api/apiRoutes"
@@ -274,8 +274,8 @@ const RecursosHumanos = () => {
                                     </td>
                                 </tr>
                             ) : (
-                            filteredUsuarios.map((usuario, index) => (
-                                <tr key={index}>
+                            filteredUsuarios.map((usuario) => (
+                                <tr key={usuario.usuario}>
                                     <td>{usuario.nombre}</td>
                                     <td>{usuario.usuario}</td>
                                     <td>{usuario.area}</td>
@@ -311,8 +311,8 @@ const RecursosHumanos = () => {
 
             {/* MODAL DE USUARIO */}
             {modalUsuario && (
-                <div className="modal show" style={{display: 'block'}} onClick={() => setModalUsuario(false)}>
-                    <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+                <div className="modal fade show d-block" tabIndex="-1" style={{display: 'block', zIndex: '1050'}} onClick={() => setModalUsuario(false)}>
+                    <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-content">
                             <div className="modal-header">
                                 <h5 className="modal-title">

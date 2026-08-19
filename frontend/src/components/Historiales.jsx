@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import { useState } from "react"
 import axios from "axios"
 import Swal from "sweetalert2"
 import { API_ROUTES } from "../api/apiRoutes"
@@ -28,7 +28,7 @@ const Historiales = ({ usuario }) => {
         // ENVIAMOS LA SOLICITUD AL BACKEND
         axios.post(API_ROUTES.MANTENIMIENTOS_FIND, { filter })
             .then(response => {
-                if (response.data.length == 0) {
+                if (response.data.length === 0) {
                     setMantenimientos([])
                     Swal.fire({
                         icon: 'warning',
@@ -102,8 +102,8 @@ const Historiales = ({ usuario }) => {
                             </tr>
                         </thead>
                         <tbody>
-                            {mantenimientos.map((equipo, index) => (
-                                <tr key={index}>
+                            {mantenimientos.map((equipo) => (
+                                <tr key={equipo.id_historial}>
                                     <td className="fw-semibold">{equipo.id_historial}</td>
                                     <td>{equipo.num_serie}</td>
                                     <td>{equipo.falla}</td>

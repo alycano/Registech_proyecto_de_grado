@@ -1,4 +1,4 @@
-const AREAS = ['Tecnologia', 'Administración', 'Recursos Humanos', 'Fianzas', 'Soporte', 'Almacen', 'Ventas']
+const AREAS = ['Tecnologia', 'Recursos Humanos', 'Soporte']
 
 function sanitizarTexto(valor, maxLongitud = 255) {
     if (typeof valor !== 'string') return ''

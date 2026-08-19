@@ -8,7 +8,19 @@ axios.interceptors.request.use((config) => {
     return config
 })
 
-const BASE_URL = 'http://localhost:3000/api'
+axios.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && error.response.status === 401) {
+            localStorage.removeItem('token')
+            localStorage.removeItem('usuario')
+            window.location.href = '/login'
+        }
+        return Promise.reject(error)
+    }
+)
+
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
 
 export const API_ROUTES = {
     LOGIN: `${BASE_URL}/login`,
@@ -20,17 +32,15 @@ export const API_ROUTES = {
     OBTENER_MANTENIMIENTOS: `${BASE_URL}/equipos/reporte`,
     ACTUALIZAR_MANTENIMIENTOS: `${BASE_URL}/equipos/reporte/solucion`,
     MANTENIMIENTOS_FIND: `${BASE_URL}/equipos/mantenimientos/find`,
-    OBTENER_PRODUCTOS: `${BASE_URL}/productos`,
-    CREAR_PRODUCTO: `${BASE_URL}/productos`,
-    ACTUALIZAR_PRODUCTO: (codigo) => `${BASE_URL}/productos/${codigo}`,
-    ELIMINAR_PRODUCTO: (codigo) => `${BASE_URL}/productos/${codigo}`,
-    OBTENER_PRODUCTO_POR_CODIGO: (codigo) => `${BASE_URL}/producto?codigo=${codigo}`,
-    OBTENER_VENTAS: `${BASE_URL}/ventas`,
-    REGISTRAR_VENTA: `${BASE_URL}/ventas`,
-    OBTENER_FINANZAS: `${BASE_URL}/finanzas`,
     OBTENER_USUARIOS: `${BASE_URL}/usuarios`,
     CREAR_USUARIO: `${BASE_URL}/usuarios`,
     ACTUALIZAR_USUARIO: (usuario) => `${BASE_URL}/usuarios/${usuario}`,
     ELIMINAR_USUARIO: (usuario) => `${BASE_URL}/usuarios/${usuario}`,
     OBTENER_AREAS: `${BASE_URL}/areas`,
+    PRESTAMOS: `${BASE_URL}/prestamos`,
+    PRESTAMOS_ACTIVOS: `${BASE_URL}/prestamos/activos`,
+    CREAR_PRESTAMO: `${BASE_URL}/prestamos`,
+    DEVOLVER_PRESTAMO: (id) => `${BASE_URL}/prestamos/${id}/devolver`,
+    HISTORIAL_EQUIPO: (num_serie) => `${BASE_URL}/prestamos/historial/${num_serie}`,
+    ESTADISTICAS: `${BASE_URL}/estadisticas`,
 }
