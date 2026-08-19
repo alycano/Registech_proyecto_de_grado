@@ -1,23 +1,8 @@
-import React, { useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 import axios from "axios"
 import Swal from "sweetalert2"
 import { API_ROUTES } from "../api/apiRoutes"
-
-const formatearDinero = (valor) => {
-    const numero = Number(valor)
-    if (isNaN(numero)) return '$0'
-    return '$' + numero.toLocaleString('es-CO')
-}
-
-const hoy = () => {
-    const d = new Date()
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-const primerDiaMes = () => {
-    const d = new Date()
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
-}
+import { formatearDinero, hoy, primerDiaMes } from "../utils/format"
 
 const Ventas = () => {
     const [productos, setProductos] = useState([])
@@ -40,7 +25,11 @@ const Ventas = () => {
                 setProductos(response.data)
             })
             .catch(err => {
-                console.error('Error al cargar productos', err)
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: err.response?.data || 'No se pudieron obtener las ventas'
+                })
             })
     }, [])
 

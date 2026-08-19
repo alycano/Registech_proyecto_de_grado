@@ -1,5 +1,5 @@
-import React from "react"
 import { useLocation, useNavigate } from "react-router-dom"
+import { useEffect } from "react"
 import Swal from "sweetalert2"
 import Tecnologia from './Tecnologia'
 import RecursosHumanos from "./RecursosHumano"
@@ -11,12 +11,21 @@ import Finanzas from "./Finanzas"
 const Dashboard = () => {
     const location = useLocation()
     const navigate = useNavigate()
-    const usuarioGuardado = localStorage.getItem('usuario')
-    const { usuario } = location.state || (usuarioGuardado ? JSON.parse(usuarioGuardado) : {})
-    if (!usuario || !localStorage.getItem('token')) {
-        navigate('/login')
-        return null
+
+    let usuario = null
+    try {
+        const usuarioGuardado = localStorage.getItem('usuario')
+        const fromState = location.state?.usuario
+        usuario = fromState || (usuarioGuardado ? JSON.parse(usuarioGuardado) : null)
+    } catch {
+        usuario = null
     }
+
+    useEffect(() => {
+        if (!localStorage.getItem('token')) {
+            navigate('/login')
+        }
+    }, [navigate])
     // FUNCION PARA MANEJAR EL CIERRE DE SESION
     const handleLogout = () => {
         Swal.fire({
@@ -54,7 +63,7 @@ const Dashboard = () => {
             case 'Soporte': return <Soportes usuario={usuario.usuario} />
             case 'Almacen': return <Almacen />
             case 'Ventas': return <Ventas />
-            case 'Fianzas': return <Finanzas />
+            case 'Finanzas': return <Finanzas />
             default: return (
                 <div className="empty-state">
                     <i className="bi bi-tools"></i>

@@ -588,65 +588,89 @@ exports.createUsuario = (req, res) => {
     }
 
 
-    const estadoFinal =
-        estado || 'activo'
-
-
-    const query = `
-        INSERT INTO usuarios
-        (
-            usuario,
-            contrasena,
-            nombre,
-            area,
-            correo,
-            estado
-        )
-        VALUES (?, ?, ?, ?, ?, ?)
-    `
-
-
     db.query(
-        query,
+        'SELECT usuario FROM usuarios WHERE usuario = ?',
+        [usuario],
+        (errCheck, resultsCheck) => {
 
-        [
-            usuario,
-            contrasena,
-            nombre,
-            area,
-            correo,
-            estadoFinal
-        ],
-
-        (err, results) => {
-
-            if (err) {
-
+            if (errCheck) {
                 console.error(
-                    'Error al agregar el usuario:',
-                    err
+                    'Error al verificar usuario duplicado:',
+                    errCheck
                 )
-
                 return res.status(500).json({
-                    error:
-                        'Error al agregar el usuario'
+                    error: 'Error al verificar el usuario'
+                })
+            }
+
+            if (resultsCheck.length > 0) {
+                return res.status(409).json({
+                    error: 'El nombre de usuario ya está en uso'
                 })
             }
 
 
-            res.status(201).json({
+            const estadoFinal = estado || 'activo'
+            const contrasenaHash = bcrypt.hashSync(contrasena, 10)
 
-                usuario,
 
-                nombre,
+            const query = `
+                INSERT INTO usuarios
+                (
+                    usuario,
+                    contrasena,
+                    nombre,
+                    area,
+                    correo,
+                    estado
+                )
+                VALUES (?, ?, ?, ?, ?, ?)
+            `
 
-                area,
 
-                correo,
+            db.query(
+                query,
 
-                estado:
+                [
+                    usuario,
+                    contrasenaHash,
+                    nombre,
+                    area,
+                    correo,
                     estadoFinal
-            })
+                ],
+
+                (err, results) => {
+
+                    if (err) {
+
+                        console.error(
+                            'Error al agregar el usuario:',
+                            err
+                        )
+
+                        return res.status(500).json({
+                            error:
+                                'Error al agregar el usuario'
+                        })
+                    }
+
+
+                    res.status(201).json({
+
+                        usuario,
+
+                        nombre,
+
+                        area,
+
+                        correo,
+
+                        estado:
+                            estadoFinal
+                    })
+                }
+            )
         }
     )
 }

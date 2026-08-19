@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from "react";
+import {useState, useEffect} from "react";
 import axios from "axios"
 import Swal from "sweetalert2"
 import { API_ROUTES} from "../api/apiRoutes"
@@ -99,7 +99,6 @@ const Equipos = ({ usuario }) => {
     // FUNCION PARA EDITAR EQUIPO
     const editarEquipo = (equipo) => {
         setEquipoSeleccionado({...equipo})
-        console.log('Editar equipo:', equipo)
     }
 
     // FUNCION PARA ABRIR MODAL REPORTE DE FALLA

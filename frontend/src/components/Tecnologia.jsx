@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
 import Equipos from './Equipos'
 import Soportes from './Soportes'

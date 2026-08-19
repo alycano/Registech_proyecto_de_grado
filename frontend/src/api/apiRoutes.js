@@ -8,7 +8,19 @@ axios.interceptors.request.use((config) => {
     return config
 })
 
-const BASE_URL = 'http://localhost:3000/api'
+axios.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && error.response.status === 401) {
+            localStorage.removeItem('token')
+            localStorage.removeItem('usuario')
+            window.location.href = '/login'
+        }
+        return Promise.reject(error)
+    }
+)
+
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
 
 export const API_ROUTES = {
     LOGIN: `${BASE_URL}/login`,

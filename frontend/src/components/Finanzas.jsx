@@ -1,27 +1,12 @@
-import React, { useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 import axios from "axios"
 import Swal from "sweetalert2"
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Tooltip, Legend } from "chart.js"
 import { Bar } from "react-chartjs-2"
 import { API_ROUTES } from "../api/apiRoutes"
+import { formatearDinero, hoy, primerDiaMes } from "../utils/format"
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend)
-
-const formatearDinero = (valor) => {
-    const numero = Number(valor)
-    if (isNaN(numero)) return '$0'
-    return '$' + numero.toLocaleString('es-CO')
-}
-
-const hoy = () => {
-    const d = new Date()
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-const primerDiaMes = () => {
-    const d = new Date()
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
-}
 
 const Finanzas = () => {
     const [resumen, setResumen] = useState(null)

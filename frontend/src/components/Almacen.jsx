@@ -1,13 +1,8 @@
-import React, { useState, useEffect } from "react"
+import { useState, useEffect } from "react"
 import axios from "axios"
 import Swal from "sweetalert2"
 import { API_ROUTES } from "../api/apiRoutes"
-
-const formatearDinero = (valor) => {
-    const numero = Number(valor)
-    if (isNaN(numero)) return '$0'
-    return '$' + numero.toLocaleString('es-CO')
-}
+import { formatearDinero } from "../utils/format"
 
 const Almacen = () => {
     const [productos, setProductos] = useState([])
