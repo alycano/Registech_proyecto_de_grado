@@ -21,15 +21,27 @@ function authMiddleware(req, res, next) {
     }
 
     try {
+        const payload = verifyToken(token)
+        req.usuario = payload
 
-        req.usuario = verifyToken(token)
+        // REFRESCAR EL TOKEN (SLIDING SESSION) PARA 15 MINUTOS MÁS
+        const { iat, exp, ...userData } = payload
+        const newToken = require('../utils/jwt').signToken(userData, '15m')
+
+        res.cookie('token', newToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 15 * 60 * 1000 // 15 MINUTOS
+        })
+
+        // (Opcional) Si el frontend necesita leer el token actualizado desde los headers
+        res.setHeader('x-refresh-token', newToken)
 
         next()
-
     } catch (error) {
-
         return res.status(401).json({
-            error: 'Token invalido o expirado'
+            error: 'Token invalido o expirado por inactividad'
         })
     }
 }

@@ -8,8 +8,11 @@ exports.login = async (req, res) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000
+            maxAge: 15 * 60 * 1000 // 15 minutos en lugar de 7 días
         })
+
+        const auditoriaService = require('../services/auditoriaService')
+        await auditoriaService.registrar(usuarioEncontrado.usuario, `Inició sesión en el sistema`)
 
         return res.status(200).json({
             mensaje: 'Login exitoso',
@@ -45,6 +48,8 @@ exports.getUsuarios = async (req, res) => {
 exports.createUsuario = async (req, res) => {
     try {
         const nuevoUsuario = await usuariosService.createUsuario(req.body)
+        const auditoriaService = require('../services/auditoriaService')
+        await auditoriaService.registrar(req.usuario.usuario, `Creó el usuario ${nuevoUsuario.usuario}`)
         res.status(201).json({
             usuario: nuevoUsuario.usuario,
             nombre: nuevoUsuario.nombre,

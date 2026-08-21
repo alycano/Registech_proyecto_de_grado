@@ -23,6 +23,8 @@ exports.getEquipos = async (req, res) => {
 exports.asignarUsuario = async (req, res) => {
     try {
         await equiposService.asignarUsuario(req.body.num_serie, req.body.usuario)
+        const auditoriaService = require('../services/auditoriaService')
+        await auditoriaService.registrar(req.usuario.usuario, `Asignó el equipo ${req.body.num_serie} a ${req.body.usuario}`)
         res.status(200).json({ mensaje: 'Se asigno exitosamente el usuario al equipo correspondiente' })
     } catch (error) {
         console.error('Error al asignar usuario al equipo:', error)
@@ -39,6 +41,8 @@ exports.asignarUsuario = async (req, res) => {
 exports.reporteFalla = async (req, res) => {
     try {
         await equiposService.reporteFalla(req.body.num_serie, req.body.falla)
+        const auditoriaService = require('../services/auditoriaService')
+        await auditoriaService.registrar(req.usuario.usuario, `Registró reporte de falla para el equipo ${req.body.num_serie}`)
         res.status(200).json({ mensaje: 'Estado actualizado a mantenimiento y reporte registrado exitosamente' })
     } catch (error) {
         console.error('Error al registrar reporte:', error)
@@ -62,6 +66,8 @@ exports.resolverReporte = async (req, res) => {
     try {
         const { num_serie, id_historial, tecnico, solucion } = req.body
         await equiposService.resolverReporte(num_serie, id_historial, tecnico, solucion)
+        const auditoriaService = require('../services/auditoriaService')
+        await auditoriaService.registrar(req.usuario.usuario, `Resolvió el reporte de falla ${id_historial} del equipo ${num_serie}`)
         res.status(200).json({ mensaje: 'Estado del equipo actualizado a activo y mantenimiento actualizado' })
     } catch (error) {
         console.error('Error al resolver reporte:', error)
