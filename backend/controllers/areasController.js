@@ -1,11 +1,9 @@
-const prisma = require('../lib/prisma')
+const areasService = require('../services/areasService')
 
 // OBTENER TODAS LAS AREAS
-
 exports.getAreas = async (req, res) => {
     try {
-        const areas = await prisma.areas.findMany()
-
+        const areas = await areasService.getAllAreas()
         res.json(areas)
     } catch (error) {
         console.error('Error al obtener las áreas:', error)
