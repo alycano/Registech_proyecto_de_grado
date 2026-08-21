@@ -1,82 +1,8 @@
-const prisma = require('../lib/prisma')
-const bcrypt = require('bcryptjs')
-const { signToken } = require('../utils/jwt')
-const { sanitizarTexto } = require('../utils/sanitize')
+const usuariosService = require('../services/usuariosService')
 
-// COMPARAR CONTRASEÑA
-function compararContrasena(contrasena, usuarioEncontrado) {
-
-    const guardada =
-        usuarioEncontrado.contrasena ||
-        usuarioEncontrado.contrasena_hash
-
-    if (
-        typeof guardada === 'string' &&
-        guardada.startsWith('$2')
-    ) {
-        return bcrypt.compareSync(
-            contrasena,
-            guardada
-        )
-    }
-
-    return guardada === contrasena
-}
-
-// LOGIN
 exports.login = async (req, res) => {
-
-    const { usuario, contrasena } = req.body
-
-    const usuarioLimpio = sanitizarTexto(usuario, 50)
-
-    if (
-        !usuarioLimpio ||
-        typeof contrasena !== 'string' ||
-        !contrasena
-    ) {
-        return res.status(400).json({
-            error: 'Usuario y contraseña son obligatorios'
-        })
-    }
-
-    if (contrasena.length > 128) {
-        return res.status(400).json({
-            error: 'Credenciales inválidas'
-        })
-    }
-
     try {
-
-        const usuarioEncontrado = await prisma.usuarios.findUnique({
-            where: {
-                usuario: usuarioLimpio
-            }
-        })
-
-        if (!usuarioEncontrado) {
-            return res.status(401).json({
-                error: 'Usuario o contraseña incorrectos'
-            })
-        }
-
-        const contrasenaValida = compararContrasena(
-            contrasena,
-            usuarioEncontrado
-        )
-
-        if (!contrasenaValida) {
-            return res.status(401).json({
-                error: 'Usuario o contraseña incorrectos'
-            })
-        }
-
-        const token = signToken({
-            id: usuarioEncontrado.id_usuario,
-            usuario: usuarioEncontrado.usuario,
-            correo: usuarioEncontrado.correo,
-            area: usuarioEncontrado.area
-        })
+        const { token, usuarioEncontrado } = await usuariosService.login(req.body.usuario, req.body.contrasena)
 
         res.cookie('token', token, {
             httpOnly: true,
@@ -96,98 +22,29 @@ exports.login = async (req, res) => {
                 estado: usuarioEncontrado.estado
             }
         })
-
     } catch (error) {
-
         console.error('Error en el login:', error)
-
-        return res.status(500).json({
-            error: 'Error interno del servidor'
-        })
+        if (error.message === 'REQ_FIELDS') return res.status(400).json({ error: 'Usuario y contraseña son obligatorios' })
+        if (error.message === 'INVALID_CREDS') return res.status(400).json({ error: 'Credenciales inválidas' })
+        if (error.message === 'NOT_FOUND') return res.status(401).json({ error: 'Usuario o contraseña incorrectos' })
+        
+        return res.status(500).json({ error: 'Error interno del servidor' })
     }
 }
 
-// OBTENER TODOS LOS USUARIOS
 exports.getUsuarios = async (req, res) => {
-
     try {
-
-        const usuarios = await prisma.usuarios.findMany({
-            select: {
-                usuario: true,
-                nombre: true,
-                area: true,
-                correo: true,
-                estado: true
-            }
-        })
-
+        const usuarios = await usuariosService.getUsuarios()
         res.json(usuarios)
-
     } catch (error) {
-
         console.error('Error al obtener usuarios:', error)
-
-        res.status(500).json({
-            error: 'Error en la consulta'
-        })
+        res.status(500).json({ error: 'Error en la consulta' })
     }
 }
 
-// AGREGAR UN NUEVO USUARIO
 exports.createUsuario = async (req, res) => {
-
-    const {
-        usuario,
-        contrasena,
-        nombre,
-        area,
-        correo,
-        estado
-    } = req.body
-
-    if (
-        !usuario ||
-        !contrasena ||
-        !nombre ||
-        !area ||
-        !correo
-    ) {
-        return res.status(400).json({
-            error: 'Todos los campos son obligatorios'
-        })
-    }
-
     try {
-
-        const usuarioExistente = await prisma.usuarios.findUnique({
-            where: {
-                usuario
-            }
-        })
-
-        if (usuarioExistente) {
-            return res.status(409).json({
-                error: 'El nombre de usuario ya está en uso'
-            })
-        }
-
-        const contrasenaHash = bcrypt.hashSync(
-            contrasena,
-            10
-        )
-
-        const nuevoUsuario = await prisma.usuarios.create({
-            data: {
-                usuario,
-                contrasena: contrasenaHash,
-                nombre,
-                area,
-                correo,
-                estado: estado || 'activo'
-            }
-        })
-
+        const nuevoUsuario = await usuariosService.createUsuario(req.body)
         res.status(201).json({
             usuario: nuevoUsuario.usuario,
             nombre: nuevoUsuario.nombre,
@@ -195,113 +52,36 @@ exports.createUsuario = async (req, res) => {
             correo: nuevoUsuario.correo,
             estado: nuevoUsuario.estado
         })
-
     } catch (error) {
-
         console.error('Error al agregar el usuario:', error)
-
-        res.status(500).json({
-            error: 'Error al agregar el usuario'
-        })
+        if (error.message === 'REQ_FIELDS') return res.status(400).json({ error: 'Todos los campos son obligatorios' })
+        if (error.message === 'DUPLICATE') return res.status(409).json({ error: 'El nombre de usuario ya está en uso' })
+        
+        res.status(500).json({ error: 'Error al agregar el usuario' })
     }
 }
 
-// EDITAR UN USUARIO
 exports.updateUsuario = async (req, res) => {
-
-    const { usuario: usuarioParam } = req.params
-
-    const {
-        usuario,
-        contrasena,
-        nombre,
-        area,
-        correo,
-        estado
-    } = req.body
-
-    if (
-        !usuario ||
-        !contrasena ||
-        !nombre ||
-        !area ||
-        !correo
-    ) {
-        return res.status(400).json({
-            error: 'Todos los campos son obligatorios'
-        })
-    }
-
     try {
-
-        const contrasenaHash = bcrypt.hashSync(
-            contrasena,
-            10
-        )
-
-        await prisma.usuarios.update({
-            where: {
-                usuario: usuarioParam
-            },
-            data: {
-                usuario,
-                contrasena: contrasenaHash,
-                nombre,
-                area,
-                correo,
-                estado
-            }
-        })
-
-        res.json({
-            mensaje: 'Usuario actualizado'
-        })
-
+        await usuariosService.updateUsuario(req.params.usuario, req.body)
+        res.json({ mensaje: 'Usuario actualizado' })
     } catch (error) {
-
         console.error('Error al editar:', error)
-
-        if (error.code === 'P2025') {
-            return res.status(404).json({
-                error: 'Usuario no encontrado'
-            })
-        }
-
-        res.status(500).json({
-            error: 'Error al editar el usuario'
-        })
+        if (error.message === 'REQ_FIELDS') return res.status(400).json({ error: 'Todos los campos son obligatorios' })
+        if (error.code === 'P2025') return res.status(404).json({ error: 'Usuario no encontrado' })
+        
+        res.status(500).json({ error: 'Error al editar el usuario' })
     }
 }
 
-// ELIMINAR UN USUARIO
 exports.deleteUsuario = async (req, res) => {
-
-    const { usuario } = req.params
-
     try {
-
-        await prisma.usuarios.delete({
-            where: {
-                usuario
-            }
-        })
-
-        res.json({
-            mensaje: 'Usuario eliminado'
-        })
-
+        await usuariosService.deleteUsuario(req.params.usuario)
+        res.json({ mensaje: 'Usuario eliminado' })
     } catch (error) {
-
         console.error('Error al eliminar usuario:', error)
-
-        if (error.code === 'P2025') {
-            return res.status(404).json({
-                error: 'Usuario no encontrado'
-            })
-        }
-
-        res.status(500).json({
-            error: 'Error al eliminar el usuario'
-        })
+        if (error.code === 'P2025') return res.status(404).json({ error: 'Usuario no encontrado' })
+        
+        res.status(500).json({ error: 'Error al eliminar el usuario' })
     }
 }
