@@ -2,7 +2,6 @@ const express = require('express')
 const router = express.Router()
 const {
     login,
-    loginGoogle,
     getUsuarios,
     createUsuario,
     updateUsuario,
@@ -11,7 +10,6 @@ const {
 const { authMiddleware } = require('../middlewares/auth')
 
 router.post('/login', login)
-router.post('/auth/google', loginGoogle)
 router.get('/usuarios', authMiddleware, getUsuarios)
 router.post('/usuarios', authMiddleware, createUsuario)
 router.put('/usuarios/:usuario', authMiddleware, updateUsuario)

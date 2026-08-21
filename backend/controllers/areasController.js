@@ -1,11 +1,14 @@
-const db = require('../config/db')
+const prisma = require('../lib/prisma')
 
 // OBTENER TODAS LAS AREAS
-exports.getAreas = (req, res) => {
-    db.query('SELECT * FROM areas', (err, results) => {
-        if (err) {
-            return res.status(500).send('Error en la consulta')
-        }
-        res.json(results)
-    })
+
+exports.getAreas = async (req, res) => {
+    try {
+        const areas = await prisma.areas.findMany()
+
+        res.json(areas)
+    } catch (error) {
+        console.error('Error al obtener las áreas:', error)
+        res.status(500).send('Error en la consulta')
+    }
 }

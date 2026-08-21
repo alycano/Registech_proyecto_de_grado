@@ -1,143 +1,163 @@
-const db = require('../config/db')
+const prisma = require('../lib/prisma')
 const { formatDate } = require('../utils/date')
 const { sanitizarTexto, sanitizarHtml } = require('../utils/sanitize')
 
+
 // OBTENER TODOS LOS ESTADOS DE LOS EQUIPOS
-exports.getEstadosEquipo = (req, res) => {
-    db.query('SELECT * FROM estados_equipos', (err, results) => {
-        if (err) {
-            return res.status(500).send('Error en la consulta')
-        }
-        res.json(results)
-    })
+exports.getEstadosEquipo = async (req, res) => {
+    try {
+        const estados = await prisma.estados_equipos.findMany()
+
+        res.json(estados)
+    } catch (error) {
+        console.error('Error al obtener estados:', error)
+
+        res.status(500).json({
+            error: 'Error en la consulta'
+        })
+    }
 }
 
 // OBTENER TODOS LOS EQUIPOS
-exports.getEquipos = (req, res) => {
-    db.query('SELECT * FROM equipos', (err, results) => {
-        if (err) {
-            return res.status(500).send('Error en la consulta')
-        }
-        res.json(results)
-    })
+exports.getEquipos = async (req, res) => {
+    try {
+        const equipos = await prisma.equipos.findMany()
+
+        res.json(equipos)
+    } catch (error) {
+        console.error('Error al obtener equipos:', error)
+
+        res.status(500).json({
+            error: 'Error en la consulta'
+        })
+    }
 }
 
 // ASIGNAR USUARIO A UN EQUIPO
-exports.asignarUsuario = (req, res) => {
+exports.asignarUsuario = async (req, res) => {
     const { num_serie, usuario } = req.body
 
     const numSerieLimpio = sanitizarTexto(num_serie, 50)
 
     if (!numSerieLimpio) {
-        return res.status(400).json({ error: 'El numero de serie es requerido' })
+        return res.status(400).json({
+            error: 'El numero de serie es requerido'
+        })
     }
 
-    // SI EL USUARIO NO EXISTE O ESTA VACIO, ASIGNAMOS NULL
     const responsable = sanitizarTexto(usuario, 50) || null
-    const query = 'UPDATE equipos SET responsable = ? WHERE num_serie = ?'
 
-    db.query(query, [responsable, numSerieLimpio], (err, results) => {
-        if (err) {
-            console.error('Error al asignar usuario al equipo', err)
-            return res.status(500).json({ error: 'Error al asignar usuario al equipo' })
+    try {
+        const equipo = await prisma.equipos.update({
+            where: {
+                num_serie: numSerieLimpio
+            },
+            data: {
+                responsable
+            }
+        })
+
+        res.status(200).json({
+            mensaje: 'Se asigno exitosamente el usuario al equipo correspondiente'
+        })
+
+    } catch (error) {
+        console.error('Error al asignar usuario al equipo:', error)
+
+        if (error.code === 'P2025') {
+            return res.status(404).json({
+                error: 'Equipo no encontrado'
+            })
         }
 
-        if (results.affectedRows === 0) {
-            return res.status(404).json({ error: 'Equipo no encontrado' })
-        }
-
-        res.status(200).json({ mensaje: 'Se asigno exitosamente el usuario al equipo correspondiente' })
-    })
+        res.status(500).json({
+            error: 'Error al asignar usuario al equipo'
+        })
+    }
 }
 
 // REGISTRAR UN NUEVO REPORTE DE FALLA
-exports.reporteFalla = (req, res) => {
+exports.reporteFalla = async (req, res) => {
     const { num_serie, falla } = req.body
 
     const numSerieLimpio = sanitizarTexto(num_serie, 50)
     const fallaLimpia = sanitizarHtml(falla, 500)
 
     if (!numSerieLimpio || !fallaLimpia) {
-        return res.status(400).json({ error: 'El numero de serie y la falla son requeridos' })
+        return res.status(400).json({
+            error: 'El numero de serie y la falla son requeridos'
+        })
     }
 
-    const fecha_reporte = formatDate()
-    const id_historial = Date.now()
+    const fecha_reporte = new Date()
+    const id_historial = Date.now().toString()
 
-    // SE OBTIENE UNA CONEXION DEL POOL PARA USAR LA TRANSACCION
-    db.getConnection((err, connection) => {
-        if (err) {
-            console.error('Error al obtener la conexion', err)
-            return res.status(500).json({ error: 'Error al obtener la conexion' })
-        }
+    try {
+        await prisma.$transaction(async (tx) => {
 
-        connection.beginTransaction((err) => {
-            if (err) {
-                connection.release()
-                return res.status(500).json({ error: 'Error al iniciar la transaccion' })
-            }
-
-            // ACTUALIZAR EL ESTADO DEL EQUIPO A MANTENIMIENTO
-            const updateEstadoQuery = 'UPDATE equipos SET estado="En mantenimiento" WHERE num_serie=?'
-            connection.query(updateEstadoQuery, [numSerieLimpio], (err, result) => {
-                if (err) {
-                    return connection.rollback(() => {
-                        connection.release()
-                        console.error('Error al actualizar el estado del equipo', err)
-                        return res.status(500).json({ error: 'Error al actualizar el estado del equipo' })
-                    })
+            await tx.equipos.update({
+                where: {
+                    num_serie: numSerieLimpio
+                },
+                data: {
+                    estado: 'En mantenimiento'
                 }
+            })
 
-                if (result.affectedRows === 0) {
-                    return connection.rollback(() => {
-                        connection.release()
-                        return res.status(404).json({ error: 'Equipo no encontrado' })
-                    })
+            await tx.historial_mantenimientos.create({
+                data: {
+                    id_historial,
+                    num_serie: numSerieLimpio,
+                    fecha_reporte,
+                    falla: fallaLimpia
                 }
-
-                // INSERTAR EL NUEVO REGISTRO EN LA TABLA HISTORIAL_MANTENIMIENTOS
-                const insertHistorialQuery = 'INSERT INTO historial_mantenimientos(id_historial, num_serie, fecha_reporte, falla) VALUES(?, ?, ?, ?)'
-                connection.query(insertHistorialQuery, [id_historial, numSerieLimpio, fecha_reporte, fallaLimpia], (err) => {
-                    if (err) {
-                        return connection.rollback(() => {
-                            connection.release()
-                            console.error('Error al insertar el registro en la tabla historial de mantenimientos', err)
-                            return res.status(500).json({ error: 'Error al insertar el registro en la tabla historial de mantenimientos' })
-                        })
-                    }
-
-                    // CONFIRMAR LA TRANSACCION
-                    connection.commit((err) => {
-                        if (err) {
-                            return connection.rollback(() => {
-                                connection.release()
-                                console.error('Error al confirmar la transaccion', err)
-                                return res.status(500).json({ error: 'Error al confirmar la transaccion' })
-                            })
-                        }
-                        connection.release()
-                        res.status(200).json({ mensaje: 'Estado actualizado a mantenimiento y reporte registrado exitosamente' })
-                    })
-                })
             })
         })
-    })
+
+        res.status(200).json({
+            mensaje: 'Estado actualizado a mantenimiento y reporte registrado exitosamente'
+        })
+
+    } catch (error) {
+        console.error('Error al registrar reporte:', error)
+
+        if (error.code === 'P2025') {
+            return res.status(404).json({
+                error: 'Equipo no encontrado'
+            })
+        }
+
+        res.status(500).json({
+            error: 'Error al registrar el reporte'
+        })
+    }
 }
 
 // OBTENER LOS MANTENIMIENTOS PENDIENTES ORDENADOS POR FECHA DE REPORTE
-exports.getReportes = (req, res) => {
-    const query = 'SELECT * FROM historial_mantenimientos WHERE fecha_solucion IS NULL ORDER BY fecha_reporte ASC'
+exports.getReportes = async (req, res) => {
+    try {
+        const reportes = await prisma.historial_mantenimientos.findMany({
+            where: {
+                fecha_solucion: null
+            },
+            orderBy: {
+                fecha_reporte: 'asc'
+            }
+        })
 
-    db.query(query, (err, results) => {
-        if (err) {
-            return res.status(500).send('Error en la consulta')
-        }
-        res.json(results)
-    })
+        res.json(reportes)
+
+    } catch (error) {
+        console.error('Error al obtener reportes:', error)
+
+        res.status(500).json({
+            error: 'Error en la consulta'
+        })
+    }
 }
 
 // ACTUALIZAR LA SOLUCION EN EL HISTORIAL Y CAMBIAR EL ESTADO DEL EQUIPO
-exports.resolverReporte = (req, res) => {
+exports.resolverReporte = async (req, res) => {
     const { num_serie, id_historial, tecnico, solucion } = req.body
 
     const numSerieLimpio = sanitizarTexto(num_serie, 50)
@@ -146,74 +166,58 @@ exports.resolverReporte = (req, res) => {
     const solucionLimpia = sanitizarHtml(solucion, 1000)
 
     if (!numSerieLimpio || !idHistorialLimpio || !tecnicoLimpio || !solucionLimpia) {
-        return res.status(400).json({ error: 'El numero de serie, id_historial, tecnico y solucion son requeridos' })
+        return res.status(400).json({
+            error: 'El numero de serie, id_historial, tecnico y solucion son requeridos'
+        })
     }
 
-    const fecha_solucion = formatDate()
+    const fecha_solucion = new Date()
 
-    // SE OBTIENE UNA CONEXION DEL POOL PARA USAR LA TRANSACCION
-    db.getConnection((err, connection) => {
-        if (err) {
-            console.error('Error al obtener la conexion', err)
-            return res.status(500).json({ error: 'Error al obtener la conexion' })
-        }
+    try {
+        await prisma.$transaction(async (tx) => {
 
-        connection.beginTransaction((err) => {
-            if (err) {
-                connection.release()
-                return res.status(500).json({ error: 'Error al iniciar la transaccion' })
-            }
-
-            // ACTUALIZAR EL ESTADO DEL EQUIPO A ACTIVO
-            const updateEstadoQuery = 'UPDATE equipos SET estado="Disponible" WHERE num_serie=?'
-            connection.query(updateEstadoQuery, [numSerieLimpio], (err, result) => {
-                if (err) {
-                    return connection.rollback(() => {
-                        connection.release()
-                        console.error('Error al actualizar el estado del equipo', err)
-                        return res.status(500).json({ error: 'Error al actualizar el estado del equipo' })
-                    })
+            await tx.equipos.update({
+                where: {
+                    num_serie: numSerieLimpio
+                },
+                data: {
+                    estado: 'Disponible'
                 }
+            })
 
-                if (result.affectedRows === 0) {
-                    return connection.rollback(() => {
-                        connection.release()
-                        return res.status(404).json({ error: 'Equipo no encontrado' })
-                    })
+            await tx.historial_mantenimientos.update({
+                where: {
+                    id_historial: idHistorialLimpio
+                },
+                data: {
+                    fecha_solucion,
+                    usuario_tecnico: tecnicoLimpio,
+                    solucion: solucionLimpia
                 }
-
-                // ACTUALIZAR EL REGISTRO EN LA TABLA HISTORIAL_MANTENIMIENTOS
-                const updateHistorialQuery = 'UPDATE historial_mantenimientos SET fecha_solucion=?, usuario_tecnico=?, solucion=? WHERE id_historial=?'
-                connection.query(updateHistorialQuery, [fecha_solucion, tecnicoLimpio, solucionLimpia, idHistorialLimpio], (err) => {
-                    if (err) {
-                        return connection.rollback(() => {
-                            connection.release()
-                            console.error('Error al actualizar el historial', err)
-                            return res.status(500).json({ error: 'Error al actualizar el historial' })
-                        })
-                    }
-
-                    // CONFIRMAR LA TRANSACCION
-                    connection.commit((err) => {
-                        if (err) {
-                            return connection.rollback(() => {
-                                connection.release()
-                                console.error('Error al confirmar la transaccion', err)
-                                return res.status(500).json({ error: 'Error al confirmar la transaccion' })
-                            })
-                        }
-
-                        connection.release()
-                        res.status(200).json({ mensaje: 'Estado del equipo actualizado a activo y mantenimiento actualizado' })
-                    })
-                })
             })
         })
-    })
+
+        res.status(200).json({
+            mensaje: 'Estado del equipo actualizado a activo y mantenimiento actualizado'
+        })
+
+    } catch (error) {
+        console.error('Error al resolver reporte:', error)
+
+        if (error.code === 'P2025') {
+            return res.status(404).json({
+                error: 'Equipo o reporte no encontrado'
+            })
+        }
+
+        res.status(500).json({
+            error: 'Error al actualizar el reporte'
+        })
+    }
 }
 
 // BUSCAR MANTENIMIENTOS POR FILTRO
-exports.buscarMantenimientos = (req, res) => {
+exports.buscarMantenimientos = async (req, res) => {
     const { filter } = req.body
 
     const filtroLimpio = sanitizarTexto(filter, 100)
@@ -224,15 +228,33 @@ exports.buscarMantenimientos = (req, res) => {
         })
     }
 
-    const query = `SELECT * FROM historial_mantenimientos WHERE (id_historial = ?
-    OR num_serie = ?
-    OR usuario_tecnico = ?)
-    AND solucion IS NOT NULL`
+    try {
+        const resultados = await prisma.historial_mantenimientos.findMany({
+            where: {
+                solucion: {
+                    not: null
+                },
+                OR: [
+                    {
+                        id_historial: filtroLimpio
+                    },
+                    {
+                        num_serie: filtroLimpio
+                    },
+                    {
+                        usuario_tecnico: filtroLimpio
+                    }
+                ]
+            }
+        })
 
-    db.query(query, [filtroLimpio, filtroLimpio, filtroLimpio], (err, result) => {
-        if (err) {
-            return res.status(500).json({ error: 'Error en la consulta' })
-        }
-        res.json(result)
-    })
+        res.json(resultados)
+
+    } catch (error) {
+        console.error('Error al buscar mantenimientos:', error)
+
+        res.status(500).json({
+            error: 'Error en la consulta'
+        })
+    }
 }

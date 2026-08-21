@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model areas {
+  area String @id @db.VarChar(100)
+}
+
+model equipos {
+  num_serie         String      @id @db.VarChar(50)
+  equipo            String      @db.VarChar(100)
+  area              String      @db.VarChar(100)
+  descripcion       String?
+  estado            String      @db.VarChar(50)
+  responsable       String?     @db.VarChar(20)
+  fecha_adquisicion DateTime    @db.Date
+  fecha_asignacion  DateTime    @db.Date
+  fecha_baja        DateTime?   @db.Date
+  prestamos         prestamos[]
+}
+
+model estados_equipos {
+  estado String @id @db.VarChar(50)
+}
+
+model historial_mantenimientos {
+  id_historial    String    @id @db.VarChar(100)
+  num_serie       String    @db.VarChar(50)
+  fecha_reporte   DateTime  @db.Date
+  fecha_solucion  DateTime? @db.Date
+  usuario_tecnico String?   @db.VarChar(20)
+  falla           String
+  solucion        String?
+}
+
+model prestamos {
+  id_prestamo      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  num_serie        String    @db.VarChar(50)
+  usuario_destino  String    @db.VarChar(50)
+  fecha_prestamo   DateTime  @db.Date
+  fecha_devolucion DateTime? @db.Date
+  estado           String    @default("activo") @db.VarChar(20)
+  observaciones    String?
+  equipos          equipos   @relation(fields: [num_serie], references: [num_serie], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model usuarios {
+  id_usuario Int    @id @default(autoincrement())
+  usuario    String @unique @db.VarChar(50)
+  nombre     String @db.VarChar(200)
+  correo     String @unique @db.VarChar(50)
+  contrasena String @db.VarChar(100)
+  area       String @db.VarChar(100)
+  estado     String @db.VarChar(15)
+}

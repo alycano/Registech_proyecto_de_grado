@@ -1,5 +1,4 @@
 import { useState } from "react"
-import ReCAPTCHA from "react-google-recaptcha"
 import axios from 'axios'
 import { useNavigate } from "react-router-dom"
 import Swal from 'sweetalert2'
@@ -9,7 +8,6 @@ import { API_ROUTES } from "../api/apiRoutes"
 const Login = () => {
     const [usuario, setUsuario] = useState("")
     const [contrasena, setContrasena] = useState("")
-    const [captchaToken, setCaptchaToken] = useState(null)
 
     const navigate = useNavigate()
 
@@ -25,20 +23,9 @@ const Login = () => {
             return
         }
 
-        // Verificar que el usuario haya completado el CAPTCHA
-        if (!captchaToken) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Verificación requerida',
-                text: 'Por favor, confirma que no eres un robot'
-            })
-            return
-        }
-
         const loginData = {
             usuario,
-            contrasena,
-            captchaToken
+            contrasena
         }
 
         try {
@@ -64,7 +51,10 @@ const Login = () => {
                 }
 
                 localStorage.setItem('token', response.data.token)
-                localStorage.setItem('usuario', JSON.stringify(response.data.usuario))
+                localStorage.setItem(
+                    'usuario',
+                    JSON.stringify(response.data.usuario)
+                )
 
                 Swal.fire({
                     icon: 'success',
@@ -133,7 +123,10 @@ const Login = () => {
             }
 
             localStorage.setItem('token', response.data.token)
-            localStorage.setItem('usuario', JSON.stringify(response.data.usuario))
+            localStorage.setItem(
+                'usuario',
+                JSON.stringify(response.data.usuario)
+            )
 
             Swal.fire({
                 icon: 'success',
@@ -221,16 +214,6 @@ const Login = () => {
                                     placeholder="Ingresa tu contraseña"
                                 />
                             </div>
-                        </div>
-
-                        {/* reCAPTCHA */}
-                        <div className="mb-4 d-flex justify-content-center">
-                            <ReCAPTCHA
-                                sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
-                                onChange={(token) => setCaptchaToken(token)}
-                                onExpired={() => setCaptchaToken(null)}
-                                onErrored={() => setCaptchaToken(null)}
-                            />
                         </div>
 
                         {/* BOTÓN LOGIN */}

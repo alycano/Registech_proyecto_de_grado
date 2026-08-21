@@ -3,6 +3,7 @@ const express = require('express')
 const cors = require('cors')
 const helmet = require('helmet')
 const rateLimit = require('express-rate-limit')
+const cookieParser = require('cookie-parser')   
 
 const usuariosRoutes = require('./routes/usuarios')
 const areasRoutes = require('./routes/areas')
@@ -33,6 +34,8 @@ app.use(cors({
 
 // MIDDLEWARE PARA ANALIZAR JSON (CON LIMITE DE TAMAÑO)
 app.use(express.json({ limit: '100kb' }))
+// PERMITIR EL USO DE COOKIES
+app.use(cookieParser())
 
 // IMPORTAMOS EL USO DE LAS RUTAS
 app.use('/api', usuariosRoutes)
