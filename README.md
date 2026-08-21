@@ -100,7 +100,9 @@ La aplicación web correrá en http://localhost:5173.
 
 ## Autores
 
-- Aly Santiago Cano (GitHub: alycano)
-- Narilyn Bustamante (GitHub: narilin)
+- Aly Santiago Cano
+- Narilyn Bustamante
+- Cesar Augusto Cardona Arango
+- Jhonatan David Gutierrez Guterres
 
 Mockups del sistema: [Enlace a los prototipos](https://stitch.withgoogle.com/projects/15267342535273535427)
