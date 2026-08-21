@@ -103,6 +103,6 @@ La aplicación web correrá en http://localhost:5173.
 - Aly Santiago Cano
 - Narilyn Bustamante
 - Cesar Augusto Cardona Arango
-- Jhonatan David Gutierrez Guterres
+- Jhonatan David Gutierrez Gutierrez
 
 Mockups del sistema: [Enlace a los prototipos](https://stitch.withgoogle.com/projects/15267342535273535427)
