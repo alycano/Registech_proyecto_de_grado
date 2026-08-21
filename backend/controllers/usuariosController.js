@@ -35,6 +35,56 @@ exports.login = async (req, res) => {
     }
 }
 
+const { OAuth2Client } = require('google-auth-library')
+const client = new OAuth2Client(process.env.VITE_GOOGLE_CLIENT_ID || '919637357699-bl3ophclobp87marg2if66u2lph2rdt6.apps.googleusercontent.com')
+
+exports.googleLogin = async (req, res) => {
+    const { credential } = req.body
+
+    if (!credential) {
+        return res.status(400).json({ error: 'Falta el credential' })
+    }
+
+    try {
+        const ticket = await client.verifyIdToken({
+            idToken: credential,
+            audience: process.env.VITE_GOOGLE_CLIENT_ID || '919637357699-bl3ophclobp87marg2if66u2lph2rdt6.apps.googleusercontent.com'
+        })
+
+        const payload = ticket.getPayload()
+        const { sub: googleId, email, name, picture } = payload
+
+        const { token, usuarioEncontrado } = await usuariosService.googleLogin(googleId, email, name, picture)
+
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 15 * 60 * 1000
+        })
+
+        const auditoriaService = require('../services/auditoriaService')
+        await auditoriaService.registrar(usuarioEncontrado.usuario, `Inició sesión con Google`)
+
+        return res.status(200).json({
+            mensaje: 'Login con Google exitoso',
+            token,
+            usuario: {
+                usuario: usuarioEncontrado.usuario,
+                nombre: usuarioEncontrado.nombre,
+                area: usuarioEncontrado.area,
+                correo: usuarioEncontrado.correo,
+                estado: usuarioEncontrado.estado,
+                foto: usuarioEncontrado.foto_url
+            }
+        })
+    } catch (error) {
+        console.error('Error en el login de Google:', error)
+        if (error.message === 'INACTIVE') return res.status(401).json({ error: 'Tu cuenta está inactiva' })
+        return res.status(401).json({ error: 'Token de Google inválido o expirado' })
+    }
+}
+
 exports.getUsuarios = async (req, res) => {
     try {
         const usuarios = await usuariosService.getUsuarios()

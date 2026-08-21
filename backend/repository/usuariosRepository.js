@@ -6,6 +6,17 @@ exports.findByUsuario = async (usuarioLimpio) => {
     })
 }
 
+exports.findByGoogleIdOrCorreo = async (googleId, correo) => {
+    return await prisma.usuarios.findFirst({
+        where: {
+            OR: [
+                { google_id: googleId },
+                { correo: correo }
+            ]
+        }
+    })
+}
+
 exports.findAll = async () => {
     return await prisma.usuarios.findMany({
         select: {

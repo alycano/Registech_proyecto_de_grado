@@ -49,13 +49,15 @@ model prestamos {
 }
 
 model usuarios {
-  id_usuario Int    @id @default(autoincrement())
-  usuario    String @unique @db.VarChar(50)
-  nombre     String @db.VarChar(200)
-  correo     String @unique @db.VarChar(50)
-  contrasena String @db.VarChar(100)
-  area       String @db.VarChar(100)
-  estado     String @db.VarChar(15)
+  id_usuario Int     @id @default(autoincrement())
+  usuario    String  @unique @db.VarChar(50)
+  nombre     String  @db.VarChar(200)
+  correo     String  @unique @db.VarChar(50)
+  contrasena String  @db.VarChar(100)
+  area       String  @db.VarChar(100)
+  estado     String  @db.VarChar(15)
+  google_id  String? @db.VarChar(100)
+  foto_url   String?
 }
 
 model auditoria {

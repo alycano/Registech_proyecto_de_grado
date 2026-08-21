@@ -35,6 +35,55 @@ exports.login = async (usuario, contrasena) => {
     return { token, usuarioEncontrado }
 }
 
+exports.googleLogin = async (googleId, email, name, picture) => {
+    // 1. Buscar si el usuario ya existe por google_id o correo
+    let usuarioEncontrado = await usuariosRepository.findByGoogleIdOrCorreo(googleId, email)
+
+    if (usuarioEncontrado) {
+        // Actualizar datos de Google si ya existía
+        await usuariosRepository.update(usuarioEncontrado.usuario, {
+            google_id: googleId,
+            nombre: name,
+            foto_url: picture,
+            contrasena: usuarioEncontrado.contrasena, // Mantener requeridos
+            area: usuarioEncontrado.area,
+            correo: usuarioEncontrado.correo,
+            estado: usuarioEncontrado.estado
+        })
+        // Recargar usuario para el token
+        usuarioEncontrado = await usuariosRepository.findByUsuario(usuarioEncontrado.usuario)
+    } else {
+        // Generar un nombre de usuario basado en el correo
+        const baseUsuario = email.split('@')[0]
+        
+        // Crear nuevo usuario
+        usuarioEncontrado = await usuariosRepository.create({
+            usuario: baseUsuario,
+            correo: email,
+            nombre: name,
+            google_id: googleId,
+            foto_url: picture,
+            contrasena: 'google_oauth_no_password',
+            area: 'Por asignar',
+            estado: 'activo'
+        })
+    }
+
+    if (usuarioEncontrado.estado === 'inactivo') {
+        throw new Error('INACTIVE')
+    }
+
+    const token = signToken({
+        id: usuarioEncontrado.id_usuario,
+        usuario: usuarioEncontrado.usuario,
+        correo: usuarioEncontrado.correo,
+        area: usuarioEncontrado.area
+    })
+
+    return { token, usuarioEncontrado }
+}
+
+
 exports.getUsuarios = async () => {
     return await usuariosRepository.findAll()
 }
