@@ -13,15 +13,6 @@ function compararContrasena(contrasena, usuarioEncontrado) {
 
 exports.login = async (usuario, contrasena) => {
     const usuarioLimpio = sanitizarTexto(usuario, 50)
-
-    if (!usuarioLimpio || typeof contrasena !== 'string' || !contrasena) {
-        throw new Error('REQ_FIELDS')
-    }
-
-    if (contrasena.length > 128) {
-        throw new Error('INVALID_CREDS')
-    }
-
     const usuarioEncontrado = await usuariosRepository.findByUsuario(usuarioLimpio)
 
     if (!usuarioEncontrado) {
@@ -51,10 +42,6 @@ exports.getUsuarios = async () => {
 exports.createUsuario = async (data) => {
     const { usuario, contrasena, nombre, area, correo, estado } = data
 
-    if (!usuario || !contrasena || !nombre || !area || !correo) {
-        throw new Error('REQ_FIELDS')
-    }
-
     const usuarioExistente = await usuariosRepository.findByUsuario(usuario)
     if (usuarioExistente) {
         throw new Error('DUPLICATE')
@@ -74,10 +61,6 @@ exports.createUsuario = async (data) => {
 
 exports.updateUsuario = async (usuarioParam, data) => {
     const { usuario, contrasena, nombre, area, correo, estado } = data
-
-    if (!usuario || !contrasena || !nombre || !area || !correo) {
-        throw new Error('REQ_FIELDS')
-    }
 
     const contrasenaHash = bcrypt.hashSync(contrasena, 10)
 
