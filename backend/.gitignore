@@ -4,7 +4,7 @@ backend/.env
 frontend/.env
 
 # Credenciales locales (usar config/db.stub.js como plantilla)
-lib/db.js
+# lib/db.js fue removido del gitignore porque ahora usa variables de entorno seguras.
 
 # Archivos subidos por los usuarios (evidencias)
 uploads/
