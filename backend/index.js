@@ -76,6 +76,12 @@ app.use((req, res) => {
 
 // MANEJO CENTRALIZADO DE ERRORES
 app.use((err, req, res, next) => {
+    // Si es un error operativo nuestro (AppError)
+    if (err.isOperational) {
+        return res.status(err.statusCode).json({ error: err.message })
+    }
+
+    // Errores propios de Express/Librerías
     if (err.type === 'entity.parse.failed') {
         return res.status(400).json({ error: 'JSON inválido en el cuerpo de la petición' })
     }
@@ -85,6 +91,8 @@ app.use((err, req, res, next) => {
     if (err.type === 'request.aborted') {
         return res.status(400).json({ error: 'Petición cancelada' })
     }
+    
+    // Error de programación o desconocido
     console.error('Error no controlado:', err)
     res.status(500).json({ error: 'Error interno del servidor' })
 })
