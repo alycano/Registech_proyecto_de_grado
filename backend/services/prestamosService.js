@@ -38,9 +38,10 @@ exports.crearPrestamo = async (num_serie, usuario_destino, observaciones, fecha_
     )
 }
 
-exports.devolverPrestamo = async (id) => {
+exports.devolverPrestamo = async (id, observaciones, evidencia) => {
     const idLimpio = sanitizarTexto(id, 50)
-    await prestamosRepository.devolverPrestamoTransaction(idLimpio)
+    const obsLimpia = observaciones ? sanitizarTexto(observaciones, 500) : null
+    await prestamosRepository.devolverPrestamoTransaction(idLimpio, obsLimpia, evidencia)
 }
 
 exports.historialEquipo = async (num_serie) => {

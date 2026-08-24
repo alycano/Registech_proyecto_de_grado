@@ -55,7 +55,7 @@ exports.crearPrestamoTransaction = async (numSerieLimpio, usuarioLimpio, observa
     }
 }
 
-exports.devolverPrestamoTransaction = async (idLimpio) => {
+exports.devolverPrestamoTransaction = async (idLimpio, observaciones, evidencia) => {
     const client = await db.pool.connect()
     try {
         await client.query('BEGIN')
@@ -68,8 +68,8 @@ exports.devolverPrestamoTransaction = async (idLimpio) => {
         if (prestamo.estado !== 'activo') throw new Error('PRESTAMO_YA_DEVUELTO')
 
         await client.query(
-            `UPDATE prestamos SET fecha_devolucion = CURRENT_DATE, estado = 'devuelto' WHERE id_prestamo = $1`,
-            [idLimpio]
+            `UPDATE prestamos SET fecha_devolucion = CURRENT_DATE, estado = 'devuelto', observaciones = COALESCE($2, observaciones), evidencia = $3 WHERE id_prestamo = $1`,
+            [idLimpio, observaciones, evidencia]
         )
         await client.query(
             'UPDATE equipos SET estado = $1, responsable = NULL WHERE num_serie = $2',

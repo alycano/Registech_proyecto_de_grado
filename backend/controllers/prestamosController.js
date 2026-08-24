@@ -48,10 +48,12 @@ exports.crearPrestamo = async (req, res) => {
 
 exports.devolverPrestamo = async (req, res) => {
     try {
-        await prestamosService.devolverPrestamo(req.params.id)
+        const observaciones = req.body.observaciones || null;
+        const evidencia = req.file ? req.file.filename : null;
+        await prestamosService.devolverPrestamo(req.params.id, observaciones, evidencia)
         const auditoriaService = require('../services/auditoriaService')
         await auditoriaService.registrar(req.usuario.usuario, `Registró la devolución del préstamo ${req.params.id}`)
-        res.status(200).json({ mensaje: 'Devolucion registrada exitosamente' })
+        res.status(200).json({ mensaje: 'Devolución registrada exitosamente' })
     } catch (error) {
         if (error.message === 'REQUERIDO') return res.status(400).json({ error: 'El id del prestamo es requerido' })
         if (error.message === 'PRESTAMO_NO_ENCONTRADO') return res.status(404).json({ error: 'Prestamo no encontrado' })
