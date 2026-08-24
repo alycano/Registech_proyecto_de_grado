@@ -1,27 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 CREATE TABLE areas (
     area VARCHAR(100) PRIMARY KEY
 );
@@ -37,9 +13,7 @@ CREATE TABLE usuarios (
     correo VARCHAR(50) NOT NULL UNIQUE,
     contrasena VARCHAR(100) NOT NULL,
     area VARCHAR(100) NOT NULL,
-    estado VARCHAR(15) NOT NULL,
-    google_id VARCHAR(100) NULL,
-    foto_url TEXT NULL
+    estado VARCHAR(15) NOT NULL
 );
 
 CREATE TABLE equipos (
@@ -47,10 +21,12 @@ CREATE TABLE equipos (
     equipo VARCHAR(100) NOT NULL,
     area VARCHAR(100) NOT NULL,
     descripcion TEXT,
+    sistema_operativo VARCHAR(60) NULL,
+    imagen VARCHAR(255) NULL,
     estado VARCHAR(50) NOT NULL,
-    responsable VARCHAR(20) NULL,
+    responsable VARCHAR(100) NULL,
     fecha_adquisicion DATE NOT NULL,
-    fecha_asignacion DATE NOT NULL,
+    fecha_asignacion DATE NULL,
     fecha_baja DATE NULL
 );
 
@@ -58,21 +34,37 @@ CREATE TABLE historial_mantenimientos (
     id_historial VARCHAR(100) PRIMARY KEY,
     num_serie VARCHAR(50) NOT NULL,
     fecha_reporte DATE NOT NULL,
-    fecha_solucion DATE NULL,
+    fecha_solucion DATE 
+    NULL,
     usuario_tecnico VARCHAR(20) NULL,
     falla TEXT NOT NULL,
-    solucion TEXT NULL
+    solucion TEXT NULL,
+    evidencia VARCHAR(255) NULL,
+    estado_orden VARCHAR(20) NOT NULL DEFAULT 'aprobada',
+    aprobada_por VARCHAR(50) NULL,
+    fecha_aprobacion DATE NULL
 );
 
 CREATE TABLE prestamos (
     id_prestamo INT AUTO_INCREMENT PRIMARY KEY,
     num_serie VARCHAR(50) NOT NULL,
     usuario_destino VARCHAR(50) NOT NULL,
+    area VARCHAR(100) NULL,
     fecha_prestamo DATE NOT NULL,
     fecha_devolucion DATE NULL,
     estado VARCHAR(20) NOT NULL DEFAULT 'activo',
     observaciones TEXT NULL,
     FOREIGN KEY (num_serie) REFERENCES equipos(num_serie)
+);
+
+CREATE TABLE reset_tokens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario VARCHAR(50) NOT NULL,
+    codigo VARCHAR(6) NOT NULL,
+    expira_en DATETIME NOT NULL,
+    usado TINYINT(1) DEFAULT 0,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario) REFERENCES usuarios(usuario)
 );
 
 INSERT INTO areas (area) VALUES

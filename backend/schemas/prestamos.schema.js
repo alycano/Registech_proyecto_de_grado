@@ -4,7 +4,10 @@ const crearPrestamoSchema = z.object({
     body: z.object({
         num_serie: z.string({ required_error: 'El número de serie es requerido' }).min(1).max(50),
         usuario_destino: z.string({ required_error: 'El usuario destino es requerido' }).min(1).max(50),
-        observaciones: z.string().max(500).optional().nullable()
+        area: z.string().max(100).optional().nullable(),
+        observaciones: z.string().max(500).optional().nullable(),
+        fecha_inicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'La fecha debe tener formato YYYY-MM-DD').optional().nullable(),
+        fecha_limite: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'La fecha debe tener formato YYYY-MM-DD').optional().nullable()
     })
 });
 

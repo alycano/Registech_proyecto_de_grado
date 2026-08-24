@@ -2,3 +2,9 @@ node_modules/
 .env
 backend/.env
 frontend/.env
+
+# Credenciales locales (usar config/db.stub.js como plantilla)
+lib/db.js
+
+# Archivos subidos por los usuarios (evidencias)
+uploads/

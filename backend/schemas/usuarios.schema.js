@@ -2,7 +2,7 @@ const { z } = require('zod');
 
 const loginSchema = z.object({
     body: z.object({
-        usuario: z.string({ required_error: 'El usuario es obligatorio' }).min(1, 'El usuario no puede estar vacío').max(50),
+        correo: z.string({ required_error: 'El correo es obligatorio' }).email('Debe ser un correo válido').max(100),
         contrasena: z.string({ required_error: 'La contraseña es obligatoria' }).min(1, 'La contraseña no puede estar vacía').max(128)
     })
 });
@@ -32,4 +32,11 @@ const actualizarUsuarioSchema = z.object({
     })
 });
 
-module.exports = { loginSchema, crearUsuarioSchema, actualizarUsuarioSchema };
+const cambiarPasswordSchema = z.object({
+    body: z.object({
+        contrasena_actual: z.string({ required_error: 'La contraseña actual es obligatoria' }).min(1).max(128),
+        contrasena_nueva: z.string({ required_error: 'La nueva contraseña es obligatoria' }).min(6, 'Mínimo 6 caracteres').max(128)
+    })
+});
+
+module.exports = { loginSchema, crearUsuarioSchema, actualizarUsuarioSchema, cambiarPasswordSchema };

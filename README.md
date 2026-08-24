@@ -27,9 +27,11 @@ Estructura del Backend:
 - Repositorios (repository/): Realizan las consultas a la base de datos usando Prisma.
 
 ### Frontend (SPA)
-- Tecnologías: React, Vite, Bootstrap 5.
-- Autenticación: Google OAuth y JWT.
+- Tecnologías: React, Vite, Bootstrap 5, Bootstrap Icons.
+- Autenticación: JWT con usuario y contraseña creados por el administrador.
 - Funcionalidad: Rutas protegidas y renderizado condicional del dashboard dependiendo del área del usuario.
+- Navegación: Sidebar con página independiente por módulo (Equipos, Préstamos, Mantenimiento, Departamentos, Reportes y Configuración).
+- Interfaz: Tema claro/oscuro con persistencia, notificaciones con SweetAlert2, tarjetas resumen (KPIs) con auto-refresco y alertas visuales de vencimiento en préstamos y órdenes.
 
 ---
 
@@ -47,25 +49,59 @@ El sistema implementa los siguientes controles de seguridad en el backend:
 
 1. Autenticación (Auth)
    - Login con credenciales encriptadas (bcrypt).
-   - Integración de login con Google OAuth.
+   - Recuperación de contraseña mediante código temporal de verificación.
+   - Cambio de contraseña autenticado desde Configuración.
 
-2. Gestión de Usuarios y Áreas
-   - CRUD de usuarios del sistema.
-   - Catálogo de áreas de la empresa (Tecnología, RRHH, Soporte, etc.).
+2. Panel Principal (Dashboard)
+   - Tarjetas resumen con las métricas del inventario.
+   - Actividad reciente del sistema y notificaciones de órdenes pendientes.
+   - Aprobación o rechazo de órdenes de mantenimiento directamente desde el panel (rol Tecnología).
 
-3. Inventario de Equipos (TI)
-   - Registro y listado de equipos.
-   - Asignación de responsables.
-   - Reporte de fallas (cambio de estado a mantenimiento).
+3. Inventario de Equipos
+   - Registro y listado de equipos en cuadrícula de tarjetas con estados.
+   - Asignación de responsables y préstamo directo desde la tarjeta, con fechas de inicio/límite y ficha técnica.
+   - Devolución rápida y alertas visuales de vencimiento (VENCIDO / Vence pronto).
+   - Reporte de fallas con evidencia fotográfica (cambio de estado a mantenimiento).
    - Resolución de reportes por los técnicos.
 
-4. Préstamos
-   - Asignación temporal de equipos.
-   - Devolución de equipos.
-   - Historial de préstamos.
+4. Gestión de Préstamos
+   - Registro de préstamos con fechas de inicio y límite, área destino y observaciones.
+   - KPIs de vencimiento: activos, por vencer (3 días) y vencidos, con refresco automático.
+   - Badges de vencimiento por fila en la tabla de préstamos activos.
+   - Historial completo con búsqueda en vivo, filtro por estado, duración y situación.
 
-5. Estadísticas
+5. Mantenimiento
+   - Bandeja de órdenes de trabajo según el rol:
+     - Soporte: registra daños con evidencia fotográfica y marca equipos como reparados.
+     - Administrador: consulta el detalle completo de cada orden (diagnóstico, evidencia ampliable, aprobación con quién y cuándo, solución aplicada) sin modificarlas.
+   - Flujo de estados: pendiente → aprobada/rechazada → reparada, con trazabilidad de aprobaciones.
+   - KPIs de órdenes totales, por aprobar, en reparación y completadas.
+   - Historial completo de mantenimientos con buscador por ID, número de serie o técnico.
+
+6. Gestión de Usuarios y Departamentos
+   - CRUD de usuarios del sistema.
+   - CRUD de áreas/departamentos con conteos de equipos y usuarios asignados; al renombrar un departamento se actualizan sus referencias automáticamente.
+
+7. Reportes
+   - Exportación en CSV (compatible con Excel) de: inventario de equipos, préstamos, mantenimientos (incluye quién aprobó cada orden) y usuarios.
+
+8. Configuración
+   - Perfil del usuario autenticado (nombre, correo, departamento).
+   - Cambio de contraseña verificando la actual.
+   - Tema claro/oscuro con persistencia local.
+
+9. Estadísticas
    - Conteo de equipos totales, disponibles, prestados, en mantenimiento y de baja.
+
+---
+
+## Roles del Sistema
+
+| Área | Acceso |
+|------|--------|
+| Tecnología (Administrador) | Panel completo: inventario con registro de equipos, usuarios, departamentos, aprobación de órdenes de mantenimiento, reportes y configuración. En las órdenes solo consulta detalles, no repara. |
+| Soporte | Bandeja de mantenimiento: registra daños con evidencia fotográfica y marca equipos como reparados cuando la orden está aprobada. |
+| Recursos Humanos | Gestión de usuarios del sistema. |
 
 ---
 
@@ -91,7 +127,7 @@ La API correrá en http://localhost:3000.
 cd frontend
 npm install
 
-# Configurar VITE_GOOGLE_CLIENT_ID en el archivo .env
+# Opcional: configurar VITE_API_URL en el archivo .env (por defecto http://localhost:3000/api)
 npm run dev
 ```
 La aplicación web correrá en http://localhost:5173.

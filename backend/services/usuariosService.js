@@ -11,9 +11,9 @@ function compararContrasena(contrasena, usuarioEncontrado) {
     return guardada === contrasena
 }
 
-exports.login = async (usuario, contrasena) => {
-    const usuarioLimpio = sanitizarTexto(usuario, 50)
-    const usuarioEncontrado = await usuariosRepository.findByUsuario(usuarioLimpio)
+exports.login = async (correo, contrasena) => {
+    const correoLimpio = sanitizarTexto(correo, 100).toLowerCase()
+    const usuarioEncontrado = await usuariosRepository.findByCorreo(correoLimpio)
 
     if (!usuarioEncontrado) {
         throw new Error('NOT_FOUND')
@@ -35,57 +35,24 @@ exports.login = async (usuario, contrasena) => {
     return { token, usuarioEncontrado }
 }
 
-exports.googleLogin = async (googleId, email, name, picture) => {
-    // 1. Buscar si el usuario ya existe por google_id o correo
-    let usuarioEncontrado = await usuariosRepository.findByGoogleIdOrCorreo(googleId, email)
-
-    if (usuarioEncontrado) {
-        // Actualizar datos de Google si ya existía
-        await usuariosRepository.update(usuarioEncontrado.usuario, {
-            google_id: googleId,
-            nombre: name,
-            foto_url: picture,
-            contrasena: usuarioEncontrado.contrasena, // Mantener requeridos
-            area: usuarioEncontrado.area,
-            correo: usuarioEncontrado.correo,
-            estado: usuarioEncontrado.estado
-        })
-        // Recargar usuario para el token
-        usuarioEncontrado = await usuariosRepository.findByUsuario(usuarioEncontrado.usuario)
-    } else {
-        // Generar un nombre de usuario basado en el correo
-        const baseUsuario = email.split('@')[0]
-        
-        // Crear nuevo usuario
-        usuarioEncontrado = await usuariosRepository.create({
-            usuario: baseUsuario,
-            correo: email,
-            nombre: name,
-            google_id: googleId,
-            foto_url: picture,
-            contrasena: 'google_oauth_no_password',
-            area: 'Por asignar',
-            estado: 'activo'
-        })
-    }
-
-    if (usuarioEncontrado.estado === 'inactivo') {
-        throw new Error('INACTIVE')
-    }
-
-    const token = signToken({
-        id: usuarioEncontrado.id_usuario,
-        usuario: usuarioEncontrado.usuario,
-        correo: usuarioEncontrado.correo,
-        area: usuarioEncontrado.area
-    })
-
-    return { token, usuarioEncontrado }
-}
-
-
 exports.getUsuarios = async () => {
     return await usuariosRepository.findAll()
+}
+
+// CAMBIO DE CONTRASENA AUTENTICADO (EL USUARIO MISMO)
+exports.cambiarPassword = async (usuario, contrasenaActual, contrasenaNueva) => {
+    const usuarioLimpio = sanitizarTexto(usuario, 50)
+    const guardado = await usuariosRepository.findByUsuario(usuarioLimpio)
+
+    if (!guardado) throw new Error('NOT_FOUND')
+    if (!compararContrasena(contrasenaActual, guardado)) throw new Error('CONTRASENA_INCORRECTA')
+
+    const hashContrasena = bcrypt.hashSync(contrasenaNueva, 10)
+    if (bcrypt.compareSync(contrasenaNueva, guardado.contrasena || guardado.contrasena_hash || '')) {
+        throw new Error('MISMA_CONTRASENA')
+    }
+
+    await usuariosRepository.updatePassword(usuarioLimpio, hashContrasena)
 }
 
 exports.createUsuario = async (data) => {
@@ -111,18 +78,96 @@ exports.createUsuario = async (data) => {
 exports.updateUsuario = async (usuarioParam, data) => {
     const { usuario, contrasena, nombre, area, correo, estado } = data
 
-    const contrasenaHash = bcrypt.hashSync(contrasena, 10)
+    // Si la contrasena viene vacia se mantiene la actual (no se toca)
+    const dataActualizar = { usuario, nombre, area, correo, estado }
+    if (contrasena && String(contrasena).trim() !== '') {
+        dataActualizar.contrasena = bcrypt.hashSync(contrasena, 10)
+    }
 
-    await usuariosRepository.update(usuarioParam, {
-        usuario,
-        contrasena: contrasenaHash,
-        nombre,
-        area,
-        correo,
-        estado
-    })
+    await usuariosRepository.update(usuarioParam, dataActualizar)
 }
 
 exports.deleteUsuario = async (usuarioParam) => {
     await usuariosRepository.delete(usuarioParam)
+}
+
+exports.solicitarRecuperacion = async (correo) => {
+    if (!correo || typeof correo !== 'string') {
+        throw new Error('REQ_FIELDS')
+    }
+
+    const { sanitizarTexto, esCorreoValido } = require('../utils/sanitize')
+    const correoLimpio = sanitizarTexto(correo, 100).toLowerCase()
+
+    if (!esCorreoValido(correoLimpio)) {
+        throw new Error('INVALID_EMAIL')
+    }
+
+    const codigo = String(Math.floor(100000 + Math.random() * 900000))
+    const expiraEn = new Date(Date.now() + 15 * 60 * 1000)
+
+    const usuarioEncontrado = await usuariosRepository.findByCorreo(correoLimpio)
+
+    if (!usuarioEncontrado) {
+        return {
+            mensaje: 'Si el correo está registrado, recibirás un código de verificación',
+            codigo: null
+        }
+    }
+
+    await usuariosRepository.createResetToken(usuarioEncontrado.usuario, codigo, expiraEn)
+
+    return {
+        mensaje: 'Código de verificación generado',
+        codigo: codigo,
+        expira_en: expiraEn
+    }
+}
+
+exports.restablecerPassword = async ({ correo, codigo, nuevaContrasena }) => {
+    if (!correo || !codigo || !nuevaContrasena) {
+        throw new Error('REQ_FIELDS')
+    }
+
+    const { sanitizarTexto, esCorreoValido } = require('../utils/sanitize')
+    const correoLimpio = sanitizarTexto(correo, 100).toLowerCase()
+    const codigoLimpio = sanitizarTexto(codigo, 10)
+
+    if (!esCorreoValido(correoLimpio)) {
+        throw new Error('INVALID_EMAIL')
+    }
+
+    if (!/^\d{6}$/.test(codigoLimpio)) {
+        throw new Error('INVALID_CODE')
+    }
+
+    if (typeof nuevaContrasena !== 'string' || nuevaContrasena.length < 6) {
+        throw new Error('SHORT_PASSWORD')
+    }
+
+    if (nuevaContrasena.length > 128) {
+        throw new Error('SHORT_PASSWORD')
+    }
+
+    const usuarioEncontrado = await usuariosRepository.findByCorreo(correoLimpio)
+
+    if (!usuarioEncontrado) {
+        throw new Error('NOT_FOUND')
+    }
+
+    const tokenValido = await usuariosRepository.findValidResetToken(usuarioEncontrado.usuario, codigoLimpio)
+
+    if (!tokenValido) {
+        throw new Error('INVALID_TOKEN')
+    }
+
+    const hashContrasena = bcrypt.hashSync(nuevaContrasena, 10)
+
+    await usuariosRepository.updatePassword(usuarioEncontrado.usuario, hashContrasena)
+
+    await usuariosRepository.markTokenUsed(tokenValido.id)
+
+    return {
+        mensaje: 'Contraseña restablecida exitosamente. Ya puedes iniciar sesión.'
+    }
 }

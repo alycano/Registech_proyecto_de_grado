@@ -15,10 +15,12 @@ model equipos {
   equipo            String      @db.VarChar(100)
   area              String      @db.VarChar(100)
   descripcion       String?
+  sistema_operativo String?     @db.VarChar(60)
+  imagen            String?     @db.VarChar(255)
   estado            String      @db.VarChar(50)
-  responsable       String?     @db.VarChar(20)
+  responsable       String?     @db.VarChar(100)
   fecha_adquisicion DateTime    @db.Date
-  fecha_asignacion  DateTime    @db.Date
+  fecha_asignacion  DateTime?   @db.Date
   fecha_baja        DateTime?   @db.Date
   prestamos         prestamos[]
 }
@@ -35,12 +37,17 @@ model historial_mantenimientos {
   usuario_tecnico String?   @db.VarChar(20)
   falla           String
   solucion        String?
+  evidencia       String?   @db.VarChar(255)
+  estado_orden    String    @default("aprobada") @db.VarChar(20)
+  aprobada_por    String?   @db.VarChar(50)
+  fecha_aprobacion DateTime? @db.Date
 }
 
 model prestamos {
   id_prestamo      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   num_serie        String    @db.VarChar(50)
   usuario_destino  String    @db.VarChar(50)
+  area             String?   @db.VarChar(100)
   fecha_prestamo   DateTime  @db.Date
   fecha_devolucion DateTime? @db.Date
   estado           String    @default("activo") @db.VarChar(20)
@@ -49,20 +56,29 @@ model prestamos {
 }
 
 model usuarios {
-  id_usuario Int     @id @default(autoincrement())
-  usuario    String  @unique @db.VarChar(50)
-  nombre     String  @db.VarChar(200)
-  correo     String  @unique @db.VarChar(50)
-  contrasena String  @db.VarChar(100)
-  area       String  @db.VarChar(100)
-  estado     String  @db.VarChar(15)
-  google_id  String? @db.VarChar(100)
-  foto_url   String?
+  id_usuario    Int            @id @default(autoincrement())
+  usuario       String         @unique @db.VarChar(50)
+  nombre        String         @db.VarChar(200)
+  correo        String         @unique @db.VarChar(50)
+  contrasena    String         @db.VarChar(100)
+  area          String         @db.VarChar(100)
+  estado        String         @db.VarChar(15)
+  reset_tokens  reset_tokens[]
 }
 
 model auditoria {
   id_auditoria String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   usuario      String   @db.VarChar(50)
   accion       String   @db.VarChar(500)
-  fecha        DateTime @default(now()) @db.Timestamp(6)
+  fecha        DateTime @default(now())
+}
+
+model reset_tokens {
+  id         Int      @id @default(autoincrement())
+  usuario    String   @db.VarChar(50)
+  codigo     String   @db.VarChar(6)
+  expira_en  DateTime
+  usado      Boolean  @default(false)
+  creado_en  DateTime @default(now())
+  usuarios   usuarios @relation(fields: [usuario], references: [usuario])
 }
