@@ -17,9 +17,7 @@ function crearUsuario(id, usuario, contrasena, nombre, area, correo) {
     contrasena,
     contrasena_hash: bcrypt.hashSync(contrasena, 10),
     area,
-    estado: 'activo',
-    google_id: null,
-    foto_url: null
+    estado: 'activo'
   }
 }
 
@@ -40,6 +38,7 @@ const equipos = [
 
 const historial_mantenimientos = []
 const prestamos = []
+const reset_tokens = []
 
 const tablas = {
   areas,
@@ -47,7 +46,8 @@ const tablas = {
   usuarios,
   equipos,
   historial_mantenimientos,
-  prestamos
+  prestamos,
+  reset_tokens
 }
 
 function splitTopLevel(texto, separador) {
@@ -101,6 +101,8 @@ function evaluarAtomo(atomo, fila, params) {
     let valor
     if (valorRaw === '?') {
       valor = params.shift()
+    } else if (valorRaw.toUpperCase() === 'NOW()') {
+      valor = new Date()
     } else if (valorRaw.startsWith('"') || valorRaw.startsWith("'")) {
       valor = valorRaw.slice(1, -1)
     } else {
@@ -115,14 +117,19 @@ function evaluarAtomo(atomo, fila, params) {
     }
 
     const campo = fila[columna]
+
+    const campoDate = campo instanceof Date ? campo : (typeof campo === 'string' && !isNaN(Date.parse(campo)) ? new Date(campo) : null)
+    const valorDate = valor instanceof Date ? valor : (typeof valor === 'string' && !isNaN(Date.parse(valor)) ? new Date(valor) : null)
+    const useDate = campoDate && valorDate
+
     switch (operador) {
-      case '=': return campo == valor
+      case '=': return useDate ? campoDate.getTime() === valorDate.getTime() : campo == valor
       case '!=':
-      case '<>': return campo != valor
-      case '<': return campo < valor
-      case '>': return campo > valor
-      case '<=': return campo <= valor
-      case '>=': return campo >= valor
+      case '<>': return useDate ? campoDate.getTime() !== valorDate.getTime() : campo != valor
+      case '<': return useDate ? campoDate < valorDate : campo < valor
+      case '>': return useDate ? campoDate > valorDate : campo > valor
+      case '<=': return useDate ? campoDate <= valorDate : campo <= valor
+      case '>=': return useDate ? campoDate >= valorDate : campo >= valor
       default: return false
     }
   }
@@ -197,9 +204,12 @@ function ejecutarInsert(sql, params) {
   if (tabla === 'prestamos') {
     fila.id_prestamo = filas.reduce((max, f) => Math.max(max, Number(f.id_prestamo) || 0), 0) + 1
   }
+  if (tabla === 'reset_tokens') {
+    fila.id = filas.reduce((max, f) => Math.max(max, Number(f.id) || 0), 0) + 1
+  }
   filas.push(fila)
 
-  return { affectedRows: 1, insertId: fila.id_usuario || fila.id_prestamo || Date.now() }
+  return { affectedRows: 1, insertId: fila.id_usuario || fila.id_prestamo || fila.id || Date.now() }
 }
 
 function ejecutarUpdate(sql, params) {

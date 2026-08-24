@@ -1,54 +1,75 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import axios from "axios"
-import Swal from "sweetalert2"
 import { API_ROUTES } from "../api/apiRoutes"
+
+// Convierte Date a string YYYY-MM-DD sin problemas de zona horaria
+const toISODate = (fecha) => {
+    const y = fecha.getFullYear()
+    const m = String(fecha.getMonth() + 1).padStart(2, '0')
+    const d = String(fecha.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+}
 
 const HistorialPrestamos = () => {
     const [prestamos, setPrestamos] = useState([])
+    const [loading, setLoading] = useState(true)
     const [filter, setFilter] = useState("")
+    const [filtroEstado, setFiltroEstado] = useState("")
 
-    const handleFilterChange = (e) => {
-        setFilter(e.target.value)
-    }
-
-    const buscarHistorial = () => {
-        if (!filter) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Campo vacio',
-                text: 'Ingresa el numero de serie del equipo'
-            })
-            return
-        }
-
-        axios.get(API_ROUTES.HISTORIAL_EQUIPO(filter))
+    useEffect(() => {
+        axios.get(API_ROUTES.PRESTAMOS)
             .then(response => {
-                if (response.data.length === 0) {
-                    setPrestamos([])
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Sin registros',
-                        text: 'No se encontraron prestamos para este equipo'
-                    })
-                } else {
-                    setPrestamos(response.data)
-                }
+                setPrestamos(response.data)
+                setLoading(false)
             })
-            .catch(err => {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Hubo un problema al buscar el historial'
-                })
+            .catch(() => {
+                setLoading(false)
             })
+    }, [])
+
+    // DIAS ENTRE EL INICIO Y LA DEVOLUCION (O HOY SI SIGUE ACTIVO)
+    const getDuracion = (p) => {
+        if (!p.fecha_prestamo) return null
+        const inicio = new Date(`${String(p.fecha_prestamo).substring(0, 10)}T00:00:00`)
+        const fin = p.fecha_devolucion && p.estado === 'devuelto'
+            ? new Date(`${String(p.fecha_devolucion).substring(0, 10)}T00:00:00`)
+            : new Date(); fin.setHours(0, 0, 0, 0)
+        return Math.max(0, Math.round((fin - inicio) / 86400000))
     }
 
-    const getEstadoClass = (estado) => {
-        switch (estado) {
-            case 'activo': return 'text-bg-success'
-            case 'devuelto': return 'text-bg-secondary'
-            default: return 'text-bg-light'
-        }
+    // ESTADO DEL PRESTAMO ACTIVO RESPECTO A SU FECHA LIMITE
+    const getSituacion = (p) => {
+        if (p.estado !== 'activo' || !p.fecha_devolucion) return null
+        const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
+        const limite = new Date(`${String(p.fecha_devolucion).substring(0, 10)}T00:00:00`)
+        const dias = Math.round((limite - hoy) / 86400000)
+        if (dias < 0) return {tipo: 'vencido', dias}
+        if (dias <= 2) return {tipo: 'por_vencer', dias}
+        return null
+    }
+
+    const filteredPrestamos = prestamos.filter(p => {
+        const texto = filter.toLowerCase()
+        const matchTexto = !texto ||
+            p.num_serie?.toLowerCase().includes(texto) ||
+            p.equipo?.toLowerCase().includes(texto) ||
+            p.usuario_destino?.toLowerCase().includes(texto)
+        const matchEstado = !filtroEstado || p.estado === filtroEstado
+        return matchTexto && matchEstado
+    })
+
+    const activos = prestamos.filter(p => p.estado === 'activo').length
+    const devueltos = prestamos.length - activos
+
+    const getEstadoClass = (estado) => estado === 'activo' ? 'estado-prestamo' : 'estado-disponible'
+
+    if (loading) {
+        return (
+            <div className="text-center py-5 text-secondary">
+                <div className="spinner-border text-primary mb-2" role="status"></div>
+                <div>Cargando historial...</div>
+            </div>
+        )
     }
 
     return (
@@ -56,71 +77,97 @@ const HistorialPrestamos = () => {
             <div className="card-body">
                 <div className="module-header">
                     <h4 className="module-title mb-0">
-                        <i className="bi bi-clock-history"></i>
-                        Historial de Prestamos
+                        Historial de Préstamos
                     </h4>
-                </div>
-
-                <div className="d-flex justify-content-center mb-3">
-                    <div className="input-group" style={{ maxWidth: '600px', width: '100%' }}>
-                        <span className="input-group-text"><i className="bi bi-search"></i></span>
-                        <input
-                            type="text"
-                            className="form-control"
-                            placeholder="Buscar por numero de serie del equipo..."
-                            value={filter}
-                            onChange={handleFilterChange}
-                            onKeyDown={(e) => { if (e.key === 'Enter') buscarHistorial() }}
-                        />
-                        <button
-                            className="btn btn-primary"
-                            onClick={buscarHistorial}
-                        >
-                            <i className="bi bi-filter"></i>
-                            Buscar
-                        </button>
+                    <div className="d-flex gap-2">
+                        <span className="badge estado-prestamo">{activos} activos</span>
+                        <span className="badge estado-disponible">{devueltos} devueltos</span>
                     </div>
                 </div>
 
-                {prestamos.length === 0 ? (
+                {/* FILTROS EN VIVO */}
+                <div className="row g-2 mb-3">
+                    <div className="col-md-8">
+                        <div className="input-group">
+                            <span className="input-group-text"><i className="bi bi-search"></i></span>
+                            <input
+                                type="text"
+                                className="form-control"
+                                placeholder="Buscar por equipo, numero de serie o usuario..."
+                                value={filter}
+                                onChange={(e) => setFilter(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                    <div className="col-md-4">
+                        <select
+                            className="form-select"
+                            value={filtroEstado}
+                            onChange={(e) => setFiltroEstado(e.target.value)}
+                        >
+                            <option value="">Todos los estados</option>
+                            <option value="activo">Activos</option>
+                            <option value="devuelto">Devueltos</option>
+                        </select>
+                    </div>
+                </div>
+
+                {filteredPrestamos.length === 0 ? (
                     <div className="empty-state">
-                        <i className="bi bi-inbox"></i>
-                        <p className="mb-0">
-                            Ingresa el numero de serie de un equipo para ver su historial de prestamos.
-                        </p>
+                        <p className="text-muted my-3">No hay préstamos que coincidan con la búsqueda</p>
                     </div>
                 ) : (
                     <div className="table-responsive">
                         <table className="table table-striped table-hover align-middle">
                             <thead className="table-header">
                                 <tr>
-                                    <th>ID</th>
-                                    <th>Num Serie</th>
                                     <th>Equipo</th>
-                                    <th>Usuario Destino</th>
-                                    <th>Fecha Prestamo</th>
-                                    <th>Fecha Devolucion</th>
+                                    <th>Usuario</th>
+                                    <th>Inicio</th>
+                                    <th>Límite / Devolución</th>
+                                    <th>Duración</th>
+                                    <th>Situación</th>
                                     <th>Estado</th>
-                                    <th>Observaciones</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {prestamos.map(p => (
-                                    <tr key={p.id_prestamo}>
-                                        <td className="fw-semibold">{p.id_prestamo}</td>
-                                        <td>{p.num_serie}</td>
-                                        <td>{p.equipo || '-'}</td>
-                                        <td>{p.usuario_destino}</td>
-                                        <td>{p.fecha_prestamo?.slice(0, 10)}</td>
-                                        <td>{p.fecha_devolucion?.slice(0, 10) || 'En curso'}</td>
-                                        <td>
-                                            <span className={`badge ${getEstadoClass(p.estado)}`}>
-                                                {p.estado}
-                                            </span>
-                                        </td>
-                                        <td>{p.observaciones || '-'}</td>
-                                    </tr>
-                                ))}
+                                {filteredPrestamos.map(p => {
+                                    const duracion = getDuracion(p)
+                                    const situacion = getSituacion(p)
+                                    return (
+                                        <tr key={p.id_prestamo}>
+                                            <td>
+                                                <div className="fw-semibold">{p.equipo || '-'}</div>
+                                                <code className="equipo-card__ns">{p.num_serie}</code>
+                                            </td>
+                                            <td>{p.usuario_destino}</td>
+                                            <td>{String(p.fecha_prestamo).substring(0, 10)}</td>
+                                            <td>
+                                                {String(p.fecha_devolucion || '').substring(0, 10) || '—'}
+                                                {!p.fecha_devolucion && <small className="text-muted d-block">(sin límite)</small>}
+                                            </td>
+                                            <td>
+                                                {duracion !== null && (
+                                                    <span className="text-secondary">{duracion} día{duracion !== 1 ? 's' : ''}</span>
+                                                )}
+                                            </td>
+                                            <td>
+                                                {situacion?.tipo === 'vencido' ? (
+                                                    <span className="badge text-bg-danger">Vencido</span>
+                                                ) : situacion?.tipo === 'por_vencer' ? (
+                                                    <span className="badge text-bg-warning">Vence pronto</span>
+                                                ) : (
+                                                    <span className="text-muted small">—</span>
+                                                )}
+                                            </td>
+                                            <td>
+                                                <span className={`badge ${getEstadoClass(p.estado)}`}>
+                                                    {p.estado === 'activo' ? 'Activo' : 'Devuelto'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
                             </tbody>
                         </table>
                     </div>

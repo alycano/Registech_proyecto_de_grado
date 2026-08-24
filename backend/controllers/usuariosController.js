@@ -2,13 +2,14 @@ const usuariosService = require('../services/usuariosService')
 
 exports.login = async (req, res) => {
     try {
-        const { token, usuarioEncontrado } = await usuariosService.login(req.body.usuario, req.body.contrasena)
+        console.log('DEBUG LOGIN body:', JSON.stringify(req.body))
+        const { token, usuarioEncontrado } = await usuariosService.login(req.body.correo, req.body.contrasena)
 
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
-            maxAge: 15 * 60 * 1000 // 15 minutos en lugar de 7 días
+            maxAge: 15 * 60 * 1000
         })
 
         const auditoriaService = require('../services/auditoriaService')
@@ -30,58 +31,8 @@ exports.login = async (req, res) => {
         if (error.message === 'REQ_FIELDS') return res.status(400).json({ error: 'Usuario y contraseña son obligatorios' })
         if (error.message === 'INVALID_CREDS') return res.status(400).json({ error: 'Credenciales inválidas' })
         if (error.message === 'NOT_FOUND') return res.status(401).json({ error: 'Usuario o contraseña incorrectos' })
-        
+
         return res.status(500).json({ error: 'Error interno del servidor' })
-    }
-}
-
-const { OAuth2Client } = require('google-auth-library')
-const client = new OAuth2Client(process.env.VITE_GOOGLE_CLIENT_ID || '919637357699-bl3ophclobp87marg2if66u2lph2rdt6.apps.googleusercontent.com')
-
-exports.googleLogin = async (req, res) => {
-    const { credential } = req.body
-
-    if (!credential) {
-        return res.status(400).json({ error: 'Falta el credential' })
-    }
-
-    try {
-        const ticket = await client.verifyIdToken({
-            idToken: credential,
-            audience: process.env.VITE_GOOGLE_CLIENT_ID || '919637357699-bl3ophclobp87marg2if66u2lph2rdt6.apps.googleusercontent.com'
-        })
-
-        const payload = ticket.getPayload()
-        const { sub: googleId, email, name, picture } = payload
-
-        const { token, usuarioEncontrado } = await usuariosService.googleLogin(googleId, email, name, picture)
-
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 15 * 60 * 1000
-        })
-
-        const auditoriaService = require('../services/auditoriaService')
-        await auditoriaService.registrar(usuarioEncontrado.usuario, `Inició sesión con Google`)
-
-        return res.status(200).json({
-            mensaje: 'Login con Google exitoso',
-            token,
-            usuario: {
-                usuario: usuarioEncontrado.usuario,
-                nombre: usuarioEncontrado.nombre,
-                area: usuarioEncontrado.area,
-                correo: usuarioEncontrado.correo,
-                estado: usuarioEncontrado.estado,
-                foto: usuarioEncontrado.foto_url
-            }
-        })
-    } catch (error) {
-        console.error('Error en el login de Google:', error)
-        if (error.message === 'INACTIVE') return res.status(401).json({ error: 'Tu cuenta está inactiva' })
-        return res.status(401).json({ error: 'Token de Google inválido o expirado' })
     }
 }
 
@@ -111,7 +62,7 @@ exports.createUsuario = async (req, res) => {
         console.error('Error al agregar el usuario:', error)
         if (error.message === 'REQ_FIELDS') return res.status(400).json({ error: 'Todos los campos son obligatorios' })
         if (error.message === 'DUPLICATE') return res.status(409).json({ error: 'El nombre de usuario ya está en uso' })
-        
+
         res.status(500).json({ error: 'Error al agregar el usuario' })
     }
 }
@@ -124,7 +75,7 @@ exports.updateUsuario = async (req, res) => {
         console.error('Error al editar:', error)
         if (error.message === 'REQ_FIELDS') return res.status(400).json({ error: 'Todos los campos son obligatorios' })
         if (error.code === 'P2025') return res.status(404).json({ error: 'Usuario no encontrado' })
-        
+
         res.status(500).json({ error: 'Error al editar el usuario' })
     }
 }
@@ -136,7 +87,55 @@ exports.deleteUsuario = async (req, res) => {
     } catch (error) {
         console.error('Error al eliminar usuario:', error)
         if (error.code === 'P2025') return res.status(404).json({ error: 'Usuario no encontrado' })
-        
+
         res.status(500).json({ error: 'Error al eliminar el usuario' })
+    }
+}
+
+exports.solicitarRecuperacion = async (req, res) => {
+    try {
+        const result = await usuariosService.solicitarRecuperacion(req.body.correo)
+        res.json(result)
+    } catch (error) {
+        console.error('Error en recuperación:', error)
+        if (error.message === 'REQ_FIELDS') return res.status(400).json({ error: 'El correo es obligatorio' })
+        if (error.message === 'INVALID_EMAIL') return res.status(400).json({ error: 'Formato de correo inválido' })
+
+        res.status(500).json({ error: 'Error interno del servidor' })
+    }
+}
+
+exports.restablecerPassword = async (req, res) => {
+    try {
+        const result = await usuariosService.restablecerPassword(req.body)
+        res.json(result)
+    } catch (error) {
+        console.error('Error al restablecer contraseña:', error)
+        if (error.message === 'REQ_FIELDS') return res.status(400).json({ error: 'Correo, código y nueva contraseña son obligatorios' })
+        if (error.message === 'INVALID_EMAIL') return res.status(400).json({ error: 'Formato de correo inválido' })
+        if (error.message === 'INVALID_CODE') return res.status(400).json({ error: 'El código debe ser de 6 dígitos' })
+        if (error.message === 'SHORT_PASSWORD') return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres' })
+        if (error.message === 'NOT_FOUND') return res.status(404).json({ error: 'Correo no registrado en el sistema' })
+        if (error.message === 'INVALID_TOKEN') return res.status(400).json({ error: 'El código es inválido o ha expirado. Solicita uno nuevo.' })
+
+        res.status(500).json({ error: 'Error al restablecer la contraseña' })
+    }
+}
+
+// CAMBIO DE CONTRASENA DEL USUARIO AUTENTICADO
+exports.cambiarPassword = async (req, res) => {
+    try {
+        await usuariosService.cambiarPassword(req.usuario.usuario, req.body.contrasena_actual, req.body.contrasena_nueva)
+
+        const auditoriaService = require('../services/auditoriaService')
+        await auditoriaService.registrar(req.usuario.usuario, 'Cambio su contrasena')
+
+        res.json({ mensaje: 'Contrasena actualizada correctamente' })
+    } catch (error) {
+        if (error.message === 'CONTRASENA_INCORRECTA') return res.status(401).json({ error: 'La contrasena actual no es correcta' })
+        if (error.message === 'MISMA_CONTRASENA') return res.status(400).json({ error: 'La nueva contrasena debe ser diferente a la actual' })
+        if (error.message === 'NOT_FOUND') return res.status(404).json({ error: 'Usuario no encontrado' })
+        console.error('Error al cambiar la contrasena:', error)
+        res.status(500).json({ error: 'No se pudo cambiar la contrasena' })
     }
 }

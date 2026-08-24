@@ -3,106 +3,153 @@ import axios from "axios"
 import Swal from "sweetalert2"
 import { API_ROUTES } from "../api/apiRoutes"
 
+// Convierte Date a string YYYY-MM-DD
+const toISODate = (fecha) => {
+    const y = fecha.getFullYear()
+    const m = String(fecha.getMonth() + 1).padStart(2, '0')
+    const d = String(fecha.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+}
+
+// Dias que faltan para la fecha limite (negativo = vencido)
+const diasRestantes = (fecha) => {
+    if (!fecha) return null
+    const limite = String(fecha).substring(0, 10)
+    return Math.round((new Date(limite) - new Date(toISODate(new Date()))) / 86400000)
+}
+
 const Prestamos = () => {
     const [prestamos, setPrestamos] = useState([])
-    const [loading, setLoading] = useState(true)
-    const [modalNuevo, setModalNuevo] = useState(false)
-    const [equipos, setEquipos] = useState([])
+    const [equiposDisponibles, setEquiposDisponibles] = useState([])
     const [usuarios, setUsuarios] = useState([])
+    const [areas, setAreas] = useState([])
+    const [loading, setLoading] = useState(true)
 
-    const [equipoSeleccionado, setEquipoSeleccionado] = useState('')
+    // Filtro de búsqueda
+    const [busqueda, setBusqueda] = useState('')
+
+    // Estado del modal de préstamo
+    const [modalNuevo, setModalNuevo] = useState(false)
+    const [numSerie, setNumSerie] = useState('')
     const [usuarioDestino, setUsuarioDestino] = useState('')
+    const [areaPrestamo, setAreaPrestamo] = useState('')
+    const [fechaInicio, setFechaInicio] = useState(toISODate(new Date()))
+    const [fechaLimite, setFechaLimite] = useState(toISODate(new Date(Date.now() + 7 * 86400000)))
     const [observaciones, setObservaciones] = useState('')
+    const [enviarCorreo, setEnviarCorreo] = useState(true)
+    const [guardando, setGuardando] = useState(false)
 
     useEffect(() => {
-        cargarPrestamos()
+        cargarDatos()
     }, [])
 
-    const cargarPrestamos = () => {
+    const cargarDatos = () => {
         setLoading(true)
-        axios.get(API_ROUTES.PRESTAMOS_ACTIVOS)
-            .then(response => {
-                setPrestamos(response.data)
+        Promise.all([
+            axios.get(API_ROUTES.PRESTAMOS_ACTIVOS),
+            axios.get(API_ROUTES.EQUIPOS),
+            axios.get(API_ROUTES.OBTENER_USUARIOS),
+            axios.get(API_ROUTES.OBTENER_AREAS)
+        ])
+            .then(([resPrestamos, resEquipos, resUsuarios, resAreas]) => {
+                setPrestamos(resPrestamos.data)
+                setEquiposDisponibles(resEquipos.data.filter(e => e.estado === 'Disponible'))
+                setUsuarios(resUsuarios.data.filter(u => u.estado === 'activo'))
+                setAreas(resAreas.data)
                 setLoading(false)
             })
-            .catch(err => {
+            .catch(() => {
                 setLoading(false)
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
-                    text: 'No se pudieron obtener los prestamos'
+                    text: 'No se pudieron cargar los datos de préstamos'
                 })
             })
     }
 
     const abrirModalNuevo = () => {
-        Promise.all([
-            axios.get(API_ROUTES.EQUIPOS),
-            axios.get(API_ROUTES.OBTENER_USUARIOS)
-        ])
-            .then(([resEquipos, resUsuarios]) => {
-                setEquipos(resEquipos.data.filter(e => e.estado === 'Disponible'))
-                setUsuarios(resUsuarios.data.filter(u => u.estado === 'activo'))
-                setEquipoSeleccionado('')
-                setUsuarioDestino('')
-                setObservaciones('')
-                setModalNuevo(true)
-            })
-            .catch(err => {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'No se pudieron cargar los datos'
-                })
-            })
+        setNumSerie('')
+        setUsuarioDestino('')
+        setAreaPrestamo('')
+        setFechaInicio(toISODate(new Date()))
+        setFechaLimite(toISODate(new Date(Date.now() + 7 * 86400000)))
+        setObservaciones('')
+        setEnviarCorreo(true)
+        setModalNuevo(true)
+    }
+
+    const handleSelectEquipo = (serie) => {
+        setNumSerie(serie)
+        const eq = equiposDisponibles.find(e => e.num_serie === serie)
+        if (eq && eq.area) {
+            setAreaPrestamo(eq.area)
+        }
+    }
+
+    const handleSelectUsuario = (nombre) => {
+        setUsuarioDestino(nombre)
+        const u = usuarios.find(x => x.nombre === nombre)
+        if (u && u.area) {
+            setAreaPrestamo(u.area)
+        }
     }
 
     const crearPrestamo = () => {
-        if (!equipoSeleccionado || !usuarioDestino) {
+        if (!numSerie || !usuarioDestino) {
             Swal.fire({
-                icon: 'error',
-                title: 'Campos incompletos',
+                icon: 'warning',
+                title: 'Campos requeridos',
                 text: 'Selecciona un equipo y un usuario destino'
             })
             return
         }
 
+        setGuardando(true)
+        const obsFinal = observaciones.trim() || `Préstamo del ${fechaInicio} al ${fechaLimite}`
+
         axios.post(API_ROUTES.CREAR_PRESTAMO, {
-            num_serie: equipoSeleccionado,
+            num_serie: numSerie,
             usuario_destino: usuarioDestino,
-            observaciones
+            area: areaPrestamo,
+            fecha_inicio: fechaInicio,
+            fecha_limite: fechaLimite,
+            observaciones: obsFinal
         })
             .then(() => {
+                setModalNuevo(false)
                 Swal.fire({
                     icon: 'success',
-                    title: 'Prestamo registrado',
+                    title: 'Préstamo registrado',
+                    text: 'El equipo fue asignado correctamente',
                     timer: 2000,
                     showConfirmButton: false
                 })
-                setModalNuevo(false)
-                cargarPrestamos()
+                cargarDatos()
             })
             .catch(err => {
                 Swal.fire({
                     icon: 'error',
-                    title: 'Error al crear prestamo',
-                    text: err.response?.data?.error || 'Hubo un error'
+                    title: 'Error al registrar préstamo',
+                    text: err.response?.data?.error || 'No se pudo crear el préstamo'
                 })
             })
+            .finally(() => setGuardando(false))
     }
 
-    const devolverPrestamo = (id) => {
+    const devolverPrestamo = (id, equipoNombre) => {
         Swal.fire({
             icon: 'question',
-            title: 'Confirmar devolucion',
-            text: 'El equipo sera devuelto y quedara disponible',
+            title: '¿Confirmar devolución?',
+            text: `${equipoNombre || 'El equipo'} volverá a estar disponible`,
             showCancelButton: true,
-            confirmButtonText: 'Si, devolver',
-            cancelButtonText: 'Cancelar'
+            confirmButtonText: 'Sí, devolver',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#16a34a'
         })
             .then((result) => {
                 if (result.isConfirmed) {
-                    axios.put(API_ROUTES.DEVOLVER_PRESTAMO(id))
+                    axios.post(API_ROUTES.DEVOLVER_PRESTAMO(id))
                         .then(() => {
                             Swal.fire({
                                 icon: 'success',
@@ -110,196 +157,327 @@ const Prestamos = () => {
                                 timer: 2000,
                                 showConfirmButton: false
                             })
-                            cargarPrestamos()
+                            cargarDatos()
                         })
                         .catch(err => {
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error al devolver',
-                                text: err.response?.data?.error || 'Hubo un error'
+                                text: err.response?.data?.error || 'Hubo un error al registrar la devolución'
                             })
                         })
                 }
             })
     }
 
-    const getDiasTranscurridos = (fecha) => {
-        const hoy = new Date()
-        const inicio = new Date(fecha)
-        const diff = Math.floor((hoy - inicio) / (1000 * 60 * 60 * 24))
-        return diff
-    }
+    // Filtra la lista según el texto de búsqueda
+    const filteredPrestamos = prestamos.filter(p => {
+        const texto = busqueda.toLowerCase().trim()
+        return !texto ||
+            p.num_serie?.toLowerCase().includes(texto) ||
+            p.equipo?.toLowerCase().includes(texto) ||
+            p.usuario_destino?.toLowerCase().includes(texto) ||
+            p.observaciones?.toLowerCase().includes(texto)
+    })
 
-    const getDiasClass = (dias) => {
-        if (dias > 30) return 'text-danger fw-bold'
-        if (dias > 15) return 'text-warning'
-        return 'text-success'
-    }
+    const usuarioSeleccionadoObj = usuarios.find(u => u.nombre === usuarioDestino)
+
+    // Conteos de vencimiento para los chips del encabezado
+    const totalVencidos = prestamos.filter(p => (diasRestantes(p.fecha_devolucion) ?? 0) < 0).length
+    const totalPorVencer = prestamos.filter(p => {
+        const d = diasRestantes(p.fecha_devolucion)
+        return d !== null && d >= 0 && d <= 3
+    }).length
 
     if (loading) {
         return (
             <div className="text-center py-5 text-secondary">
                 <div className="spinner-border text-primary mb-2" role="status"></div>
-                <div>Cargando prestamos...</div>
+                <div>Cargando préstamos...</div>
             </div>
         )
     }
 
     return (
-        <div className="card">
+        <div className="card shadow-sm border">
             <div className="card-body">
-                <div className="module-header">
-                    <h4 className="module-title mb-0">
-                        <i className="bi bi-arrow-left-right"></i>
-                        Prestamos Activos
-                    </h4>
-                    <div className="d-flex gap-2 align-items-center">
-                        <span className="badge text-bg-success">{prestamos.length} activos</span>
-                        <button
-                            className="btn btn-primary btn-sm"
-                            onClick={abrirModalNuevo}
-                        >
-                            <i className="bi bi-plus-lg"></i>
-                            Nuevo Prestamo
-                        </button>
+                {/* ENCABEZADO */}
+                <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <div className="d-flex align-items-center gap-2 flex-wrap">
+                        <h4 className="mb-0 fw-bold">
+                            Préstamos Activos
+                        </h4>
+                        <span className="chip-alerta chip-alerta--ok">{prestamos.length} activos</span>
+                        {totalPorVencer > 0 && (
+                            <span className="chip-alerta chip-alerta--pronto">{totalPorVencer} por vencer</span>
+                        )}
+                        {totalVencidos > 0 && (
+                            <span className="chip-alerta chip-alerta--vencido">{totalVencidos} vencidos</span>
+                        )}
+                    </div>
+
+                    <button
+                        className="btn btn-success btn-sm"
+                        onClick={abrirModalNuevo}
+                    >
+                        + Nuevo Préstamo
+                    </button>
+                </div>
+
+                {/* BUSCADOR */}
+                <div className="mb-3">
+                    <div className="input-group">
+                        <span className="input-group-text bg-light">
+                            <i className="bi bi-search"></i>
+                        </span>
+                        <input
+                            type="text"
+                            className="form-control"
+                            placeholder="Buscar por número de serie, equipo o usuario..."
+                            value={busqueda}
+                            onChange={(e) => setBusqueda(e.target.value)}
+                        />
+                        {busqueda && (
+                            <button
+                                className="btn btn-outline-secondary"
+                                type="button"
+                                onClick={() => setBusqueda('')}
+                            >
+                                Limpiar
+                            </button>
+                        )}
                     </div>
                 </div>
 
+                {/* TABLA DE PRÉSTAMOS */}
                 <div className="table-responsive">
-                    <table className="table table-striped table-hover align-middle">
+                    <table className="table table-striped table-hover align-middle mb-0">
                         <thead className="table-header">
                             <tr>
-                                <th>Num Serie</th>
+                                <th>N/S</th>
                                 <th>Equipo</th>
                                 <th>Usuario Destino</th>
-                                <th>Fecha Prestamo</th>
-                                <th>Dias</th>
+                                <th>Área</th>
+                                <th>Fecha Inicio</th>
+                                <th>Fecha Límite</th>
                                 <th>Observaciones</th>
-                                <th>Acciones</th>
+                                <th className="text-center">Acción</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {prestamos.length === 0 ? (
+                            {filteredPrestamos.length === 0 ? (
                                 <tr>
-                                    <td colSpan="7" className="text-center py-4 text-secondary">
-                                        No hay prestamos activos
+                                    <td colSpan="8" className="text-center py-4 text-muted">
+                                        No hay préstamos registrados
                                     </td>
                                 </tr>
                             ) : (
-                                prestamos.map(p => {
-                                    const dias = getDiasTranscurridos(p.fecha_prestamo)
-                                    return (
-                                        <tr key={p.id_prestamo}>
-                                            <td className="fw-semibold">{p.num_serie}</td>
-                                            <td>{p.equipo || '-'}</td>
-                                            <td>{p.usuario_destino}</td>
-                                            <td>{p.fecha_prestamo?.slice(0, 10)}</td>
-                                            <td>
-                                                <span className={getDiasClass(dias)}>
-                                                    {dias} dias
-                                                </span>
-                                            </td>
-                                            <td>{p.observaciones || '-'}</td>
-                                            <td>
-                                                <button
-                                                    className="btn btn-sm btn-warning"
-                                                    onClick={() => devolverPrestamo(p.id_prestamo)}
-                                                >
-                                                    <i className="bi bi-arrow-return-left"></i>
-                                                    Devolver
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    )
-                                })
+                                filteredPrestamos.map(p => (
+                                    <tr key={p.id_prestamo}>
+                                        <td className="fw-semibold">
+                                            <code>{p.num_serie}</code>
+                                        </td>
+                                        <td>{p.equipo || '-'}</td>
+                                        <td>{p.usuario_destino}</td>
+                                        <td>{p.area || '-'}</td>
+                                        <td>{p.fecha_prestamo ? String(p.fecha_prestamo).substring(0, 10) : '—'}</td>
+                                        <td>
+                                            {p.fecha_devolucion ? String(p.fecha_devolucion).substring(0, 10) : '—'}
+                                            {(() => {
+                                                const d = diasRestantes(p.fecha_devolucion)
+                                                if (d === null || d > 3) return null
+                                                if (d < 0) {
+                                                    return (
+                                                        <div className="mt-1">
+                                                            <span className="chip-alerta chip-alerta--vencido">VENCIDO ({Math.abs(d)}d)</span>
+                                                        </div>
+                                                    )
+                                                }
+                                                return (
+                                                    <div className="mt-1">
+                                                        <span className="chip-alerta chip-alerta--pronto">
+                                                            {d === 0 ? 'Vence hoy' : `Vence en ${d}d`}
+                                                        </span>
+                                                    </div>
+                                                )
+                                            })()}
+                                        </td>
+                                        <td>{p.observaciones || '-'}</td>
+                                        <td className="text-center">
+                                            <button
+                                                className="btn btn-outline-success btn-sm"
+                                                onClick={() => devolverPrestamo(p.id_prestamo, p.equipo)}
+                                            >
+                                                Devolver
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
                             )}
                         </tbody>
                     </table>
                 </div>
+            </div>
 
-                {/* MODAL NUEVO PRESTAMO */}
-                {modalNuevo && (
+            {/* MODAL DE NUEVO PRÉSTAMO */}
+            {modalNuevo && (
+                <div
+                    className="modal fade show d-block"
+                    role="dialog"
+                    tabIndex="-1"
+                    style={{ display: 'block', zIndex: '1050', backgroundColor: 'rgba(0,0,0,0.5)' }}
+                    onClick={() => !guardando && setModalNuevo(false)}
+                >
                     <div
-                        className="modal fade show d-block"
-                        tabIndex="-1"
-                        style={{ display: 'block', zIndex: '1050' }}
-                        onClick={() => setModalNuevo(false)}
+                        className="modal-dialog modal-dialog-centered"
+                        onClick={(e) => e.stopPropagation()}
                     >
-                        <div
-                            className="modal-dialog modal-dialog-centered"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <div className="modal-content">
-                                <div className="modal-header">
-                                    <h5 className="modal-title">
-                                        <i className="bi bi-plus-circle me-1"></i>
-                                        Nuevo Prestamo
-                                    </h5>
-                                    <button
-                                        type="button"
-                                        className="btn-close"
-                                        onClick={() => setModalNuevo(false)}
-                                    ></button>
-                                </div>
-                                <div className="modal-body">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title fw-bold">
+                                    Registrar Préstamo
+                                </h5>
+                                <button
+                                    type="button"
+                                    className="btn-close"
+                                    onClick={() => !guardando && setModalNuevo(false)}
+                                    disabled={guardando}
+                                ></button>
+                            </div>
+
+                            <div className="modal-body">
+                                <form onSubmit={(e) => e.preventDefault()}>
+                                    {/* EQUIPO */}
                                     <div className="mb-3">
-                                        <label className="form-label">Equipo (solo disponibles)</label>
+                                        <label className="form-label fw-semibold">Equipo (Disponibles)</label>
                                         <select
                                             className="form-select"
-                                            value={equipoSeleccionado}
-                                            onChange={(e) => setEquipoSeleccionado(e.target.value)}
+                                            value={numSerie}
+                                            onChange={(e) => handleSelectEquipo(e.target.value)}
                                         >
                                             <option value="">Seleccionar equipo...</option>
-                                            {equipos.map(e => (
+                                            {equiposDisponibles.map(e => (
                                                 <option key={e.num_serie} value={e.num_serie}>
-                                                    {e.num_serie} - {e.equipo}
+                                                    {e.equipo} ({e.num_serie})
                                                 </option>
                                             ))}
                                         </select>
                                     </div>
 
+                                    {/* USUARIO DESTINO */}
                                     <div className="mb-3">
-                                        <label className="form-label">Usuario Destino</label>
+                                        <label className="form-label fw-semibold">Usuario Destino</label>
                                         <select
                                             className="form-select"
                                             value={usuarioDestino}
-                                            onChange={(e) => setUsuarioDestino(e.target.value)}
+                                            onChange={(e) => handleSelectUsuario(e.target.value)}
                                         >
                                             <option value="">Seleccionar usuario...</option>
                                             {usuarios.map(u => (
-                                                <option key={u.usuario} value={u.usuario}>
-                                                    {u.nombre} ({u.usuario})
+                                                <option key={u.usuario} value={u.nombre}>
+                                                    {u.nombre} {u.area ? `(${u.area})` : ''}
                                                 </option>
                                             ))}
                                         </select>
                                     </div>
 
+                                    {/* ÁREA */}
                                     <div className="mb-3">
-                                        <label className="form-label">Observaciones</label>
+                                        <label className="form-label fw-semibold">Área / Departamento</label>
+                                        <select
+                                            className="form-select"
+                                            value={areaPrestamo}
+                                            onChange={(e) => setAreaPrestamo(e.target.value)}
+                                        >
+                                            <option value="">Seleccionar área...</option>
+                                            {areas.map(a => (
+                                                <option key={a.area} value={a.area}>{a.area}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* FECHAS */}
+                                    <div className="row g-2 mb-3">
+                                        <div className="col-6">
+                                            <label className="form-label fw-semibold">Fecha Inicio</label>
+                                            <input
+                                                type="date"
+                                                className="form-control"
+                                                value={fechaInicio}
+                                                min={toISODate(new Date())}
+                                                onChange={(e) => {
+                                                    setFechaInicio(e.target.value)
+                                                    if (fechaLimite < e.target.value) setFechaLimite(e.target.value)
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="col-6">
+                                            <label className="form-label fw-semibold">Fecha Devolución</label>
+                                            <input
+                                                type="date"
+                                                className="form-control"
+                                                value={fechaLimite}
+                                                min={fechaInicio}
+                                                onChange={(e) => setFechaLimite(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* OBSERVACIONES */}
+                                    <div className="mb-3">
+                                        <label className="form-label fw-semibold">Observaciones</label>
                                         <textarea
                                             className="form-control"
-                                            rows="3"
+                                            rows="2"
+                                            placeholder="Opcional..."
                                             value={observaciones}
                                             onChange={(e) => setObservaciones(e.target.value)}
-                                            placeholder="Opcional..."
                                         ></textarea>
                                     </div>
 
-                                    <div className="text-center">
-                                        <button
-                                            className="btn btn-primary"
-                                            onClick={crearPrestamo}
-                                        >
-                                            <i className="bi bi-check-lg"></i>
-                                            Registrar Prestamo
-                                        </button>
+                                    {/* CHECKBOX CORREO */}
+                                    <div className="form-check mb-2">
+                                        <input
+                                            className="form-check-input"
+                                            type="checkbox"
+                                            id="checkCorreo"
+                                            checked={enviarCorreo}
+                                            onChange={(e) => setEnviarCorreo(e.target.checked)}
+                                        />
+                                        <label className="form-check-label small" htmlFor="checkCorreo">
+                                            Enviar recibo por correo electrónico al usuario
+                                        </label>
+                                        {enviarCorreo && usuarioSeleccionadoObj?.correo && (
+                                            <div className="small text-muted ps-1 mt-1">
+                                                Correo: <strong>{usuarioSeleccionadoObj.correo}</strong>
+                                            </div>
+                                        )}
                                     </div>
-                                </div>
+                                </form>
+                            </div>
+
+                            <div className="modal-footer">
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary"
+                                    onClick={() => setModalNuevo(false)}
+                                    disabled={guardando}
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn btn-primary"
+                                    onClick={crearPrestamo}
+                                    disabled={guardando || !numSerie || !usuarioDestino}
+                                >
+                                    {guardando ? 'Registrando...' : 'Registrar Préstamo'}
+                                </button>
                             </div>
                         </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     )
 }

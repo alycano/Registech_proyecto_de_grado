@@ -53,7 +53,6 @@ const Historiales = ({ usuario }) => {
             <div className="card-body">
                 <div className="module-header">
                     <h4 className="module-title mb-0">
-                        <i className="bi bi-clock-history"></i>
                         Historial de Mantenimientos
                     </h4>
                 </div>
@@ -74,7 +73,6 @@ const Historiales = ({ usuario }) => {
                             className="btn btn-primary"
                             onClick={obtenerHistorial}
                         >
-                            <i className="bi bi-filter"></i>
                             Buscar
                         </button>
                     </div>
@@ -82,9 +80,8 @@ const Historiales = ({ usuario }) => {
 
                 {mantenimientos.length === 0 ? (
                     <div className="empty-state">
-                        <i className="bi bi-inbox"></i>
-                        <p className="mb-0">
-                            Aun no hay resultados. Usa el buscador para consultar el historial.
+                        <p className="text-muted my-3">
+                            Aún no hay resultados. Usa el buscador para consultar el historial.
                         </p>
                     </div>
                 ) : (

@@ -20,7 +20,6 @@ API REST para el sistema de inventario y gestión de equipos de TI de la empresa
 | jsonwebtoken | - | Firma y verificación de tokens JWT |
 | helmet | - | Cabeceras HTTP seguras |
 | express-rate-limit | - | Límite de intentos de login |
-| google-auth-library | - | Verificación de credenciales de Google |
 
 ---
 
@@ -84,7 +83,6 @@ DB_USER=root
 DB_PASSWORD=
 DB_NAME=proyecto_final
 JWT_SECRET=registech_dev_secret_cambiar_en_produccion
-GOOGLE_CLIENT_ID=
 CLIENT_URL=http://localhost:5173
 DB_STUB=1
 ```
@@ -146,8 +144,9 @@ DB_STUB=1
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| `POST` | `/login` | Autenticar usuario (usuario + contraseña) |
-| `POST` | `/auth/google` | Autenticar con credencial de Google |
+| `POST` | `/login` | Autenticar usuario (correo + contraseña) |
+| `POST` | `/usuarios/solicitar-recuperacion` | Generar código temporal de 6 dígitos |
+| `POST` | `/usuarios/restablecer-password` | Restablecer contraseña con el código |
 | `GET` | `/usuarios` | Obtener todos los usuarios (RRHH o Tecnología) |
 | `POST` | `/usuarios` | Crear nuevo usuario (RRHH o Tecnología) |
 | `PUT` | `/usuarios/:usuarioParam` | Editar usuario existente (RRHH o Tecnología) |
@@ -338,8 +337,9 @@ npm run dev
 ### Autenticación
 | Método | Ruta | Body |
 |--------|------|------|
-| `POST` | `/login` | `{ "usuario": "...", "contrasena": "..." }` |
-| `POST` | `/auth/google` | `{ "credential": "..." }` |
+| `POST` | `/login` | `{ "correo": "...", "contrasena": "..." }` |
+| `POST` | `/usuarios/solicitar-recuperacion` | `{ "correo": "..." }` |
+| `POST` | `/usuarios/restablecer-password` | `{ "correo": "...", "codigo": "...", "nuevaContrasena": "..." }` |
 
 > Todas las demás rutas requieren el encabezado `Authorization: Bearer <token>` obtenido en el login.
 

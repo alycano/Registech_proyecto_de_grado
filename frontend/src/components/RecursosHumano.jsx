@@ -224,33 +224,29 @@ const RecursosHumanos = () => {
             <div className="card-body">
                 <div className="module-header">
                     <h4 className="module-title mb-0">
-                        <i className="bi bi-people-fill"></i>
-                        Listado de asociados
+                        Gestión de Usuarios
                     </h4>
                     <span className="badge text-bg-primary">{filteredUsuarios.length} usuarios</span>
                 </div>
 
-                {/* INPUT PARA FILTRAR USUARIOS */}
-                <div className="d-flex justify-content-start mb-3">
+                {/* INPUT PARA FILTRAR USUARIOS Y BOTON */}
+                <div className="d-flex justify-content-between align-items-center mb-3">
                     <div className="input-group" style={{ maxWidth: '400px' }}>
                         <span className="input-group-text"><i className="bi bi-search"></i></span>
                         <input
                             type="text"
                             className="form-control"
-                            placeholder="Filtrar por nombre, usuario, area o estado"
+                            placeholder="Filtrar por nombre, usuario o área..."
                             value={filter}
                             onChange={handleFilterChange}
                         />
                     </div>
-                </div>
 
-                {/* BOTON PARA AGREGAR UN NUEVO USUARIO */}
-                <div className="d-flex justify-content-end mb-3">
                     <button
-                        className="btn btn-primary"
+                        className="btn btn-primary btn-sm"
                         onClick={nuevoUsuario}
                     >
-                        <i className="bi bi-person-plus"></i> Nuevo Usuario
+                        + Nuevo Usuario
                     </button>
                 </div>
 
@@ -260,10 +256,10 @@ const RecursosHumanos = () => {
                             <tr>
                                 <th>Nombre</th>
                                 <th>Usuario</th>
-                                <th>Area</th>
+                                <th>Área</th>
                                 <th>Correo</th>
                                 <th>Estado</th>
-                                <th>Acciones</th>
+                                <th className="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -287,19 +283,19 @@ const RecursosHumanos = () => {
                                     </td>
                                     <td className="text-center">
                                         <button
-                                            className="btn btn-warning btn-sm me-1"
+                                            className="btn btn-outline-primary btn-sm me-1"
                                             onClick={() => editarUsuario(usuario)}
                                             title="Editar"
                                         >
-                                            <i className="bi bi-pencil-square"></i>
+                                            Editar
                                         </button>
 
                                         <button
-                                            className="btn btn-danger btn-sm"
+                                            className="btn btn-outline-danger btn-sm"
                                             onClick={() => borrarUsuario(usuario)}
                                             title="Eliminar"
                                         >
-                                            <i className="bi bi-trash"></i>
+                                            Eliminar
                                         </button>
                                     </td>
                                 </tr>

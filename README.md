@@ -28,7 +28,7 @@ Estructura del Backend:
 
 ### Frontend (SPA)
 - Tecnologías: React, Vite, Bootstrap 5.
-- Autenticación: Google OAuth y JWT.
+- Autenticación: JWT con usuario y contraseña creados por el administrador.
 - Funcionalidad: Rutas protegidas y renderizado condicional del dashboard dependiendo del área del usuario.
 
 ---
@@ -47,7 +47,7 @@ El sistema implementa los siguientes controles de seguridad en el backend:
 
 1. Autenticación (Auth)
    - Login con credenciales encriptadas (bcrypt).
-   - Integración de login con Google OAuth.
+   - Recuperación de contraseña mediante código temporal de verificación.
 
 2. Gestión de Usuarios y Áreas
    - CRUD de usuarios del sistema.
@@ -91,7 +91,7 @@ La API correrá en http://localhost:3000.
 cd frontend
 npm install
 
-# Configurar VITE_GOOGLE_CLIENT_ID en el archivo .env
+# Opcional: configurar VITE_API_URL en el archivo .env (por defecto http://localhost:3000/api)
 npm run dev
 ```
 La aplicación web correrá en http://localhost:5173.
