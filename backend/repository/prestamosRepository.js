@@ -21,6 +21,19 @@ exports.findPrestamosActivos = async () => {
     return rows
 }
 
+exports.findPrestamoActivoPorEquipo = async (numSerieLimpio) => {
+    const { rows } = await db.query(
+        `SELECT p.*, e.equipo, e.descripcion, e.area as equipo_area
+         FROM prestamos p
+         JOIN equipos e ON p.num_serie = e.num_serie
+         WHERE p.num_serie = $1 AND p.estado = 'activo'
+         ORDER BY p.fecha_prestamo DESC
+         LIMIT 1`,
+        [numSerieLimpio]
+    )
+    return rows[0] || null
+}
+
 // fechaInicio: dia en que inicia el prestamo (null = hoy)
 // fechaLimite: fecha de devolucion pactada; mientras el prestamo este activo se guarda
 // ahi y al registrar la devolucion real se sobrescribe con CURRENT_DATE

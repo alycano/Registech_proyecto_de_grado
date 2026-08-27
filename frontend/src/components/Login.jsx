@@ -4,6 +4,7 @@ import axios from 'axios'
 import { useNavigate } from "react-router-dom"
 import Swal from 'sweetalert2'
 import { API_ROUTES } from "../api/apiRoutes"
+import { useAuth } from "../context/AuthContext"
 
 const Login = () => {
     const [correo, setCorreo] = useState("")
@@ -23,6 +24,7 @@ const Login = () => {
     const [loadingRecuperar, setLoadingRecuperar] = useState(false)
 
     const navigate = useNavigate()
+    const { login } = useAuth()
 
     useEffect(() => {
         const correoGuardado = localStorage.getItem('registech_recordar_correo')
@@ -75,7 +77,7 @@ const Login = () => {
                 }
 
                 localStorage.setItem('token', response.data.token)
-                localStorage.setItem('usuario', JSON.stringify(response.data.usuario))
+                login(response.data.usuario)
 
                 Swal.fire({
                     icon: 'success',
@@ -195,8 +197,9 @@ const Login = () => {
             return
         }
 
-        if (nuevaContrasena.length < 6) {
-            Swal.fire({ icon: 'warning', title: 'Contraseña muy corta', text: 'La nueva contraseña debe tener al menos 6 caracteres' })
+        const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=\[\]{};':"\\|,.<>\/?]).{8,}$/
+        if (!PASSWORD_REGEX.test(nuevaContrasena)) {
+            Swal.fire({ icon: 'warning', title: 'Contraseña débil', text: 'Mínimo 8 caracteres, 1 mayúscula, 1 minúscula, 1 número y 1 símbolo (!@#$%^&* etc.)' })
             return
         }
 

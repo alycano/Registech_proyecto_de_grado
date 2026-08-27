@@ -35,15 +35,57 @@ exports.exportarEquipos = async (req, res) => {
              FROM equipos ORDER BY num_serie`
         )
 
-        const header = 'Num Serie,Equipo,Area,Descripcion,Estado,Responsable,Fecha Adquisicion,Fecha Asignacion\n'
-        const csv = rows.map(r =>
-            [r.num_serie, r.equipo, r.area, `"${(r.descripcion||'').replace(/"/g,'""')}"`,
-             r.estado, r.responsable||'', r.fecha_adquisicion, r.fecha_asignacion].join(',')
-        ).join('\n')
+        const ExcelJS = require('exceljs')
+        const workbook = new ExcelJS.Workbook()
+        workbook.creator = 'RegisTech'
+        workbook.created = new Date()
 
-        res.setHeader('Content-Type', 'text/csv; charset=utf-8')
-        res.setHeader('Content-Disposition', 'attachment; filename=equipos_registech.csv')
-        res.send('\uFEFF' + header + csv)
+        const sheet = workbook.addWorksheet('Inventario de Equipos', {
+            properties: { defaultColWidth: 18 }
+        })
+
+        sheet.columns = [
+            { header: 'Num Serie', key: 'num_serie', width: 20 },
+            { header: 'Equipo', key: 'equipo', width: 25 },
+            { header: 'Area', key: 'area', width: 20 },
+            { header: 'Descripcion', key: 'descripcion', width: 35 },
+            { header: 'Estado', key: 'estado', width: 18 },
+            { header: 'Responsable', key: 'responsable', width: 22 },
+            { header: 'Fecha Adquisicion', key: 'fecha_adquisicion', width: 20 },
+            { header: 'Fecha Asignacion', key: 'fecha_asignacion', width: 20 },
+        ]
+
+        const headerRow = sheet.getRow(1)
+        headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } }
+        headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } }
+        headerRow.alignment = { horizontal: 'center' }
+
+        rows.forEach(row => {
+            const r = sheet.addRow(row)
+            r.eachCell(cell => {
+                cell.alignment = { vertical: 'middle' }
+            })
+        })
+
+        const colores = {
+            'Disponible': 'FF22C55E',
+            'Asignado': 'FF3B82F6',
+            'En mantenimiento': 'FFEF4444',
+            'Baja': 'FF6B7280',
+        }
+        for (let i = 2; i <= sheet.rowCount; i++) {
+            const cell = sheet.getRow(i).getCell('estado')
+            const val = String(cell.value || '')
+            if (colores[val]) {
+                cell.font = { bold: true, color: { argb: colores[val] } }
+            }
+        }
+
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        res.setHeader('Content-Disposition', 'attachment; filename=equipos_registech.xlsx')
+
+        await workbook.xlsx.write(res)
+        res.end()
     } catch (error) {
         console.error('Error al exportar:', error)
         res.status(500).json({ error: 'Error al exportar' })

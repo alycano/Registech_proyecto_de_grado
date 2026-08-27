@@ -10,7 +10,7 @@ const {
     restablecerPassword,
     cambiarPassword
 } = require('../controllers/usuariosController')
-const { authMiddleware } = require('../middlewares/auth')
+const { authMiddleware, requireRol } = require('../middlewares/auth')
 const { validate } = require('../middlewares/validate')
 const { loginSchema, crearUsuarioSchema, actualizarUsuarioSchema, cambiarPasswordSchema } = require('../schemas/usuarios.schema')
 
@@ -19,8 +19,8 @@ router.post('/usuarios/solicitar-recuperacion', solicitarRecuperacion)
 router.post('/usuarios/restablecer-password', restablecerPassword)
 router.post('/usuarios/cambiar-password', authMiddleware, validate(cambiarPasswordSchema), cambiarPassword)
 router.get('/usuarios', authMiddleware, getUsuarios)
-router.post('/usuarios', authMiddleware, validate(crearUsuarioSchema), createUsuario)
-router.put('/usuarios/:usuario', authMiddleware, validate(actualizarUsuarioSchema), updateUsuario)
-router.delete('/usuarios/:usuario', authMiddleware, deleteUsuario)
+router.post('/usuarios', authMiddleware, requireRol('admin'), validate(crearUsuarioSchema), createUsuario)
+router.put('/usuarios/:usuario', authMiddleware, requireRol('admin'), validate(actualizarUsuarioSchema), updateUsuario)
+router.delete('/usuarios/:usuario', authMiddleware, requireRol('admin'), deleteUsuario)
 
 module.exports = router

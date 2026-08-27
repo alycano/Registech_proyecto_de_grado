@@ -4,6 +4,7 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearSca
 import axios from 'axios'
 import Swal from 'sweetalert2'
 import { API_ROUTES } from '../../api/apiRoutes'
+import { useAuth } from '../../context/AuthContext'
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement)
 
@@ -53,6 +54,7 @@ function getActivityColor(accion) {
 }
 
 export default function DashboardAdmin() {
+    const { usuario } = useAuth()
     const [data, setData] = useState(null)
     const [actividad, setActividad] = useState([])
     const [solicitudes, setSolicitudes] = useState([])
@@ -62,16 +64,28 @@ export default function DashboardAdmin() {
     const [loading, setLoading] = useState(true)
     const ROWS = 5
 
-    const cargarOrdenes = () => axios.get(API_ROUTES.OBTENER_MANTENIMIENTOS)
-        .then(o => setOrdenes(o.data)).catch(() => {})
+    const rol = usuario?.rol
+
+    const cargarOrdenes = () => {
+        if (rol === 'admin' || rol === 'sistemas') {
+            return axios.get(API_ROUTES.OBTENER_MANTENIMIENTOS).then(o => setOrdenes(o.data)).catch(() => {})
+        }
+        return Promise.resolve()
+    }
 
     useEffect(() => {
-        Promise.all([
+        const promises = [
             axios.get(API_ROUTES.DASHBOARD),
             axios.get(API_ROUTES.ACTIVIDAD).catch(() => ({ data: [] })),
-            axios.get(API_ROUTES.SOLICITUDES).catch(() => ({ data: [] })),
-            cargarOrdenes(),
-        ]).then(([d, a, s]) => {
+        ]
+        if (rol === 'admin') {
+            promises.push(axios.get(API_ROUTES.SOLICITUDES).catch(() => ({ data: [] })))
+        } else {
+            promises.push(Promise.resolve({ data: [] }))
+        }
+        promises.push(cargarOrdenes())
+
+        Promise.all(promises).then(([d, a, s]) => {
             setData(d.data)
             setActividad(a.data)
             setSolicitudes(s.data)
@@ -109,22 +123,18 @@ export default function DashboardAdmin() {
     }
 
     const handleExportar = () => {
-        const token = localStorage.getItem('token')
-        axios.get(API_ROUTES.EXPORTAR_EQUIPOS, {
-            responseType: 'blob',
-            headers: { Authorization: `Bearer ${token}` },
-        }).then(res => {
+        axios.get(API_ROUTES.EXPORTAR_EQUIPOS, { responseType: 'blob' }).then(res => {
             const url = window.URL.createObjectURL(new Blob([res.data]))
             const a = document.createElement('a')
             a.href = url
-            a.download = 'equipos_registech.csv'
+            a.download = 'equipos_registech.xlsx'
             a.click()
             window.URL.revokeObjectURL(url)
         })
     }
 
     const handleResponder = (id, estado) => {
-        axios.put(API_ROUTES.RESponder_SOLICITUD(id), { estado })
+        axios.put(API_ROUTES.RESPONDER_SOLICITUD(id), { estado, respuesta: estado === 'aprobada' ? 'Solicitud aprobada' : 'Solicitud rechazada' })
             .then(() => {
                 setSolicitudes(prev => prev.map(s =>
                     s.id_solicitud === id ? { ...s, estado } : s
@@ -154,11 +164,15 @@ export default function DashboardAdmin() {
         }],
     }
 
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+    const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'
+    const textColor = isDark ? '#94a3b8' : '#475569'
+
     const donutOpts = {
         responsive: true,
         maintainAspectRatio: false,
         cutout: '65%',
-        plugins: { legend: { position: 'bottom', labels: { padding: 14, usePointStyle: true, pointStyleWidth: 8, font: { size: 11 } } } },
+        plugins: { legend: { position: 'bottom', labels: { padding: 14, usePointStyle: true, pointStyleWidth: 8, font: { size: 11 }, color: textColor } } },
     }
 
     const barColors = ['#3b82f6', '#8b5cf6', '#06b6d4', '#f59e0b', '#ef4444', '#ec4899']
@@ -178,8 +192,8 @@ export default function DashboardAdmin() {
         maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-            y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.04)' }, border: { display: false } },
-            x: { grid: { display: false }, border: { display: false } },
+            y: { beginAtZero: true, ticks: { stepSize: 1, color: textColor }, grid: { color: gridColor }, border: { display: false } },
+            x: { grid: { display: false }, border: { display: false }, ticks: { color: textColor } },
         },
     }
 
@@ -192,12 +206,18 @@ export default function DashboardAdmin() {
         <div className="dashboard-admin">
             <div className="dashboard-admin__header">
                 <div>
-                    <h2 className="dashboard-admin__title">Panel de Control</h2>
-                    <p className="dashboard-admin__subtitle">Vista general del sistema</p>
+                    <h2 className="dashboard-admin__title">
+                        {rol === 'sistemas' ? 'Panel de Mantenimiento' : rol === 'inventario' ? 'Panel de Inventario' : 'Panel de Control'}
+                    </h2>
+                    <p className="dashboard-admin__subtitle">
+                        {rol === 'sistemas' ? 'Gestión de órdenes y mantenimiento' : rol === 'inventario' ? 'Vista general de equipos y préstamos' : 'Vista general del sistema'}
+                    </p>
                 </div>
-                <button className="btn btn-sm btn-outline-primary rounded-pill" onClick={handleExportar}>
-                    <i className="bi bi-download me-1"></i>Exportar CSV
-                </button>
+                {rol === 'admin' && (
+                    <button className="btn btn-sm btn-outline-primary rounded-pill" onClick={handleExportar}>
+                        <i className="bi bi-download me-1"></i>Exportar Excel
+                    </button>
+                )}
             </div>
 
             <div className="row g-3 mb-4">
@@ -261,7 +281,7 @@ export default function DashboardAdmin() {
                 </div>
             </div>
 
-            {ordenes.filter(o => o.estado_orden === 'pendiente').length > 0 && (
+            {(rol === 'admin' || rol === 'sistemas') && ordenes.filter(o => o.estado_orden === 'pendiente').length > 0 && (
                 <div className="table-card mb-4">
                     <div className="table-card__header">
                         <h5 className="chart-card__title mb-0">
@@ -330,7 +350,8 @@ export default function DashboardAdmin() {
             )}
 
             <div className="row g-4 cards-equal-row">
-                <div className="col-lg-7">
+                {rol !== 'sistemas' && (
+                <div className={rol === 'admin' ? 'col-lg-7' : 'col-lg-12'}>
                     <div className="table-card">
                         <div className="table-card__header">
                             <h5 className="chart-card__title mb-0">Prestamos Recientes</h5>
@@ -358,10 +379,7 @@ export default function DashboardAdmin() {
                                                     <td><span className="dept-tag">{p.equipo_area}</span></td>
                                                     <td>{formatDate(p.fecha_prestamo)}</td>
                                                     <td>
-                                                        <span className="status-badge" style={{
-                                                            color: p.estado === 'activo' ? '#22c55e' : '#6b7280',
-                                                            background: p.estado === 'activo' ? '#f0fdf4' : '#f9fafb'
-                                                        }}>{p.estado}</span>
+                                                        <span className={`badge ${p.estado === 'activo' ? 'estado-prestamo' : 'estado-disponible'}`}>{p.estado}</span>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -381,6 +399,8 @@ export default function DashboardAdmin() {
                         )}
                     </div>
                 </div>
+                )}
+                {rol === 'admin' && (
                 <div className="col-lg-5">
                     <div className="table-card">
                         <div className="table-card__header">
@@ -407,11 +427,8 @@ export default function DashboardAdmin() {
                                                 <td><strong>{s.tipo_equipo}</strong></td>
                                                 <td>{s.usuario_solicita}</td>
                                                 <td><small className="text-muted">{s.justificacion || '-'}</small></td>
-                                                <td>
-                                                    <span className="status-badge" style={{
-                                                        color: s.estado === 'aprobada' ? '#22c55e' : s.estado === 'rechazada' ? '#ef4444' : '#f59e0b',
-                                                        background: s.estado === 'aprobada' ? '#f0fdf4' : s.estado === 'rechazada' ? '#fef2f2' : '#fffbeb'
-                                                    }}>{s.estado}</span>
+                                                    <td>
+                                                    <span className={`badge ${s.estado === 'aprobada' ? 'estado-disponible' : s.estado === 'rechazada' ? 'estado-baja' : 'estado-mantenimiento'}`}>{s.estado}</span>
                                                 </td>
                                                 <td>
                                                     {s.estado === 'pendiente' && (
@@ -433,6 +450,7 @@ export default function DashboardAdmin() {
                         )}
                     </div>
                 </div>
+                )}
             </div>
 
             {fotoAmpliada && (
@@ -445,7 +463,7 @@ export default function DashboardAdmin() {
                     <div className="modal-dialog modal-lg modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-content bg-transparent border-0">
                             <div className="text-end mb-2">
-                                <button className="btn btn-sm btn-light rounded-pill" onClick={() => setFotoAmpliada(null)}>
+                                <button className="btn btn-sm btn-outline-light rounded-pill" onClick={() => setFotoAmpliada(null)}>
                                     <i className="bi bi-x-lg me-1"></i>Cerrar
                                 </button>
                             </div>

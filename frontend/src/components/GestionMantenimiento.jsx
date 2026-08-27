@@ -5,7 +5,7 @@ import Historiales from "./Historiales"
 import { API_ROUTES } from "../api/apiRoutes"
 
 const GestionMantenimiento = ({ usuario }) => {
-    const esAdmin = usuario?.area === 'Tecnologia'
+    const esAdmin = usuario?.rol === 'admin'
 
     const [vista, setVista] = useState('activas')
     const [kpis, setKpis] = useState(null)

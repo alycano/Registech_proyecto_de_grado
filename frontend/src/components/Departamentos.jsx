@@ -4,7 +4,7 @@ import Swal from "sweetalert2"
 import { API_ROUTES } from "../api/apiRoutes"
 
 const Departamentos = ({ usuario }) => {
-    const esAdmin = usuario?.area === 'Tecnologia'
+    const esAdmin = usuario?.rol === 'admin'
 
     const [areas, setAreas] = useState([])
     const [equipos, setEquipos] = useState([])

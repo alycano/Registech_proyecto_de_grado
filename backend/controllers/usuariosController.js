@@ -1,9 +1,11 @@
 const usuariosService = require('../services/usuariosService')
+const crypto = require('crypto')
+const { generarTokenCsrf } = require('../middlewares/csrf')
 
 exports.login = async (req, res) => {
     try {
-        console.log('DEBUG LOGIN body:', JSON.stringify(req.body))
-        const { token, usuarioEncontrado } = await usuariosService.login(req.body.correo, req.body.contrasena)
+        const { correo, contrasena } = req.body
+        const { token, usuarioEncontrado } = await usuariosService.login(correo, contrasena)
 
         res.cookie('token', token, {
             httpOnly: true,
@@ -12,16 +14,28 @@ exports.login = async (req, res) => {
             maxAge: 15 * 60 * 1000
         })
 
+        const sessionId = crypto.randomBytes(16).toString('hex')
+        const csrfToken = generarTokenCsrf(sessionId)
+
+        res.cookie('session_id', sessionId, {
+            httpOnly: false,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 1000
+        })
+
         const auditoriaService = require('../services/auditoriaService')
         await auditoriaService.registrar(usuarioEncontrado.usuario, `Inició sesión en el sistema`)
 
         return res.status(200).json({
             mensaje: 'Login exitoso',
             token,
+            csrf_token: csrfToken,
             usuario: {
                 usuario: usuarioEncontrado.usuario,
                 nombre: usuarioEncontrado.nombre,
                 area: usuarioEncontrado.area,
+                rol: usuarioEncontrado.rol,
                 correo: usuarioEncontrado.correo,
                 estado: usuarioEncontrado.estado
             }
@@ -114,7 +128,7 @@ exports.restablecerPassword = async (req, res) => {
         if (error.message === 'REQ_FIELDS') return res.status(400).json({ error: 'Correo, código y nueva contraseña son obligatorios' })
         if (error.message === 'INVALID_EMAIL') return res.status(400).json({ error: 'Formato de correo inválido' })
         if (error.message === 'INVALID_CODE') return res.status(400).json({ error: 'El código debe ser de 6 dígitos' })
-        if (error.message === 'SHORT_PASSWORD') return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres' })
+        if (error.message === 'SHORT_PASSWORD') return res.status(400).json({ error: 'La contraseña debe tener mínimo 8 caracteres, 1 mayúscula, 1 minúscula, 1 número y 1 símbolo' })
         if (error.message === 'NOT_FOUND') return res.status(404).json({ error: 'Correo no registrado en el sistema' })
         if (error.message === 'INVALID_TOKEN') return res.status(400).json({ error: 'El código es inválido o ha expirado. Solicita uno nuevo.' })
 
