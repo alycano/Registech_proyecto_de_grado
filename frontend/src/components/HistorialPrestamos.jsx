@@ -118,7 +118,7 @@ const HistorialPrestamos = () => {
                                     <th>Inicio</th>
                                     <th>Límite / Devolución</th>
                                     <th>Duración</th>
-                                    <th>Situación</th>
+                                    <th>Detalles / Evidencia</th>
                                     <th>Estado</th>
                                 </tr>
                             </thead>
@@ -144,12 +144,18 @@ const HistorialPrestamos = () => {
                                                 )}
                                             </td>
                                             <td>
-                                                {situacion?.tipo === 'vencido' ? (
-                                                    <span className="badge text-bg-danger">Vencido</span>
-                                                ) : situacion?.tipo === 'por_vencer' ? (
-                                                    <span className="badge text-bg-warning">Vence pronto</span>
-                                                ) : (
-                                                    <span className="text-muted small">—</span>
+                                                <div style={{ maxWidth: '180px', fontSize: '0.85rem' }}>
+                                                    {p.observaciones ? <span className="text-muted">{p.observaciones}</span> : <span className="text-muted fst-italic">Sin observaciones</span>}
+                                                </div>
+                                                {p.evidencia && (
+                                                    <a 
+                                                        href={API_ROUTES.ARCHIVO_EVIDENCIA(p.evidencia)} 
+                                                        target="_blank" 
+                                                        rel="noreferrer" 
+                                                        className="btn btn-sm btn-outline-primary mt-1"
+                                                    >
+                                                        <i className="bi bi-image me-1"></i> Ver Foto
+                                                    </a>
                                                 )}
                                             </td>
                                             <td>

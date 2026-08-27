@@ -139,17 +139,38 @@ const Prestamos = () => {
 
     const devolverPrestamo = (id, equipoNombre) => {
         Swal.fire({
-            icon: 'question',
-            title: '¿Confirmar devolución?',
-            text: `${equipoNombre || 'El equipo'} volverá a estar disponible`,
+            title: 'Confirmar devolución',
+            html: `
+                <p class="mb-3">${equipoNombre || 'El equipo'} volverá a estar disponible.</p>
+                <div class="mb-3 text-start">
+                    <label class="form-label fw-bold text-muted small">Observaciones al entregar (Opcional)</label>
+                    <textarea id="obs-devolucion" class="form-control form-control-sm" rows="2" placeholder="Ej. El equipo se entregó sin una tecla..."></textarea>
+                </div>
+                <div class="mb-3 text-start">
+                    <label class="form-label fw-bold text-muted small">Evidencia fotográfica (Opcional)</label>
+                    <input type="file" id="evidencia-devolucion" class="form-control form-control-sm" accept="image/*">
+                </div>
+            `,
             showCancelButton: true,
             confirmButtonText: 'Sí, devolver',
             cancelButtonText: 'Cancelar',
-            confirmButtonColor: '#16a34a'
+            confirmButtonColor: '#16a34a',
+            preConfirm: () => {
+                const obs = document.getElementById('obs-devolucion').value;
+                const fileInput = document.getElementById('evidencia-devolucion');
+                const file = fileInput.files.length > 0 ? fileInput.files[0] : null;
+                return { obs, file };
+            }
         })
             .then((result) => {
                 if (result.isConfirmed) {
-                    axios.post(API_ROUTES.DEVOLVER_PRESTAMO(id))
+                    const formData = new FormData();
+                    if (result.value.obs) formData.append('observaciones', result.value.obs);
+                    if (result.value.file) formData.append('evidencia', result.value.file);
+
+                    axios.post(API_ROUTES.DEVOLVER_PRESTAMO(id), formData, {
+                        headers: { 'Content-Type': 'multipart/form-data' }
+                    })
                         .then(() => {
                             Swal.fire({
                                 icon: 'success',

@@ -52,6 +52,7 @@ model prestamos {
   fecha_devolucion DateTime? @db.Date
   estado           String    @default("activo") @db.VarChar(20)
   observaciones    String?
+  evidencia        String?   @db.VarChar(255)
   equipos          equipos   @relation(fields: [num_serie], references: [num_serie], onDelete: NoAction, onUpdate: NoAction)
 }
 

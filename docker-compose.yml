@@ -19,4 +19,7 @@ services:
     container_name: frontend-1
     ports:
       - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     restart: always
