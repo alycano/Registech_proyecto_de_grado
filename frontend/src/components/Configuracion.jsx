@@ -33,8 +33,9 @@ const Configuracion = ({ usuario }) => {
             Swal.fire({ icon: 'warning', title: 'Campos incompletos', text: 'Completa la contraseña actual y la nueva' })
             return
         }
-        if (contrasenaNueva.length < 6) {
-            Swal.fire({ icon: 'warning', title: 'Contraseña muy corta', text: 'La nueva contraseña debe tener al menos 6 caracteres' })
+        const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=\[\]{};':"\\|,.<>\/?]).{8,}$/
+        if (!PASSWORD_REGEX.test(contrasenaNueva)) {
+            Swal.fire({ icon: 'warning', title: 'Contraseña débil', text: 'Mínimo 8 caracteres, 1 mayúscula, 1 minúscula, 1 número y 1 símbolo (!@#$%^&* etc.)' })
             return
         }
         if (contrasenaNueva !== confirmar) {
@@ -87,7 +88,7 @@ const Configuracion = ({ usuario }) => {
                             <div className="d-flex align-items-center gap-3 mb-3">
                                 <div
                                     className="d-flex align-items-center justify-content-center fw-bold rounded-circle"
-                                    style={{ width: '64px', height: '64px', background: '#dbeafe', color: '#1e40af', fontSize: '1.4rem' }}
+                                    style={{ width: '64px', height: '64px', background: 'var(--brand)', color: '#fff', fontSize: '1.4rem' }}
                                 >
                                     {iniciales}
                                 </div>
@@ -107,9 +108,9 @@ const Configuracion = ({ usuario }) => {
                                     </tr>
                                     <tr>
                                         <td className="text-secondary">
-                                            <i className="bi bi-building me-2"></i>Departamento
+                                            <i className="bi bi-building me-2"></i>Rol
                                         </td>
-                                        <td><span className="badge bg-secondary-subtle text-secondary-emphasis">{usuario?.area}</span></td>
+                                        <td><span className="badge bg-secondary-subtle text-secondary-emphasis">{usuario?.rol ? usuario.rol.charAt(0).toUpperCase() + usuario.rol.slice(1) : ''}</span></td>
                                     </tr>
                                 </tbody>
                             </table>

@@ -12,16 +12,16 @@ exports.findByCorreo = async (correo) => {
 
 exports.findAll = async () => {
     const { rows } = await db.query(
-        'SELECT usuario, nombre, area, correo, estado FROM usuarios'
+        'SELECT usuario, nombre, area, rol, correo, estado FROM usuarios'
     )
     return rows
 }
 
 exports.create = async (data) => {
     const { rows } = await db.query(
-        `INSERT INTO usuarios (usuario, nombre, correo, contrasena, area, estado)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [data.usuario, data.nombre, data.correo, data.contrasena, data.area, data.estado || 'activo']
+        `INSERT INTO usuarios (usuario, nombre, correo, contrasena, area, rol, estado)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [data.usuario, data.nombre, data.correo, data.contrasena, data.area, data.rol || 'inventario', data.estado || 'activo']
     )
     return rows[0]
 }

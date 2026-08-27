@@ -2,6 +2,15 @@ import axios from 'axios'
 
 axios.defaults.withCredentials = true
 
+function getCsrfToken() {
+    return localStorage.getItem('csrf_token')
+}
+
+function getCookie(name) {
+    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
+    return match ? match[2] : null
+}
+
 axios.interceptors.request.use((config) => {
     const token = localStorage.getItem('token')
 
@@ -9,16 +18,43 @@ axios.interceptors.request.use((config) => {
         config.headers.Authorization = `Bearer ${token}`
     }
 
+    const method = config.method?.toUpperCase()
+    if (method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH') {
+        const csrf = getCsrfToken() || getCookie('csrf_token')
+        if (csrf) {
+            config.headers['X-CSRF-Token'] = csrf
+        }
+    }
+
     return config
 })
 
 axios.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        const newCsrf = response.data?.csrf_token
+        if (newCsrf) {
+            localStorage.setItem('csrf_token', newCsrf)
+        }
+        const newToken = response.headers['x-refresh-token']
+        if (newToken) {
+            localStorage.setItem('token', newToken)
+        }
+        return response
+    },
     (error) => {
-        if (error.response && error.response.status === 401) {
-            localStorage.removeItem('token')
-            localStorage.removeItem('usuario')
-            window.location.href = '/login'
+        const url = error?.config?.url || ''
+        const esLogin = url.includes('/login') || url.includes('/solicitar-recuperacion') || url.includes('/restablecer-password')
+        if (error.response) {
+            if (error.response.status === 401 && !esLogin) {
+                localStorage.removeItem('token')
+                localStorage.removeItem('usuario')
+                localStorage.removeItem('csrf_token')
+                window.location.href = '/login'
+            }
+            if (error.response.status === 403 && error.response.data?.error?.includes('CSRF')) {
+                localStorage.removeItem('csrf_token')
+                window.location.href = '/login'
+            }
         }
         return Promise.reject(error)
     }
@@ -51,6 +87,7 @@ export const API_ROUTES = {
     CAMBIAR_PASSWORD: `${BASE_URL}/usuarios/cambiar-password`,
     PRESTAMOS: `${BASE_URL}/prestamos`,
     PRESTAMOS_ACTIVOS: `${BASE_URL}/prestamos/activos`,
+    PRESTAMOS_ACTIVOS_POR_EQUIPO: (num_serie) => `${BASE_URL}/prestamos/activos/${encodeURIComponent(num_serie)}`,
     CREAR_PRESTAMO: `${BASE_URL}/prestamos`,
     DEVOLVER_PRESTAMO: (id) => `${BASE_URL}/prestamos/${id}/devolver`,
     HISTORIAL_EQUIPO: (num_serie) => `${BASE_URL}/prestamos/historial/${num_serie}`,
@@ -60,5 +97,7 @@ export const API_ROUTES = {
     ACTIVIDAD: `${BASE_URL}/actividad`,
     SOLICITUDES: `${BASE_URL}/solicitudes`,
     MIS_SOLICITUDES: `${BASE_URL}/solicitudes/mis`,
-    RESponder_SOLICITUD: (id) => `${BASE_URL}/solicitudes/${id}/responder`,
+    RESPONDER_SOLICITUD: (id) => `${BASE_URL}/solicitudes/${id}/responder`,
+    APROBACION_ORDEN: `${BASE_URL}/equipos/reporte/aprobacion`,
+    NOTIFICACIONES: `${BASE_URL}/notificaciones`,
 }

@@ -3,21 +3,8 @@ import axios from "axios"
 import Swal from "sweetalert2"
 import { API_ROUTES } from "../api/apiRoutes"
 
-// Genera y descarga un CSV con BOM para que Excel lo abra bien
-const descargarCSV = (nombreArchivo, cabecera, filas) => {
-    const escapar = (valor) => `"${String(valor ?? '').replace(/"/g, '""')}"`
-    const csv = '\uFEFF' + [cabecera, ...filas].map(fila => fila.map(escapar).join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = nombreArchivo
-    link.click()
-    URL.revokeObjectURL(url)
-}
-
 const Reportes = ({ usuario }) => {
-    const esAdmin = usuario?.area === 'Tecnologia'
+    const esAdmin = usuario?.rol === 'admin'
 
     const [conteos, setConteos] = useState({})
     const [descargando, setDescargando] = useState('')
@@ -36,7 +23,6 @@ const Reportes = ({ usuario }) => {
         Promise.all(peticiones)
     }, [esAdmin])
 
-    // INVENTARIO DE EQUIPOS (CSV GENERADO POR EL BACKEND)
     const descargarEquipos = () => {
         setDescargando('equipos')
         axios.get(API_ROUTES.EXPORTAR_EQUIPOS, { responseType: 'blob' })
@@ -44,7 +30,7 @@ const Reportes = ({ usuario }) => {
                 const url = URL.createObjectURL(res.data)
                 const link = document.createElement('a')
                 link.href = url
-                link.download = `inventario_equipos_${new Date().toISOString().slice(0, 10)}.csv`
+                link.download = `inventario_equipos_${new Date().toISOString().slice(0, 10)}.xlsx`
                 link.click()
                 URL.revokeObjectURL(url)
             })
@@ -54,13 +40,41 @@ const Reportes = ({ usuario }) => {
             .finally(() => setDescargando(''))
     }
 
-    // PRESTAMOS (CSV CLIENTE)
+    const descargarExcel = (nombreArchivo, cabecera, filas) => {
+        const escapar = (v) => String(v ?? '')
+        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+        xml += '<?mso-application progid="Excel.Sheet"?>\n'
+        xml += '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"\n'
+        xml += '  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n'
+        xml += '  <Styles>\n'
+        xml += '    <Style ss:ID="hdr"><Font ss:Bold="1" ss:Color="#FFFFFF"/><Interior ss:Color="#2563EB" ss:Pattern="Solid"/></Style>\n'
+        xml += '  </Styles>\n'
+        xml += '  <Worksheet ss:Name="Hoja1">\n'
+        xml += '    <Table>\n'
+        xml += '      <Row>\n'
+        cabecera.forEach(h => { xml += `        <Cell ss:StyleID="hdr"><Data ss:Type="String">${escapar(h)}</Data></Cell>\n` })
+        xml += '      </Row>\n'
+        filas.forEach(fila => {
+            xml += '      <Row>\n'
+            fila.forEach(v => { xml += `        <Cell><Data ss:Type="String">${escapar(v)}</Data></Cell>\n` })
+            xml += '      </Row>\n'
+        })
+        xml += '    </Table>\n  </Worksheet>\n</Workbook>'
+        const blob = new Blob([xml], { type: 'application/vnd.ms-excel' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = nombreArchivo
+        link.click()
+        URL.revokeObjectURL(url)
+    }
+
     const descargarPrestamos = () => {
         setDescargando('prestamos')
         axios.get(API_ROUTES.PRESTAMOS)
             .then(res => {
-                descargarCSV(
-                    `prestamos_${new Date().toISOString().slice(0, 10)}.csv`,
+                descargarExcel(
+                    `prestamos_${new Date().toISOString().slice(0, 10)}.xls`,
                     ['ID Prestamo', 'Num Serie', 'Equipo', 'Usuario Destino', 'Area', 'Fecha Inicio', 'Fecha Limite/Devolucion', 'Estado', 'Observaciones'],
                     res.data.map(p => [
                         p.id_prestamo, p.num_serie, p.equipo || '', p.usuario_destino,
@@ -69,22 +83,21 @@ const Reportes = ({ usuario }) => {
                     ])
                 )
                 if (res.data.length === 0) {
-                    Swal.fire({ icon: 'info', title: 'Sin datos', text: 'No hay préstamos registrados todavía' })
+                    Swal.fire({ icon: 'info', title: 'Sin datos', text: 'No hay prestamos registrados todavia' })
                 }
             })
             .catch(() => {
-                Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo generar el reporte de préstamos' })
+                Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo generar el reporte de prestamos' })
             })
             .finally(() => setDescargando(''))
     }
 
-    // MANTENIMIENTOS (CSV CLIENTE, SOLO ADMIN)
     const descargarMantenimientos = () => {
         setDescargando('mantenimientos')
         axios.get(API_ROUTES.HISTORIAL_MANTENIMIENTOS)
             .then(res => {
-                descargarCSV(
-                    `mantenimientos_${new Date().toISOString().slice(0, 10)}.csv`,
+                descargarExcel(
+                    `mantenimientos_${new Date().toISOString().slice(0, 10)}.xls`,
                     ['ID Orden', 'Num Serie', 'Equipo', 'Falla', 'Estado Orden', 'Aprobada Por', 'Fecha Aprobacion', 'Tecnico', 'Solucion', 'Fecha Reporte', 'Fecha Solucion'],
                     res.data.map(m => [
                         m.id_historial, m.num_serie, m.equipo || '', m.falla, m.estado_orden,
@@ -102,13 +115,12 @@ const Reportes = ({ usuario }) => {
             .finally(() => setDescargando(''))
     }
 
-    // USUARIOS (SIN CONTRASENAS)
     const descargarUsuarios = () => {
         setDescargando('usuarios')
         axios.get(API_ROUTES.OBTENER_USUARIOS)
             .then(res => {
-                descargarCSV(
-                    `usuarios_${new Date().toISOString().slice(0, 10)}.csv`,
+                descargarExcel(
+                    `usuarios_${new Date().toISOString().slice(0, 10)}.xls`,
                     ['Usuario', 'Nombre', 'Correo', 'Area', 'Estado'],
                     res.data.map(u => [u.usuario, u.nombre, u.correo, u.area || '', u.estado || ''])
                 )
@@ -124,15 +136,15 @@ const Reportes = ({ usuario }) => {
             id: 'equipos',
             icono: 'bi-pc-display',
             titulo: 'Inventario de Equipos',
-            descripcion: 'Todos los equipos con su estado, área y responsable.',
+            descripcion: 'Todos los equipos con su estado, area y responsable.',
             registros: conteos.equipos,
             accion: descargarEquipos
         },
         {
             id: 'prestamos',
             icono: 'bi-arrow-left-right',
-            titulo: 'Préstamos',
-            descripcion: 'Historial completo de préstamos con fechas y estados.',
+            titulo: 'Prestamos',
+            descripcion: 'Historial completo de prestamos con fechas y estados.',
             registros: conteos.prestamos,
             accion: descargarPrestamos
         },
@@ -140,7 +152,7 @@ const Reportes = ({ usuario }) => {
             id: 'mantenimientos',
             icono: 'bi-tools',
             titulo: 'Mantenimientos',
-            descripcion: 'Órdenes de trabajo, aprobaciones y soluciones aplicadas.',
+            descripcion: 'Ordenes de trabajo, aprobaciones y soluciones aplicadas.',
             registros: conteos.mantenimientos,
             accion: descargarMantenimientos
         }] : []),
@@ -148,7 +160,7 @@ const Reportes = ({ usuario }) => {
             id: 'usuarios',
             icono: 'bi-people',
             titulo: 'Usuarios',
-            descripcion: 'Listado de cuentas con su departamento (sin contraseñas).',
+            descripcion: 'Listado de cuentas con su departamento (sin contrasenas).',
             registros: conteos.usuarios,
             accion: descargarUsuarios
         }
@@ -161,7 +173,7 @@ const Reportes = ({ usuario }) => {
                     Reportes
                 </h2>
                 <span className="badge bg-primary-subtle text-primary-emphasis">
-                    Exportación en formato CSV (Excel)
+                    Exportacion en formato Excel
                 </span>
             </div>
 
@@ -197,7 +209,7 @@ const Reportes = ({ usuario }) => {
                                     ) : (
                                         <>
                                             <i className="bi bi-download me-1"></i>
-                                            Descargar CSV
+                                            Descargar Excel
                                         </>
                                     )}
                                 </button>

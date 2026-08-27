@@ -3,6 +3,7 @@ const router = express.Router()
 const {
     getPrestamos,
     getPrestamosActivos,
+    getPrestamoActivoPorEquipo,
     crearPrestamo,
     devolverPrestamo,
     historialEquipo,
@@ -14,6 +15,7 @@ const { crearPrestamoSchema, devolverPrestamoSchema, historialEquipoSchema } = r
 
 router.get('/prestamos', authMiddleware, getPrestamos)
 router.get('/prestamos/activos', authMiddleware, getPrestamosActivos)
+router.get('/prestamos/activos/:num_serie', authMiddleware, getPrestamoActivoPorEquipo)
 router.post('/prestamos', authMiddleware, validate(crearPrestamoSchema), crearPrestamo)
 router.post('/prestamos/:id/devolver', authMiddleware, validate(devolverPrestamoSchema), devolverPrestamo)
 router.get('/prestamos/historial/:num_serie', authMiddleware, validate(historialEquipoSchema), historialEquipo)

@@ -512,21 +512,21 @@ const Soportes = ({ usuario, esAdmin }) => {
 
                                     {/* INFORMACION DE LA APROBACION */}
                                     {ordenDetalle.estado_orden === 'aprobada' ? (
-                                        <div className="border rounded p-2 mb-0 d-flex align-items-center gap-2" style={{ background: '#dcfce7' }}>
-                                            <i className="bi bi-patch-check-fill" style={{ color: '#14532d' }}></i>
+                                        <div className="border rounded p-2 mb-0 d-flex align-items-center gap-2 estado-disponible">
+                                            <i className="bi bi-patch-check-fill"></i>
                                             <div className="small">
-                                                <strong style={{ color: '#14532d' }}>Orden aprobada</strong>
-                                                <span style={{ color: '#14532d' }}>
+                                                <strong>Orden aprobada</strong>
+                                                <span>
                                                     {ordenDetalle.aprobada_por ? ` por ${ordenDetalle.aprobada_por}` : ''}
                                                     {ordenDetalle.fecha_aprobacion ? ` el ${new Date(ordenDetalle.fecha_aprobacion).toLocaleDateString('es-CO')}` : ''}
                                                 </span>
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="border rounded p-2 mb-0 d-flex align-items-center gap-2" style={{ background: '#fef9c3' }}>
-                                            <i className="bi bi-hourglass-split" style={{ color: '#854d0e' }}></i>
-                                            <div className="small fw-semibold" style={{ color: '#854d0e' }}>
-                                                Pendiente de aprobación del administrador
+                                        <div className="border rounded p-2 mb-0 d-flex align-items-center gap-2 estado-mantenimiento">
+                                            <i className="bi bi-hourglass-split"></i>
+                                            <div className="small fw-semibold">
+                                                Pendiente de aprobacion del administrador
                                             </div>
                                         </div>
                                     )}

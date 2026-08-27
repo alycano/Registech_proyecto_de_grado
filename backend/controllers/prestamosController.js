@@ -20,6 +20,17 @@ exports.getPrestamosActivos = async (req, res) => {
     }
 }
 
+exports.getPrestamoActivoPorEquipo = async (req, res) => {
+    try {
+        const prestamo = await prestamosService.getPrestamoActivoPorEquipo(req.params.num_serie)
+        if (!prestamo) return res.status(404).json({ error: 'No hay préstamo activo para este equipo' })
+        res.json(prestamo)
+    } catch (error) {
+        console.error('Error al buscar préstamo activo:', error)
+        res.status(500).json({ error: 'Error al buscar préstamo activo' })
+    }
+}
+
 exports.crearPrestamo = async (req, res) => {
     try {
         await prestamosService.crearPrestamo(

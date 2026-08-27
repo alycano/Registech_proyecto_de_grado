@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import Sidebar from './Sidebar'
 import Header from './Header'
+import { useAuth } from '../../context/AuthContext'
 
-export default function Layout({ children, usuario }) {
+export default function Layout({ children }) {
+    const { usuario } = useAuth()
     const [collapsed, setCollapsed] = useState(false)
     const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light')
 
@@ -12,7 +14,6 @@ export default function Layout({ children, usuario }) {
         localStorage.setItem('theme', theme)
     }, [theme])
 
-    // Sincroniza el tema cuando se cambia desde Configuracion
     useEffect(() => {
         const alCambiarTema = (e) => setTheme(e.detail)
         window.addEventListener('registech-theme', alCambiarTema)

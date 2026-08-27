@@ -15,6 +15,11 @@ exports.getPrestamosActivos = async () => {
     return await prestamosRepository.findPrestamosActivos()
 }
 
+exports.getPrestamoActivoPorEquipo = async (num_serie) => {
+    const numSerieLimpio = sanitizarTexto(num_serie, 50)
+    return await prestamosRepository.findPrestamoActivoPorEquipo(numSerieLimpio)
+}
+
 exports.crearPrestamo = async (num_serie, usuario_destino, observaciones, fecha_inicio, fecha_limite, area) => {
     const numSerieLimpio = sanitizarTexto(num_serie, 50)
     const usuarioLimpio = sanitizarTexto(usuario_destino, 50)

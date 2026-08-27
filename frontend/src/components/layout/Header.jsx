@@ -62,7 +62,7 @@ export default function Header({ usuario, onToggleSidebar, theme, onToggleTheme 
                     <span className="app-header__avatar">{iniciales}</span>
                     <div className="d-none d-md-block">
                         <div className="app-header__name">{usuario?.nombre || 'Usuario'}</div>
-                        <div className="app-header__role">{usuario?.area || ''}</div>
+                        <div className="app-header__role">{usuario?.rol ? usuario.rol.charAt(0).toUpperCase() + usuario.rol.slice(1) : usuario?.area || ''}</div>
                     </div>
                 </div>
             </div>

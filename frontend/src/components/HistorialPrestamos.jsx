@@ -2,14 +2,6 @@ import { useState, useEffect } from "react"
 import axios from "axios"
 import { API_ROUTES } from "../api/apiRoutes"
 
-// Convierte Date a string YYYY-MM-DD sin problemas de zona horaria
-const toISODate = (fecha) => {
-    const y = fecha.getFullYear()
-    const m = String(fecha.getMonth() + 1).padStart(2, '0')
-    const d = String(fecha.getDate()).padStart(2, '0')
-    return `${y}-${m}-${d}`
-}
-
 const HistorialPrestamos = () => {
     const [prestamos, setPrestamos] = useState([])
     const [loading, setLoading] = useState(true)

@@ -8,7 +8,7 @@ function compararContrasena(contrasena, usuarioEncontrado) {
     if (typeof guardada === 'string' && guardada.startsWith('$2')) {
         return bcrypt.compareSync(contrasena, guardada)
     }
-    return guardada === contrasena
+    return false
 }
 
 exports.login = async (correo, contrasena) => {
@@ -29,7 +29,8 @@ exports.login = async (correo, contrasena) => {
         id: usuarioEncontrado.id_usuario,
         usuario: usuarioEncontrado.usuario,
         correo: usuarioEncontrado.correo,
-        area: usuarioEncontrado.area
+        area: usuarioEncontrado.area,
+        rol: usuarioEncontrado.rol
     })
 
     return { token, usuarioEncontrado }
@@ -56,7 +57,7 @@ exports.cambiarPassword = async (usuario, contrasenaActual, contrasenaNueva) => 
 }
 
 exports.createUsuario = async (data) => {
-    const { usuario, contrasena, nombre, area, correo, estado } = data
+    const { usuario, contrasena, nombre, area, rol, correo, estado } = data
 
     const usuarioExistente = await usuariosRepository.findByUsuario(usuario)
     if (usuarioExistente) {
@@ -70,16 +71,17 @@ exports.createUsuario = async (data) => {
         contrasena: contrasenaHash,
         nombre,
         area,
+        rol: rol || 'inventario',
         correo,
         estado: estado || 'activo'
     })
 }
 
 exports.updateUsuario = async (usuarioParam, data) => {
-    const { usuario, contrasena, nombre, area, correo, estado } = data
+    const { contrasena, nombre, area, rol, correo, estado } = data
 
-    // Si la contrasena viene vacia se mantiene la actual (no se toca)
-    const dataActualizar = { usuario, nombre, area, correo, estado }
+    const dataActualizar = { nombre, area, correo, estado }
+    if (rol) dataActualizar.rol = rol
     if (contrasena && String(contrasena).trim() !== '') {
         dataActualizar.contrasena = bcrypt.hashSync(contrasena, 10)
     }
@@ -110,17 +112,34 @@ exports.solicitarRecuperacion = async (correo) => {
 
     if (!usuarioEncontrado) {
         return {
-            mensaje: 'Si el correo está registrado, recibirás un código de verificación',
-            codigo: null
+            mensaje: 'Si el correo está registrado, recibirás un código de verificación'
         }
     }
 
     await usuariosRepository.createResetToken(usuarioEncontrado.usuario, codigo, expiraEn)
 
+    try {
+        const { enviarCorreo } = require('./mailService')
+        await enviarCorreo({
+            para: correoLimpio,
+            asunto: 'Registech - Código de recuperación de contraseña',
+            html: `
+                <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+                    <h2 style="color:#2563eb">Recuperación de contraseña</h2>
+                    <p>Hola <strong>${usuarioEncontrado.nombre || usuarioEncontrado.usuario}</strong>,</p>
+                    <p>Tu código de verificación es:</p>
+                    <div style="background:#f3f4f6;padding:20px;text-align:center;font-size:32px;letter-spacing:8px;font-weight:bold;color:#1e40af;border-radius:8px">${codigo}</div>
+                    <p style="color:#6b7280;font-size:14px">Este código expira en 15 minutos.</p>
+                    <p style="color:#6b7280;font-size:14px">Si no solicitaste este cambio, ignora este correo.</p>
+                </div>
+            `
+        })
+    } catch (e) {
+        console.warn('Error enviando correo de recuperación:', e.message)
+    }
+
     return {
-        mensaje: 'Código de verificación generado',
-        codigo: codigo,
-        expira_en: expiraEn
+        mensaje: 'Si el correo está registrado, recibirás un código de verificación'
     }
 }
 
@@ -141,11 +160,8 @@ exports.restablecerPassword = async ({ correo, codigo, nuevaContrasena }) => {
         throw new Error('INVALID_CODE')
     }
 
-    if (typeof nuevaContrasena !== 'string' || nuevaContrasena.length < 6) {
-        throw new Error('SHORT_PASSWORD')
-    }
-
-    if (nuevaContrasena.length > 128) {
+    const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=\[\]{};':"\\|,.<>\/?]).{8,128}$/
+    if (typeof nuevaContrasena !== 'string' || !PASSWORD_REGEX.test(nuevaContrasena)) {
         throw new Error('SHORT_PASSWORD')
     }
 
