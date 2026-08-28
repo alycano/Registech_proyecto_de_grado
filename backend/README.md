@@ -43,6 +43,7 @@ A lo largo del proyecto, el backend ha pasado por múltiples refactorizaciones p
 
 - **🛡️ Autenticación y Usuarios:** Login, registro, recuperación de contraseña por correo, y gestión de roles (Administrador, Soporte, Recursos Humanos).
 - **💻 Equipos (Inventario):** CRUD de equipos, asignación de responsables, gestión del ciclo de vida (adquisición a baja).
+- **Inventario PMC (Menor Cuantia):** Gestion y control rapido de consumibles por volumen (mouses, teclados, cables) con botones de accion directa para Entregar y Devolver sin rastrear numeros de serie.
 - **🔄 Préstamos:** Control de entrega y devolución de equipos. *Novedad:* Permite adjuntar fotos de evidencia al devolver un equipo dañado.
 - **🛠️ Mantenimiento:** Sistema de reportes de fallas, trazabilidad de técnicos asignados y resoluciones/aprobaciones.
 - **🏢 Áreas:** Gestión de los departamentos de la empresa con conteo automático de uso.
