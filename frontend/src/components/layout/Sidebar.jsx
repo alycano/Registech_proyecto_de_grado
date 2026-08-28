@@ -1,18 +1,20 @@
 import { useNavigate, NavLink } from 'react-router-dom'
 import Swal from 'sweetalert2'
+import { useAuth } from '../../context/AuthContext'
 
 const MENU = [
-    { label: 'Panel Principal', icon: 'bi-grid-1x2', path: '/dashboard' },
-    { label: 'Equipos', icon: 'bi-pc-display', path: '/equipment' },
-    { label: 'Prestamos', icon: 'bi-arrow-left-right', path: '/loans' },
-    { label: 'Mantenimiento', icon: 'bi-tools', path: '/maintenance' },
-    { label: 'Departamentos', icon: 'bi-building', path: '/departments' },
-    { label: 'Reportes', icon: 'bi-file-earmark-bar-graph', path: '/reports' },
-    { label: 'Configuracion', icon: 'bi-gear', path: '/settings' },
+    { label: 'Panel Principal', icon: 'bi-grid-1x2', path: '/dashboard', roles: ['admin', 'inventario', 'sistemas'] },
+    { label: 'Equipos', icon: 'bi-pc-display', path: '/equipment', roles: ['admin', 'inventario'] },
+    { label: 'Prestamos', icon: 'bi-arrow-left-right', path: '/loans', roles: ['admin', 'inventario'] },
+    { label: 'Mantenimiento', icon: 'bi-tools', path: '/maintenance', roles: ['admin', 'sistemas'] },
+    { label: 'Departamentos', icon: 'bi-building', path: '/departments', roles: ['admin'] },
+    { label: 'Reportes', icon: 'bi-file-earmark-bar-graph', path: '/reports', roles: ['admin', 'inventario', 'sistemas'] },
+    { label: 'Configuracion', icon: 'bi-gear', path: '/settings', roles: ['admin', 'inventario', 'sistemas'] },
 ]
 
 export default function Sidebar({ collapsed, onToggle, usuario, theme, onToggleTheme }) {
     const navigate = useNavigate()
+    const { logout } = useAuth()
 
     const handleLogout = () => {
         Swal.fire({
@@ -26,8 +28,7 @@ export default function Sidebar({ collapsed, onToggle, usuario, theme, onToggleT
             cancelButtonColor: '#64748b',
         }).then((result) => {
             if (result.isConfirmed) {
-                localStorage.removeItem('token')
-                localStorage.removeItem('usuario')
+                logout()
                 navigate('/login')
             }
         })
@@ -41,7 +42,7 @@ export default function Sidebar({ collapsed, onToggle, usuario, theme, onToggleT
             </div>
 
             <nav className="sidebar__nav">
-                {MENU.map((item) => (
+                {MENU.filter(item => item.roles.includes(usuario?.rol)).map((item) => (
                     <NavLink
                         key={item.path}
                         to={item.path}

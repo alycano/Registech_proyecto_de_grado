@@ -1,5 +1,3 @@
-const AREAS = ['Tecnologia', 'Recursos Humanos', 'Soporte']
-
 function sanitizarTexto(valor, maxLongitud = 255) {
     if (typeof valor !== 'string') return ''
     let texto = valor.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
@@ -22,11 +20,4 @@ function esCorreoValido(correo) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)
 }
 
-function sanitizarNumero(valor) {
-    if (valor === null || valor === undefined || valor === '') return null
-    const numero = Number(valor)
-    if (!Number.isFinite(numero)) return null
-    return numero
-}
-
-module.exports = { AREAS, sanitizarTexto, sanitizarHtml, esCorreoValido, sanitizarNumero }
+module.exports = { sanitizarTexto, sanitizarHtml, esCorreoValido }

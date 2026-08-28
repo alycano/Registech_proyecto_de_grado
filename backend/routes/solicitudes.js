@@ -1,6 +1,6 @@
 const express = require('express')
 const router = express.Router()
-const { authMiddleware } = require('../middlewares/auth')
+const { authMiddleware, requireRol } = require('../middlewares/auth')
 const {
     crearSolicitud, getMisSolicitudes, getSolicitudes,
     responderSolicitud, getActividadReciente
@@ -8,8 +8,8 @@ const {
 
 router.post('/solicitudes', authMiddleware, crearSolicitud)
 router.get('/solicitudes/mis', authMiddleware, getMisSolicitudes)
-router.get('/solicitudes', authMiddleware, getSolicitudes)
-router.put('/solicitudes/:id/responder', authMiddleware, responderSolicitud)
+router.get('/solicitudes', authMiddleware, requireRol('admin'), getSolicitudes)
+router.put('/solicitudes/:id/responder', authMiddleware, requireRol('admin'), responderSolicitud)
 router.get('/actividad', authMiddleware, getActividadReciente)
 
 module.exports = router

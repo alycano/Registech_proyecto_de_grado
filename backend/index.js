@@ -5,6 +5,7 @@ const cors = require('cors')
 const helmet = require('helmet')
 const rateLimit = require('express-rate-limit')
 const cookieParser = require('cookie-parser')
+const { middlewareCsrf } = require('./middlewares/csrf')
 
 const usuariosRoutes = require('./routes/usuarios')
 const areasRoutes = require('./routes/areas')
@@ -20,6 +21,17 @@ const app = express()
 app.use(helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' }
 }))
+
+// PERMITIR PETICIONES DE OTROS DOMINIOS (ANTES DE RATE LIMITERS PARA QUE 429 TENGA CORS)
+app.use(cors({
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    credentials: true
+}))
+
+// MIDDLEWARE PARA ANALIZAR JSON (CON LIMITE DE TAMAÑO)
+app.use(express.json({ limit: '100kb' }))
+// PERMITIR EL USO DE COOKIES
+app.use(cookieParser())
 
 // LIMITE DE INTENTOS EN EL LOGIN (ANTI FUERZA BRUTA)
 const loginLimiter = rateLimit({
@@ -42,16 +54,13 @@ const recuperacionLimiter = rateLimit({
 app.use('/api/usuarios/solicitar-recuperacion', recuperacionLimiter)
 app.use('/api/usuarios/restablecer-password', recuperacionLimiter)
 
-// PERMITIR PETICIONES DE OTROS DOMINIOS
-app.use(cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
-    credentials: true
-}))
-
-// MIDDLEWARE PARA ANALIZAR JSON (CON LIMITE DE TAMAÑO)
-app.use(express.json({ limit: '100kb' }))
-// PERMITIR EL USO DE COOKIES
-app.use(cookieParser())
+// CSRF: exempt login, recovery, and health
+app.use((req, res, next) => {
+    if (req.path === '/api/login' || req.path.includes('solicitar-recuperacion') || req.path.includes('restablecer-password') || req.path === '/api/health') {
+        return next()
+    }
+    middlewareCsrf(req, res, next)
+})
 
 // IMPORTAMOS EL USO DE LAS RUTAS
 app.use('/api', usuariosRoutes)
@@ -97,8 +106,12 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: 'Error interno del servidor' })
 })
 
-// INICIAR EL SERVIDOR
+// INICIAR EL SERVIDOR (solo si no es test)
 const port = process.env.PORT || 3000
-app.listen(port, () => {
-    console.log(`Servidor escuchando en http://localhost:${port}`)
-})
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(port, () => {
+        console.log(`Servidor escuchando en http://localhost:${port}`)
+    })
+}
+
+module.exports = app

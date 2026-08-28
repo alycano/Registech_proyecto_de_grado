@@ -1,3 +1,4 @@
+const crypto = require('crypto')
 const equiposRepository = require('../repository/equiposRepository')
 const { sanitizarTexto, sanitizarHtml } = require('../utils/sanitize')
 
@@ -43,7 +44,7 @@ exports.reporteFalla = async (num_serie, falla, evidencia) => {
     const numSerieLimpio = sanitizarTexto(num_serie, 50)
     const fallaLimpia = sanitizarHtml(falla, 500)
     const fecha_reporte = new Date()
-    const id_historial = Date.now().toString()
+    const id_historial = crypto.randomUUID()
 
     await equiposRepository.createReporteTransaction(numSerieLimpio, id_historial, fecha_reporte, fallaLimpia, evidencia)
     return id_historial

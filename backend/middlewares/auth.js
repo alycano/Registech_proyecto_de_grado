@@ -63,7 +63,25 @@ function requireArea(...areasPermitidas) {
     }
 }
 
+function requireRol(...rolesPermitidos) {
+
+    return (req, res, next) => {
+
+        if (
+            !req.usuario ||
+            !rolesPermitidos.includes(req.usuario.rol)
+        ) {
+            return res.status(403).json({
+                error: 'No tienes permisos para esta accion'
+            })
+        }
+
+        next()
+    }
+}
+
 module.exports = {
     authMiddleware,
-    requireArea
+    requireArea,
+    requireRol
 }

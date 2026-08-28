@@ -3,8 +3,13 @@ const auditoriaService = require('../services/auditoriaService')
 
 // OBTENER TODAS LAS AREAS
 exports.getAreas = async (req, res) => {
-    const areas = await areasService.getAllAreas()
-    res.json(areas)
+    try {
+        const areas = await areasService.getAllAreas()
+        res.json(areas)
+    } catch (error) {
+        console.error('Error al obtener las áreas:', error)
+        res.status(500).json({ error: 'Error en la consulta' })
+    }
 }
 
 // CREAR UN NUEVO DEPARTAMENTO

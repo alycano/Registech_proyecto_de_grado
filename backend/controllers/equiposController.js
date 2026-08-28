@@ -34,7 +34,7 @@ exports.agregarEquipo = async (req, res) => {
         // Si algo falla y se subio una foto, no queda archivo huerfano
         if (archivo) eliminarArchivo(archivo.filename)
 
-        console.error('Error al registrar equipo:', error)
+        console.error('Error al registrar equipo:', error.message, error.code)
         if (error.message === 'EQUIPO_DUPLICADO') return res.status(409).json({ error: 'Ya existe un equipo con ese número de serie' })
         if (error.message === 'ESTADO_INVALIDO') return res.status(400).json({ error: 'El estado inicial del equipo es inválido' })
         if (error.message === 'SOLO_IMAGENES') return res.status(400).json({ error: 'Solo se permiten imágenes (jpg, png, webp)' })
