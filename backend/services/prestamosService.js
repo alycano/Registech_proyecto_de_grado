@@ -20,21 +20,49 @@ exports.getPrestamoActivoPorEquipo = async (num_serie) => {
     return await prestamosRepository.findPrestamoActivoPorEquipo(numSerieLimpio)
 }
 
-exports.crearPrestamo = async (num_serie, usuario_destino, observaciones, fecha_inicio, fecha_limite, area) => {
-    const numSerieLimpio = sanitizarTexto(num_serie, 50)
+
+exports.crearPrestamo = async (
+    num_series,
+    usuario_destino,
+    observaciones,
+    fecha_inicio,
+    fecha_limite,
+    area
+) => {
     const usuarioLimpio = sanitizarTexto(usuario_destino, 50)
-    const observacionesLimpias = observaciones ? sanitizarHtml(observaciones, 500) : null
-    const areaLimpia = area ? sanitizarTexto(area, 100) : null
+
+    const numSeriesLimpios = Array.isArray(num_series)
+        ? num_series.map(numSerie => sanitizarTexto(numSerie, 50))
+        : []
+
+    const observacionesLimpias = observaciones
+        ? sanitizarHtml(observaciones, 500)
+        : null
+
+    const areaLimpia = area
+        ? sanitizarTexto(area, 100)
+        : null
 
     const fechaInicioLimpia = validarFecha(fecha_inicio)
     const fechaLimiteLimpia = validarFecha(fecha_limite)
 
-    if (fechaInicioLimpia && fechaLimiteLimpia && fechaLimiteLimpia < fechaInicioLimpia) {
+    if (
+        numSeriesLimpios.length === 0 ||
+        !usuarioLimpio
+    ) {
+        throw new Error('REQUERIDOS')
+    }
+
+    if (
+        fechaInicioLimpia &&
+        fechaLimiteLimpia &&
+        fechaLimiteLimpia < fechaInicioLimpia
+    ) {
         throw new Error('FECHAS_INVALIDAS')
     }
 
     await prestamosRepository.crearPrestamoTransaction(
-        numSerieLimpio,
+        numSeriesLimpios,
         usuarioLimpio,
         observacionesLimpias,
         fechaInicioLimpia,
@@ -42,6 +70,8 @@ exports.crearPrestamo = async (num_serie, usuario_destino, observaciones, fecha_
         areaLimpia
     )
 }
+
+
 
 exports.devolverPrestamo = async (id, observaciones, evidencia) => {
     const idLimpio = sanitizarTexto(id, 50)
