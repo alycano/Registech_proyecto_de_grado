@@ -98,6 +98,9 @@ export const API_ROUTES = {
     SOLICITUDES: `${BASE_URL}/solicitudes`,
     MIS_SOLICITUDES: `${BASE_URL}/solicitudes/mis`,
     RESPONDER_SOLICITUD: (id) => `${BASE_URL}/solicitudes/${id}/responder`,
+    PMC: `${BASE_URL}/pmc`,
+    PMC_ENTREGAR: (id) => `${BASE_URL}/pmc/${id}/entregar`,
+    PMC_DEVOLVER: (id) => `${BASE_URL}/pmc/${id}/devolver`,
     APROBACION_ORDEN: `${BASE_URL}/equipos/reporte/aprobacion`,
     NOTIFICACIONES: `${BASE_URL}/notificaciones`,
 }

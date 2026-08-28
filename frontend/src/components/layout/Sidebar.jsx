@@ -8,6 +8,7 @@ const MENU = [
     { label: 'Prestamos', icon: 'bi-arrow-left-right', path: '/loans', roles: ['admin', 'inventario'] },
     { label: 'Mantenimiento', icon: 'bi-tools', path: '/maintenance', roles: ['admin', 'sistemas'] },
     { label: 'Departamentos', icon: 'bi-building', path: '/departments', roles: ['admin'] },
+    { label: 'Inventario PMC', icon: 'bi-mouse', path: '/pmc', roles: ['admin', 'inventario'] },
     { label: 'Reportes', icon: 'bi-file-earmark-bar-graph', path: '/reports', roles: ['admin', 'inventario', 'sistemas'] },
     { label: 'Configuracion', icon: 'bi-gear', path: '/settings', roles: ['admin', 'inventario', 'sistemas'] },
 ]
