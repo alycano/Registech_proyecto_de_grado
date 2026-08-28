@@ -22,8 +22,8 @@ model equipos {
   fecha_baja        DateTime?          @db.Date
   sistema_operativo String?            @db.VarChar(60)
   imagen            String?            @db.VarChar(255)
-
   prestamos_equipos prestamo_equipos[]
+  prestamos         prestamos[]
 }
 
 model estados_equipos {
@@ -45,6 +45,7 @@ model historial_mantenimientos {
 
 model prestamos {
   id_prestamo      String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  num_serie        String?            @db.VarChar(50)
   usuario_destino  String             @db.VarChar(50)
   fecha_prestamo   DateTime           @db.Date
   fecha_devolucion DateTime?          @db.Date
@@ -52,8 +53,8 @@ model prestamos {
   observaciones    String?
   evidencia        String?            @db.VarChar(255)
   area             String?            @db.VarChar(100)
-
   equipos          prestamo_equipos[]
+  equipos          equipos?           @relation(fields: [num_serie], references: [num_serie], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model usuarios {
@@ -77,7 +78,6 @@ model auditoria {
   fecha        DateTime @default(now()) @db.Timestamp(6)
 }
 
-
 model reset_tokens {
   id        Int       @id @default(autoincrement())
   usuario   String    @db.VarChar(50)
@@ -89,21 +89,19 @@ model reset_tokens {
 }
 
 model prestamo_equipos {
-  id_prestamo String   @db.Uuid
-  num_serie   String   @db.VarChar(50)
-
-  prestamo prestamos @relation(fields: [id_prestamo], references: [id_prestamo], onDelete: Cascade, onUpdate: Cascade)
-  equipo   equipos   @relation(fields: [num_serie], references: [num_serie], onDelete: NoAction, onUpdate: Cascade)
+  id_prestamo String    @db.Uuid
+  num_serie   String    @db.VarChar(50)
+  equipo      equipos   @relation(fields: [num_serie], references: [num_serie], onDelete: NoAction, map: "prestamo_equipos_equipo_fkey")
+  prestamo    prestamos @relation(fields: [id_prestamo], references: [id_prestamo], onDelete: Cascade, map: "prestamo_equipos_prestamo_fkey")
 
   @@id([id_prestamo, num_serie])
 }
 
 model productos_menor_cuantia {
-  id                  Int      @id @default(autoincrement())
-  nombre              String   @db.VarChar(100)
-  descripcion         String?  @db.Text
-  cantidad_total      Int      @default(0)
-  cantidad_disponible Int      @default(0)
-  creado_en           DateTime @default(now()) @db.Timestamp(6)
+  id                  Int       @id @default(autoincrement())
+  nombre              String    @db.VarChar(100)
+  descripcion         String?
+  cantidad_total      Int?      @default(0)
+  cantidad_disponible Int?      @default(0)
+  creado_en           DateTime? @default(now()) @db.Timestamp(6)
 }
-
