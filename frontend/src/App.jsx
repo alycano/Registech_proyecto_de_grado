@@ -11,6 +11,7 @@ import GestionMantenimiento from './components/GestionMantenimiento'
 import Departamentos from './components/Departamentos'
 import Reportes from './components/Reportes'
 import Configuracion from './components/Configuracion'
+import PMC from './components/PMC'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap-icons/font/bootstrap-icons.css'
 
@@ -50,6 +51,7 @@ function AppRoutes() {
             <Route path="/loans" element={wrap(GestionPrestamos)} />
             <Route path="/maintenance" element={wrap(GestionMantenimiento)} />
             <Route path="/departments" element={wrap(Departamentos)} />
+            <Route path="/pmc" element={wrap(PMC)} />
             <Route path="/reports" element={wrap(Reportes)} />
             <Route path="/settings" element={wrap(Configuracion)} />
             <Route path="*" element={<Navigate to="/login" />} />

@@ -13,6 +13,7 @@ const equiposRoutes = require('./routes/equipos')
 const prestamosRoutes = require('./routes/prestamos')
 const dashboardRoutes = require('./routes/dashboard')
 const solicitudesRoutes = require('./routes/solicitudes')
+const pmcRoutes = require('./routes/pmc')
 
 // CREAR INSTANCIA DE EXPRESS
 const app = express()
@@ -69,6 +70,7 @@ app.use('/api', equiposRoutes)
 app.use('/api', prestamosRoutes)
 app.use('/api', dashboardRoutes)
 app.use('/api', solicitudesRoutes)
+app.use('/api/pmc', pmcRoutes)
 
 // SERVIR LAS EVIDENCIAS FOTOGRAFICAS DE MANTENIMIENTO
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), { maxAge: '1d' }))
