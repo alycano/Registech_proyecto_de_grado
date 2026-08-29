@@ -54,7 +54,7 @@ model prestamos {
   evidencia        String?            @db.VarChar(255)
   area             String?            @db.VarChar(100)
   equipos          prestamo_equipos[]
-  equipos          equipos?           @relation(fields: [num_serie], references: [num_serie], onDelete: NoAction, onUpdate: NoAction)
+  equipo           equipos?           @relation(fields: [num_serie], references: [num_serie], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model usuarios {
@@ -89,10 +89,11 @@ model reset_tokens {
 }
 
 model prestamo_equipos {
-  id_prestamo String    @db.Uuid
-  num_serie   String    @db.VarChar(50)
-  equipo      equipos   @relation(fields: [num_serie], references: [num_serie], onDelete: NoAction, map: "prestamo_equipos_equipo_fkey")
-  prestamo    prestamos @relation(fields: [id_prestamo], references: [id_prestamo], onDelete: Cascade, map: "prestamo_equipos_prestamo_fkey")
+  id_prestamo String   @db.Uuid
+  num_serie   String   @db.VarChar(50)
+  estado      String?  @default("prestado") @db.VarChar(50)
+  equipos     equipos  @relation(fields: [num_serie], references: [num_serie], onDelete: NoAction, map: "prestamo_equipos_num_serie_fkey")
+  prestamos   prestamos @relation(fields: [id_prestamo], references: [id_prestamo], onDelete: Cascade, map: "prestamo_equipos_id_prestamo_fkey")
 
   @@id([id_prestamo, num_serie])
 }
@@ -104,4 +105,12 @@ model productos_menor_cuantia {
   cantidad_total      Int?      @default(0)
   cantidad_disponible Int?      @default(0)
   creado_en           DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model solicitudes {
+  id          Int      @id @default(autoincrement())
+  usuario     String   @db.VarChar(50)
+  detalles    String?
+  estado      String   @default("pendiente") @db.VarChar(20)
+  creado_en   DateTime @default(now()) @db.Timestamp(6)
 }

@@ -1,5 +1,6 @@
 const express = require('express')
 const router = express.Router()
+const prestamosController = require('../controllers/prestamosController')
 const {
     getPrestamos,
     getPrestamosActivos,
@@ -7,7 +8,8 @@ const {
     crearPrestamo,
     devolverPrestamo,
     historialEquipo,
-    getEstadisticas
+    getEstadisticas,
+    devolverEquipoParcial
 } = require('../controllers/prestamosController')
 const { authMiddleware } = require('../middlewares/auth')
 const { validate } = require('../middlewares/validate')
@@ -21,5 +23,6 @@ router.post('/prestamos', authMiddleware, validate(crearPrestamoSchema), crearPr
 router.post('/prestamos/:id/devolver', authMiddleware, upload.single('evidencia'), validate(devolverPrestamoSchema), devolverPrestamo)
 router.get('/prestamos/historial/:num_serie', authMiddleware, validate(historialEquipoSchema), historialEquipo)
 router.get('/estadisticas', authMiddleware, getEstadisticas)
+router.post('/devolucion-parcial', authMiddleware, prestamosController.devolverEquipoParcial);
 
 module.exports = router
