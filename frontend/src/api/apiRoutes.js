@@ -89,7 +89,8 @@ export const API_ROUTES = {
     PRESTAMOS_ACTIVOS: `${BASE_URL}/prestamos/activos`,
     PRESTAMOS_ACTIVOS_POR_EQUIPO: (num_serie) => `${BASE_URL}/prestamos/activos/${encodeURIComponent(num_serie)}`,
     CREAR_PRESTAMO: `${BASE_URL}/prestamos`,
-    DEVOLVER_PRESTAMO: (id) => `${BASE_URL}/prestamos/${id}/devolver`,
+   DEVOLVER_EQUIPO: (id, num_serie) =>
+    `${BASE_URL}/prestamos/${id}/equipos/${encodeURIComponent(num_serie)}/devolver`,
     HISTORIAL_EQUIPO: (num_serie) => `${BASE_URL}/prestamos/historial/${num_serie}`,
     ESTADISTICAS: `${BASE_URL}/estadisticas`,
     DASHBOARD: `${BASE_URL}/dashboard`,
@@ -98,6 +99,12 @@ export const API_ROUTES = {
     SOLICITUDES: `${BASE_URL}/solicitudes`,
     MIS_SOLICITUDES: `${BASE_URL}/solicitudes/mis`,
     RESPONDER_SOLICITUD: (id) => `${BASE_URL}/solicitudes/${id}/responder`,
+    PMC: `${BASE_URL}/pmc`,
+    PMC_ENTREGAR: (id) => `${BASE_URL}/pmc/${id}/entregar`,
+    PMC_DEVOLVER: (id) => `${BASE_URL}/pmc/${id}/devolver`,
     APROBACION_ORDEN: `${BASE_URL}/equipos/reporte/aprobacion`,
-    NOTIFICACIONES: `${BASE_URL}/notificaciones`,
+   NOTIFICACIONES: `${BASE_URL}/notificaciones`,
+NOTIFICACIONES_NO_LEIDAS: `${BASE_URL}/notificaciones/no-leidas`,
+MARCAR_NOTIFICACION_LEIDA: (id) => `${BASE_URL}/notificaciones/${id}/leida`,
+MARCAR_NOTIFICACIONES_LEIDAS: `${BASE_URL}/notificaciones/leidas/todas`,
 }
