@@ -96,6 +96,27 @@ exports.updateResponsable = async (
 
 
 // ======================================================
+// LIBERAR EQUIPO
+// ======================================================
+
+exports.liberarEquipo = async (numSerieLimpio) => {
+
+    return await prisma.equipos.update({
+
+        where: {
+            num_serie: numSerieLimpio
+        },
+
+        data: {
+            estado: 'Disponible',
+            responsable: null
+        }
+
+    })
+}
+
+
+// ======================================================
 // BUSCAR USUARIO
 // ======================================================
 
