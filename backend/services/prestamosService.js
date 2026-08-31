@@ -75,8 +75,39 @@ exports.crearPrestamo = async (
 
 exports.devolverPrestamo = async (id, observaciones, evidencia) => {
     const idLimpio = sanitizarTexto(id, 50)
-    const obsLimpia = observaciones ? sanitizarTexto(observaciones, 500) : null
-    await prestamosRepository.devolverPrestamoTransaction(idLimpio, obsLimpia, evidencia)
+
+    const obsLimpia = observaciones
+        ? sanitizarTexto(observaciones, 500)
+        : null
+
+    await prestamosRepository.devolverPrestamoTransaction(
+        idLimpio,
+        obsLimpia,
+        evidencia
+    )
+}
+
+
+exports.devolverEquipo = async (
+    id,
+    num_serie,
+    observaciones,
+    evidencia
+) => {
+    const idLimpio = sanitizarTexto(id, 50)
+
+    const numSerieLimpio = sanitizarTexto(num_serie, 50)
+
+    const obsLimpia = observaciones
+        ? sanitizarTexto(observaciones, 500)
+        : null
+
+    return await prestamosRepository.devolverEquipoTransaction(
+        idLimpio,
+        numSerieLimpio,
+        obsLimpia,
+        evidencia
+    )
 }
 
 exports.historialEquipo = async (num_serie) => {
