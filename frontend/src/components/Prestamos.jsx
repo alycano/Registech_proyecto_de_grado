@@ -1183,7 +1183,7 @@ const Prestamos = () => {
                         {busqueda && (
 
                             <button
-                                className="btn btn-outline-secondary"
+                                className="btn btn-secondary"
                                 type="button"
                                 onClick={() =>
                                     setBusqueda("")
@@ -1367,7 +1367,7 @@ const Prestamos = () => {
 
                                             <button
                                                 type="button"
-                                                className="btn btn-outline-primary btn-sm"
+                                                className="btn btn-primary btn-sm"
                                                 onClick={() =>
                                                     verPrestamo(p)
                                                 }
@@ -1509,7 +1509,7 @@ const Prestamos = () => {
 
                                     <button
                                         type="button"
-                                        className="btn btn-sm btn-outline-secondary"
+                                        className="btn btn-sm btn-secondary"
                                         onClick={seleccionarTodos}
                                         disabled={
                                             !prestamoSeleccionado.equipos?.length
@@ -1738,7 +1738,7 @@ const Prestamos = () => {
 
                                     <button
                                         type="button"
-                                        className="btn btn-outline-success"
+                                        className="btn btn-success"
                                         onClick={
                                             devolverSeleccionados
                                         }
@@ -1948,7 +1948,7 @@ const Prestamos = () => {
 
                                                                 <button
                                                                     type="button"
-                                                                    className="btn btn-sm btn-outline-danger"
+                                                                    className="btn btn-sm btn-danger"
                                                                     onClick={() =>
                                                                         setNumSeries(
                                                                             prev =>

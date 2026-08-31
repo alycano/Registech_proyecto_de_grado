@@ -426,10 +426,10 @@ export default function DashboardAdmin() {
                                                 <td>
                                                     {s.estado === 'pendiente' && (
                                                         <div className="btn-group btn-group-sm">
-                                                            <button className="btn btn-outline-success btn-sm" onClick={()=>handleResponder(s.id_solicitud,'aprobada')} title="Aprobar">
+                                                            <button className="btn btn-success btn-sm" onClick={()=>handleResponder(s.id_solicitud,'aprobada')} title="Aprobar">
                                                                 <i className="bi bi-check-lg"></i>
                                                             </button>
-                                                            <button className="btn btn-outline-danger btn-sm" onClick={()=>handleResponder(s.id_solicitud,'rechazada')} title="Rechazar">
+                                                            <button className="btn btn-danger btn-sm" onClick={()=>handleResponder(s.id_solicitud,'rechazada')} title="Rechazar">
                                                                 <i className="bi bi-x-lg"></i>
                                                             </button>
                                                         </div>
