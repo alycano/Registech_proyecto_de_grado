@@ -44,6 +44,19 @@ exports.updateResponsable = async (numSerieLimpio, responsable) => {
     return rows[0]
 }
 
+// Libera un equipo que quedó marcado como asignado sin préstamo activo
+exports.liberarEquipo = async (numSerieLimpio) => {
+    const { rows } = await db.query(
+        `UPDATE equipos
+         SET estado = $1,
+             responsable = NULL
+         WHERE num_serie = $2
+         RETURNING *`,
+        ['Disponible', numSerieLimpio]
+    )
+    return rows[0]
+}
+
 exports.createReporteTransaction = async (numSerieLimpio, id_historial, fecha_reporte, fallaLimpia, evidencia) => {
     const client = await db.pool.connect()
     try {

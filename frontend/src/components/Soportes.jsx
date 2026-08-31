@@ -60,8 +60,9 @@ const Soportes = ({ usuario, esAdmin }) => {
         const archivo = e.target.files[0]
         if (!archivo) return
 
-        if (!archivo.type.startsWith('image/')) {
-            Swal.fire({ icon: 'warning', title: 'Archivo inválido', text: 'Debes seleccionar una imagen (jpg, png, webp)' })
+        const TIPOS_PERMITIDOS = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+        if (!TIPOS_PERMITIDOS.includes(archivo.type)) {
+            Swal.fire({ icon: 'warning', title: 'Archivo inválido', text: 'Solo se permiten imágenes JPG, PNG, WEBP o GIF' })
             e.target.value = ''
             return
         }
@@ -253,7 +254,7 @@ const Soportes = ({ usuario, esAdmin }) => {
                                         <td>
                                             {esAdmin ? (
                                                 <button
-                                                    className="btn btn-sm btn-outline-primary"
+                                                    className="btn btn-sm btn-primary"
                                                     onClick={() => setOrdenDetalle(m)}
                                                 >
                                                     <i className="bi bi-eye me-1"></i>
@@ -338,12 +339,12 @@ const Soportes = ({ usuario, esAdmin }) => {
                                             <input
                                                 type="file"
                                                 className={`form-control ${fotoDano ? 'is-valid' : ''}`}
-                                                accept="image/*"
+                                                accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif"
                                                 onChange={handleSeleccionarFoto}
                                                 disabled={enviandoReporte}
                                                 required
                                             />
-                                            <small className="text-muted">JPG, PNG o WEBP. Máximo 5 MB.</small>
+                                            <small className="text-muted">JPG, PNG, WEBP o GIF. Máximo 5 MB.</small>
                                         </div>
 
                                         {previewFoto && (

@@ -101,6 +101,7 @@ exports.deleteUsuario = async (req, res) => {
     } catch (error) {
         console.error('Error al eliminar usuario:', error)
         if (error.code === 'P2025') return res.status(404).json({ error: 'Usuario no encontrado' })
+        if (error.code === '23503') return res.status(409).json({ error: 'No se puede eliminar el usuario porque tiene préstamos, solicitudes u otros registros asociados. Puedes desactivarlo cambiando su estado a inactivo.' })
 
         res.status(500).json({ error: 'Error al eliminar el usuario' })
     }

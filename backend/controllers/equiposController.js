@@ -61,6 +61,19 @@ exports.asignarUsuario = async (req, res) => {
     }
 }
 
+exports.liberarEquipo = async (req, res) => {
+    try {
+        const equipo = await equiposService.liberarEquipo(req.params.num_serie)
+        if (!equipo) return res.status(404).json({ error: 'Equipo no encontrado' })
+        const auditoriaService = require('../services/auditoriaService')
+        await auditoriaService.registrar(req.usuario.usuario, `Liberó el equipo ${equipo.num_serie} (${equipo.equipo}), quedó disponible`)
+        res.status(200).json({ mensaje: 'Equipo liberado y disponible nuevamente', equipo })
+    } catch (error) {
+        console.error('Error al liberar equipo:', error)
+        res.status(500).json({ error: 'Error al liberar el equipo' })
+    }
+}
+
 exports.reporteFalla = async (req, res) => {
     const { num_serie, falla } = req.body
     const archivo = req.file

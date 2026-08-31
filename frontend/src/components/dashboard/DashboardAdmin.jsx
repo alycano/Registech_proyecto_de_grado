@@ -60,6 +60,7 @@ export default function DashboardAdmin() {
     const [solicitudes, setSolicitudes] = useState([])
     const [ordenes, setOrdenes] = useState([])
     const [fotoAmpliada, setFotoAmpliada] = useState(null)
+    const [detalleOrden, setDetalleOrden] = useState(null)
     const [page, setPage] = useState(1)
     const [loading, setLoading] = useState(true)
     const ROWS = 5
@@ -214,7 +215,7 @@ export default function DashboardAdmin() {
                     </p>
                 </div>
                 {rol === 'admin' && (
-                    <button className="btn btn-sm btn-outline-primary rounded-pill" onClick={handleExportar}>
+                    <button className="btn btn-sm btn-primary rounded-pill" onClick={handleExportar}>
                         <i className="bi bi-download me-1"></i>Exportar Excel
                     </button>
                 )}
@@ -236,7 +237,7 @@ export default function DashboardAdmin() {
             </div>
 
             <div className="row g-4 mb-4">
-                <div className="col-lg-4">
+                <div className={`col-lg-${rol === 'admin' ? 4 : 6}`}>
                     <div className="chart-card">
                         <div className="chart-card__header">
                             <h5 className="chart-card__title">Por Estado</h5>
@@ -246,7 +247,7 @@ export default function DashboardAdmin() {
                         </div>
                     </div>
                 </div>
-                <div className="col-lg-5">
+                <div className={`col-lg-${rol === 'admin' ? 5 : 6}`}>
                     <div className="chart-card">
                         <div className="chart-card__header">
                             <h5 className="chart-card__title">Por Area</h5>
@@ -256,6 +257,7 @@ export default function DashboardAdmin() {
                         </div>
                     </div>
                 </div>
+                {rol === 'admin' && (
                 <div className="col-lg-3">
                     <div className="chart-card">
                         <div className="chart-card__header">
@@ -279,6 +281,7 @@ export default function DashboardAdmin() {
                         )}
                     </div>
                 </div>
+                )}
             </div>
 
             {(rol === 'admin' || rol === 'sistemas') && ordenes.filter(o => o.estado_orden === 'pendiente').length > 0 && (
@@ -324,22 +327,12 @@ export default function DashboardAdmin() {
                                         <td style={{ maxWidth: '260px' }}>{o.falla}</td>
                                         <td>{o.usuario_tecnico || '-'}</td>
                                         <td className="text-end">
-                                            <div className="btn-group btn-group-sm">
-                                                <button
-                                                    className="btn btn-outline-success"
-                                                    onClick={() => handleDecidir(o.id_historial, 'aprobada')}
-                                                    title="Aprobar reparación"
-                                                >
-                                                    <i className="bi bi-check-lg"></i> Aprobar
-                                                </button>
-                                                <button
-                                                    className="btn btn-outline-danger"
-                                                    onClick={() => handleDecidir(o.id_historial, 'rechazada')}
-                                                    title="Rechazar orden"
-                                                >
-                                                    <i className="bi bi-x-lg"></i> Rechazar
-                                                </button>
-                                            </div>
+                                            <button
+                                                className="btn btn-sm btn-primary"
+                                                onClick={() => setDetalleOrden(o)}
+                                            >
+                                                <i className="bi bi-eye me-1"></i>Ver detalles
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
@@ -373,7 +366,7 @@ export default function DashboardAdmin() {
                                         </thead>
                                         <tbody>
                                             {paginatedLoans.map(p => (
-                                                <tr key={p.id_prestamo}>
+                                                <tr key={`${p.id_prestamo}-${p.num_serie}`}>
                                                     <td><strong>{p.equipo}</strong><br/><small className="text-muted">{p.num_serie}</small></td>
                                                     <td>{p.usuario_destino}</td>
                                                     <td><span className="dept-tag">{p.equipo_area}</span></td>
@@ -452,6 +445,93 @@ export default function DashboardAdmin() {
                 </div>
                 )}
             </div>
+
+            {/* MODAL DETALLES DE ORDEN CON APROBACION ADENTRO (SOLO ADMIN) */}
+            {detalleOrden && (
+                <div
+                    className="modal fade show d-block"
+                    tabIndex="-1"
+                    style={{ display: 'block', zIndex: '1050', backgroundColor: 'rgba(0,0,0,0.5)' }}
+                    onClick={() => setDetalleOrden(null)}
+                >
+                    <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title fw-bold">Detalles de la Orden</h5>
+                                <button type="button" className="btn-close" onClick={() => setDetalleOrden(null)}></button>
+                            </div>
+                            <div className="modal-body">
+                                {detalleOrden.evidencia && (
+                                    <div className="text-center mb-3">
+                                        <img
+                                            src={API_ROUTES.ARCHIVO_EVIDENCIA(detalleOrden.evidencia)}
+                                            alt="Evidencia del daño"
+                                            className="img-thumbnail"
+                                            style={{ maxHeight: '190px', cursor: 'zoom-in' }}
+                                            onClick={() => setFotoAmpliada(detalleOrden.evidencia)}
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="d-flex justify-content-between align-items-start mb-3">
+                                    <div>
+                                        <h6 className="fw-bold mb-1">{detalleOrden.equipo || 'Equipo'}</h6>
+                                        <code>{detalleOrden.num_serie}</code>
+                                        {detalleOrden.area && (
+                                            <span className="badge bg-secondary-subtle text-secondary-emphasis ms-2">{detalleOrden.area}</span>
+                                        )}
+                                    </div>
+                                    <span className="badge text-bg-warning">Pendiente de aprobación</span>
+                                </div>
+
+                                <table className="table table-sm mb-3">
+                                    <tbody>
+                                        <tr>
+                                            <td className="text-secondary" style={{ width: '40%' }}>ID Orden</td>
+                                            <td className="fw-semibold">{detalleOrden.id_historial}</td>
+                                        </tr>
+                                        <tr>
+                                            <td className="text-secondary">Fecha de reporte</td>
+                                            <td>{new Date(detalleOrden.fecha_reporte).toLocaleDateString('es-CO')}</td>
+                                        </tr>
+                                        <tr>
+                                            <td className="text-secondary">Reportado por</td>
+                                            <td>Soporte Técnico</td>
+                                        </tr>
+                                        <tr>
+                                            <td className="text-secondary">Diagnóstico</td>
+                                            <td>{detalleOrden.falla}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-secondary" onClick={() => setDetalleOrden(null)}>
+                                    Cerrar
+                                </button>
+                                {rol === 'admin' && (
+                                    <>
+                                        <button
+                                            type="button"
+                                            className="btn btn-success"
+                                            onClick={() => { setDetalleOrden(null); handleDecidir(detalleOrden.id_historial, 'aprobada') }}
+                                        >
+                                            <i className="bi bi-check-lg me-1"></i>Aprobar
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="btn btn-danger"
+                                            onClick={() => { setDetalleOrden(null); handleDecidir(detalleOrden.id_historial, 'rechazada') }}
+                                        >
+                                            <i className="bi bi-x-lg me-1"></i>Rechazar
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {fotoAmpliada && (
                 <div

@@ -92,7 +92,25 @@ const Equipos = ({ usuario }) => {
             const res = await axios.get(API_ROUTES.PRESTAMOS_ACTIVOS_POR_EQUIPO(equipo.num_serie))
             prestamo = res.data
         } catch {
-            Swal.fire({ icon: 'warning', title: 'Sin préstamo activo', text: 'No se encontró un préstamo activo para este equipo' })
+            Swal.fire({
+                icon: 'warning',
+                title: 'Sin préstamo activo',
+                html: `No se encontró un préstamo activo para <strong>${equipo.num_serie}</strong>.<br/><br/>El equipo quedó marcado como asignado sin registro de préstamo. Puedes liberarlo para dejarlo disponible.`,
+                showCancelButton: true,
+                confirmButtonText: '<i class="bi bi-unlock me-1"></i>Liberar equipo',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#2563eb'
+            }).then(result => {
+                if (!result.isConfirmed) return
+                axios.post(API_ROUTES.LIBERAR_EQUIPO(equipo.num_serie))
+                    .then(() => {
+                        cargarDatos()
+                        Swal.fire({ icon: 'success', title: 'Equipo liberado', text: `${equipo.equipo} está disponible nuevamente`, timer: 2500, showConfirmButton: false })
+                    })
+                    .catch(err => {
+                        Swal.fire({ icon: 'error', title: 'Error al liberar', text: err.response?.data?.error || 'Hubo un error al liberar el equipo' })
+                    })
+            })
             return
         }
         Swal.fire({

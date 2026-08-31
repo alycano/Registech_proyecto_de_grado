@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import axios from "axios"
 import Prestamos from "./Prestamos"
 import HistorialPrestamos from "./HistorialPrestamos"
@@ -9,41 +9,41 @@ const GestionPrestamos = () => {
     const [kpis, setKpis] = useState(null)
 
     // RESUMEN GENERAL PARA LAS TARJETAS KPI (SE REFRESCA CADA 15s)
-    useEffect(() => {
-        const cargarKpis = () => {
-            axios.get(API_ROUTES.PRESTAMOS)
-                .then(res => {
-                    const data = res.data
-                    const hoy = new Date()
-                    hoy.setHours(0, 0, 0, 0)
-                    const comoFecha = (f) => f ? new Date(`${String(f).substring(0, 10)}T00:00:00`) : null
+    const cargarKpis = useCallback(() => {
+        axios.get(API_ROUTES.PRESTAMOS)
+            .then(res => {
+                const data = res.data
+                const hoy = new Date()
+                hoy.setHours(0, 0, 0, 0)
+                const comoFecha = (f) => f ? new Date(`${String(f).substring(0, 10)}T00:00:00`) : null
 
-                    const activos = data.filter(p => p.estado === 'activo')
-                    const vencidos = activos.filter(p => {
-                        const f = comoFecha(p.fecha_devolucion)
-                        return f && f < hoy
-                    }).length
-                    const porVencer = activos.filter(p => {
-                        const f = comoFecha(p.fecha_devolucion)
-                        if (!f) return false
-                        const dias = Math.round((f - hoy) / 86400000)
-                        return dias >= 0 && dias <= 3
-                    }).length
+                const activos = data.filter(p => p.estado === 'activo')
+                const vencidos = activos.filter(p => {
+                    const f = comoFecha(p.fecha_devolucion)
+                    return f && f < hoy
+                }).length
+                const porVencer = activos.filter(p => {
+                    const f = comoFecha(p.fecha_devolucion)
+                    if (!f) return false
+                    const dias = Math.round((f - hoy) / 86400000)
+                    return dias >= 0 && dias <= 3
+                }).length
 
-                    setKpis({
-                        activos: activos.length,
-                        porVencer,
-                        vencidos,
-                        devueltos: data.filter(p => p.estado === 'devuelto').length
-                    })
+                setKpis({
+                    activos: activos.length,
+                    porVencer,
+                    vencidos,
+                    devueltos: data.filter(p => p.estado === 'devuelto').length
                 })
-                .catch(() => setKpis(null))
-        }
+            })
+            .catch(() => setKpis(null))
+    }, [])
 
+    useEffect(() => {
         cargarKpis()
         const intervalo = setInterval(cargarKpis, 15000)
         return () => clearInterval(intervalo)
-    }, [])
+    }, [cargarKpis])
 
     return (
         <div>
@@ -146,7 +146,7 @@ const GestionPrestamos = () => {
             </ul>
 
             {/* CONTENIDO SEGUN PESTANA */}
-            {vista === 'activos' ? <Prestamos /> : <HistorialPrestamos />}
+            {vista === 'activos' ? <Prestamos onCambio={cargarKpis} /> : <HistorialPrestamos />}
         </div>
     )
 }

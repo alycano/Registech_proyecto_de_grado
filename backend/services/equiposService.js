@@ -40,6 +40,11 @@ exports.asignarUsuario = async (num_serie, usuario) => {
     await equiposRepository.updateResponsable(numSerieLimpio, responsable)
 }
 
+exports.liberarEquipo = async (num_serie) => {
+    const numSerieLimpio = sanitizarTexto(num_serie, 50)
+    return await equiposRepository.liberarEquipo(numSerieLimpio)
+}
+
 exports.reporteFalla = async (num_serie, falla, evidencia) => {
     const numSerieLimpio = sanitizarTexto(num_serie, 50)
     const fallaLimpia = sanitizarHtml(falla, 500)
@@ -63,7 +68,7 @@ exports.decidirAprobacion = async (id_historial, decision, aprobadoPor = null) =
         throw new Error('DECISION_INVALIDA')
     }
 
-    const idHistorialLimpio = sanitizarTexto(id_historial, 30)
+    const idHistorialLimpio = sanitizarTexto(id_historial, 40)
     const ordenActualizada = await equiposRepository.decidirOrden(idHistorialLimpio, decision, aprobadoPor ? sanitizarTexto(aprobadoPor, 50) : null)
 
     if (!ordenActualizada) {
@@ -75,7 +80,7 @@ exports.decidirAprobacion = async (id_historial, decision, aprobadoPor = null) =
 
 exports.resolverReporte = async (num_serie, id_historial, tecnico, solucion) => {
     const numSerieLimpio = sanitizarTexto(num_serie, 50)
-    const idHistorialLimpio = sanitizarTexto(id_historial, 30)
+    const idHistorialLimpio = sanitizarTexto(id_historial, 40)
     const tecnicoLimpio = sanitizarTexto(tecnico, 50)
     const solucionLimpia = sanitizarHtml(solucion, 1000)
     const fecha_solucion = new Date()

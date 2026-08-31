@@ -127,7 +127,7 @@ const HistorialPrestamos = () => {
                                     const duracion = getDuracion(p)
                                     const situacion = getSituacion(p)
                                     return (
-                                        <tr key={p.id_prestamo}>
+                                        <tr key={`${p.id_prestamo}-${p.num_serie}`}>
                                             <td>
                                                 <div className="fw-semibold">{p.equipo || '-'}</div>
                                                 <code className="equipo-card__ns">{p.num_serie}</code>

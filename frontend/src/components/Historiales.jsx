@@ -6,6 +6,7 @@ import { API_ROUTES } from "../api/apiRoutes"
 const Historiales = ({ usuario }) => {
     const [mantenimientos, setMantenimientos] = useState([])
     const [filter, setFilter] = useState("")
+    const [detalle, setDetalle] = useState(null)
 
     // FUNCION PARA MANEJAR LOS CAMBIOS EN EL CAMPO FILTRO
     const handleFilterChange = (e) => {
@@ -96,6 +97,7 @@ const Historiales = ({ usuario }) => {
                                 <th>Tecnico</th>
                                 <th>Fecha Reporte</th>
                                 <th>Fecha Solucion</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -108,6 +110,14 @@ const Historiales = ({ usuario }) => {
                                     <td>{equipo.usuario_tecnico || '-'}</td>
                                     <td>{equipo.fecha_reporte ? equipo.fecha_reporte.slice(0, 10) : '-'}</td>
                                     <td>{equipo.fecha_solucion ? equipo.fecha_solucion.slice(0, 10) : '-'}</td>
+                                    <td className="text-center">
+                                        <button
+                                            className="btn btn-sm btn-primary"
+                                            onClick={() => setDetalle(equipo)}
+                                        >
+                                            <i className="bi bi-eye me-1"></i>Ver detalles
+                                        </button>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -115,6 +125,113 @@ const Historiales = ({ usuario }) => {
                 </div>
                 )}
             </div>
+
+            {/* MODAL VER DETALLES */}
+            {detalle && (
+                <div className="modal fade show d-block" tabIndex="-1" role="dialog">
+                    <div className="modal-dialog modal-dialog-centered modal-lg" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title fw-bold">
+                                    Detalle del Mantenimiento
+                                </h5>
+                                <button
+                                    type="button"
+                                    className="btn-close"
+                                    onClick={() => setDetalle(null)}
+                                ></button>
+                            </div>
+                            <div className="modal-body">
+                                <div className="row g-3">
+                                    <div className="col-md-6">
+                                        <div className="mb-3">
+                                            <small className="text-secondary fw-semibold">ID Mantenimiento</small>
+                                            <div className="fw-semibold">{detalle.id_historial}</div>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="mb-3">
+                                            <small className="text-secondary fw-semibold">Número de serie</small>
+                                            <div className="fw-semibold">{detalle.num_serie}</div>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="mb-3">
+                                            <small className="text-secondary fw-semibold">Estado</small>
+                                            <div>
+                                                {detalle.estado_orden === 'pendiente' && <span className="badge text-bg-warning">Pendiente de aprobación</span>}
+                                                {detalle.estado_orden === 'aprobada' && !detalle.fecha_solucion && <span className="badge text-bg-primary">En reparación</span>}
+                                                {detalle.estado_orden === 'rechazada' && <span className="badge text-bg-danger">Rechazada</span>}
+                                                {detalle.fecha_solucion && <span className="badge text-bg-success">Completada</span>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="mb-3">
+                                            <small className="text-secondary fw-semibold">Equipo</small>
+                                            <div>{detalle.equipo || '-'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {detalle.evidencia && (
+                                    <div className="text-center mb-3">
+                                        <small className="text-secondary fw-semibold d-block mb-1">Evidencia fotográfica</small>
+                                        <img
+                                            src={API_ROUTES.ARCHIVO_EVIDENCIA(detalle.evidencia)}
+                                            alt="Evidencia del daño"
+                                            className="img-fluid rounded border"
+                                            style={{ maxHeight: '220px' }}
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="row g-3">
+                                    <div className="col-md-6">
+                                        <div className="mb-3">
+                                            <small className="text-secondary fw-semibold">Falla reportada</small>
+                                            <div className="text-break">{detalle.falla || '-'}</div>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="mb-3">
+                                            <small className="text-secondary fw-semibold">Solución</small>
+                                            <div className="text-break">{detalle.solucion || 'Aún sin resolver'}</div>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="mb-3">
+                                            <small className="text-secondary fw-semibold">Técnico responsable</small>
+                                            <div>{detalle.usuario_tecnico || '-'}</div>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="mb-3">
+                                            <small className="text-secondary fw-semibold">Aprobada por</small>
+                                            <div>{detalle.aprobada_por || '-'}</div>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="mb-3">
+                                            <small className="text-secondary fw-semibold">Fecha de reporte</small>
+                                            <div>{detalle.fecha_reporte ? detalle.fecha_reporte.slice(0, 10) : '-'}</div>
+                                        </div>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <div className="mb-3">
+                                            <small className="text-secondary fw-semibold">Fecha de solución</small>
+                                            <div>{detalle.fecha_solucion ? detalle.fecha_solucion.slice(0, 10) : '-'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button className="btn btn-secondary" onClick={() => setDetalle(null)}>Cerrar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

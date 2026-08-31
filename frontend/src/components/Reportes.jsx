@@ -173,7 +173,7 @@ const Reportes = ({ usuario }) => {
                     Reportes
                 </h2>
                 <span className="badge bg-primary-subtle text-primary-emphasis">
-                    Exportacion en formato Excel
+                    Exportación en formato Excel
                 </span>
             </div>
 

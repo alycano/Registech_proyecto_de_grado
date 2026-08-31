@@ -18,7 +18,7 @@
         return Math.round((new Date(limite) - new Date(toISODate(new Date()))) / 86400000)
     }
 
-    const Prestamos = () => {
+    const Prestamos = ({ onCambio }) => {
         const [prestamos, setPrestamos] = useState([])
         const [equiposDisponibles, setEquiposDisponibles] = useState([])
         const [usuarios, setUsuarios] = useState([])
@@ -57,6 +57,7 @@
                     setUsuarios(resUsuarios.data.filter(u => u.estado === 'activo'))
                     setAreas(resAreas.data)
                     setLoading(false)
+                    onCambio?.()
                 })
                 .catch(() => {
                     setLoading(false)
@@ -336,7 +337,7 @@
                                             <td>{p.observaciones || '-'}</td>
                                             <td className="text-center">
                                                 <button
-                                                    className="btn btn-outline-success btn-sm"
+                                                    className="btn btn-success btn-sm"
                                                     onClick={() => devolverPrestamo(p.id_prestamo, p.equipo)}
                                                 >
                                                     Devolver

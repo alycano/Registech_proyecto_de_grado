@@ -102,7 +102,15 @@ app.use((err, req, res, next) => {
     if (err.type === 'request.aborted') {
         return res.status(400).json({ error: 'Petición cancelada' })
     }
-    
+
+    // Errores de subida de archivos (multer)
+    if (err.message === 'SOLO_IMAGENES') {
+        return res.status(400).json({ error: 'Solo se permiten imágenes (jpg, png, webp, gif)' })
+    }
+    if (err && err.name === 'MulterError' && err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ error: 'La imagen supera el tamaño máximo de 5 MB' })
+    }
+
     // Error de programación o desconocido
     console.error('Error no controlado:', err)
     res.status(500).json({ error: 'Error interno del servidor' })

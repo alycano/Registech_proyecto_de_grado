@@ -71,6 +71,7 @@ export const API_ROUTES = {
     ARCHIVO_EVIDENCIA: (nombre) => `${BASE_URL.replace('/api', '')}/uploads/${nombre}`,
     ESTADOS_EQUIPO: `${BASE_URL}/estados_equipo`,
     ASIGNAR_USUARIO: `${BASE_URL}/equipos/asignacion`,
+    LIBERAR_EQUIPO: (numSerie) => `${BASE_URL}/equipos/${encodeURIComponent(numSerie)}/liberar`,
     REPORTE_FALLA: `${BASE_URL}/equipos/reporte/add`,
     OBTENER_MANTENIMIENTOS: `${BASE_URL}/equipos/reporte`,
     HISTORIAL_MANTENIMIENTOS: `${BASE_URL}/equipos/mantenimientos`,

@@ -2,8 +2,11 @@ import { useState } from "react"
 import axios from "axios"
 import Swal from "sweetalert2"
 import { API_ROUTES } from "../api/apiRoutes"
+import { useAuth } from "../context/AuthContext"
 
-const Configuracion = ({ usuario }) => {
+const Configuracion = () => {
+    const { usuario } = useAuth()
+
     const [contrasenaActual, setContrasenaActual] = useState('')
     const [contrasenaNueva, setContrasenaNueva] = useState('')
     const [confirmar, setConfirmar] = useState('')

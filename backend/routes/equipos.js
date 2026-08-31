@@ -5,6 +5,7 @@ const {
     getEstadosEquipo,
     agregarEquipo,
     asignarUsuario,
+    liberarEquipo,
     reporteFalla,
     getReportes,
     getHistorialMantenimientos,
@@ -28,7 +29,8 @@ router.get('/estados_equipo', authMiddleware, getEstadosEquipo)
 router.get('/equipos', authMiddleware, getEquipos)
 router.post('/equipos/add', authMiddleware, requireRol('admin'), upload.single('foto'), validate(crearEquipoSchema), agregarEquipo)
 router.post('/equipos/asignacion', authMiddleware, validate(asignarUsuarioSchema), asignarUsuario)
-router.post('/equipos/reporte/add', authMiddleware, upload.single('foto'), validate(reporteFallaSchema), reporteFalla)
+router.post('/equipos/:num_serie/liberar', authMiddleware, liberarEquipo)
+router.post('/equipos/reporte/add', authMiddleware, requireRol('sistemas'), upload.single('foto'), validate(reporteFallaSchema), reporteFalla)
 router.get('/equipos/reporte', authMiddleware, getReportes)
 router.get('/equipos/mantenimientos', authMiddleware, requireRol('admin', 'sistemas'), getHistorialMantenimientos)
 router.post('/equipos/reporte/aprobacion', authMiddleware, requireRol('admin'), validate(decisionAprobacionSchema), aprobarRechazarOrden)
