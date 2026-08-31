@@ -93,22 +93,105 @@ exports.crearPrestamo = async (req, res) => {
     }
 }
 
-
-
 exports.devolverPrestamo = async (req, res) => {
     try {
-        const observaciones = req.body.observaciones || null;
-        const evidencia = req.file ? req.file.filename : null;
-        await prestamosService.devolverPrestamo(req.params.id, observaciones, evidencia)
+        const observaciones = req.body.observaciones || null
+        const evidencia = req.file ? req.file.filename : null
+
+        await prestamosService.devolverPrestamo(
+            req.params.id,
+            observaciones,
+            evidencia
+        )
+
         const auditoriaService = require('../services/auditoriaService')
-        await auditoriaService.registrar(req.usuario.usuario, `Registró la devolución del préstamo ${req.params.id}`)
-        res.status(200).json({ mensaje: 'Devolución registrada exitosamente' })
+
+        await auditoriaService.registrar(
+            req.usuario.usuario,
+            `Registró la devolución del préstamo ${req.params.id}`
+        )
+
+        res.status(200).json({
+            mensaje: 'Devolución registrada exitosamente'
+        })
+
     } catch (error) {
-        if (error.message === 'REQUERIDO') return res.status(400).json({ error: 'El id del prestamo es requerido' })
-        if (error.message === 'PRESTAMO_NO_ENCONTRADO') return res.status(404).json({ error: 'Prestamo no encontrado' })
-        if (error.message === 'PRESTAMO_YA_DEVUELTO') return res.status(400).json({ error: 'Este prestamo ya fue devuelto' })
+
+        if (error.message === 'REQUERIDO') {
+            return res.status(400).json({
+                error: 'El id del prestamo es requerido'
+            })
+        }
+
+        if (error.message === 'PRESTAMO_NO_ENCONTRADO') {
+            return res.status(404).json({
+                error: 'Prestamo no encontrado'
+            })
+        }
+
+        if (error.message === 'PRESTAMO_YA_DEVUELTO') {
+            return res.status(400).json({
+                error: 'Este prestamo ya fue devuelto'
+            })
+        }
+
         console.error('Error al devolver prestamo:', error)
-        res.status(500).json({ error: 'Error al devolver prestamo' })
+
+        res.status(500).json({
+            error: 'Error al devolver prestamo'
+        })
+    }
+}
+
+exports.devolverEquipo = async (req, res) => {
+    try {
+        const observaciones = req.body.observaciones || null
+        const evidencia = req.file ? req.file.filename : null
+
+        const resultado = await prestamosService.devolverEquipo(
+            req.params.id,
+            req.params.num_serie,
+            observaciones,
+            evidencia
+        )
+
+        const auditoriaService = require('../services/auditoriaService')
+
+        await auditoriaService.registrar(
+            req.usuario.usuario,
+            `Registró la devolución del equipo ${req.params.num_serie} del préstamo ${req.params.id}`
+        )
+
+        res.status(200).json({
+            mensaje: 'Equipo devuelto exitosamente',
+            ...resultado
+        })
+
+    } catch (error) {
+
+        if (error.message === 'PRESTAMO_NO_ENCONTRADO') {
+            return res.status(404).json({
+                error: 'Préstamo no encontrado'
+            })
+        }
+
+        if (error.message === 'PRESTAMO_YA_DEVUELTO') {
+            return res.status(400).json({
+                error: 'Este préstamo ya fue devuelto'
+            })
+        }
+
+        if (error.message === 'EQUIPO_NO_PERTENECE') {
+            return res.status(400).json({
+                error: 'El equipo no pertenece a este préstamo'
+            })
+        }
+
+        console.error('Error al devolver equipo:', error)
+
+        res.status(500).json({
+            error: 'Error al devolver equipo'
+        })
     }
 }
 

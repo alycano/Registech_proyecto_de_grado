@@ -6,6 +6,7 @@ const helmet = require('helmet')
 const rateLimit = require('express-rate-limit')
 const cookieParser = require('cookie-parser')
 const { middlewareCsrf } = require('./middlewares/csrf')
+const notificacionesRoutes = require('./routes/notificaciones')
 
 const usuariosRoutes = require('./routes/usuarios')
 const areasRoutes = require('./routes/areas')
@@ -71,6 +72,7 @@ app.use('/api', prestamosRoutes)
 app.use('/api', dashboardRoutes)
 app.use('/api', solicitudesRoutes)
 app.use('/api/pmc', pmcRoutes)
+app.use('/api', notificacionesRoutes)
 
 // SERVIR LAS EVIDENCIAS FOTOGRAFICAS DE MANTENIMIENTO
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), { maxAge: '1d' }))
