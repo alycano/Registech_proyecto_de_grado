@@ -6,6 +6,7 @@ const helmet = require('helmet')
 const rateLimit = require('express-rate-limit')
 const cookieParser = require('cookie-parser')
 const { middlewareCsrf } = require('./middlewares/csrf')
+const notificacionesRoutes = require('./routes/notificaciones')
 
 const usuariosRoutes = require('./routes/usuarios')
 const areasRoutes = require('./routes/areas')
@@ -43,7 +44,7 @@ const loginLimiter = rateLimit({
     message: { error: 'Demasiados intentos de inicio de sesion. Intenta de nuevo en 15 minutos' }
 })
 app.use('/api/login', loginLimiter)
-
+app.use('/api/prestamos', prestamosRoutes)
 // LIMITE DE INTENTOS PARA RECUPERACION DE CONTRASENA
 const recuperacionLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -71,6 +72,7 @@ app.use('/api', prestamosRoutes)
 app.use('/api', dashboardRoutes)
 app.use('/api', solicitudesRoutes)
 app.use('/api/pmc', pmcRoutes)
+app.use('/api', notificacionesRoutes)
 
 // SERVIR LAS EVIDENCIAS FOTOGRAFICAS DE MANTENIMIENTO
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), { maxAge: '1d' }))
