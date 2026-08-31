@@ -54,10 +54,15 @@ model prestamos {
   fecha_devolucion DateTime? @db.Date
   estado           String    @default("activo") @db.VarChar(20)
   observaciones    String?
+
   evidencia        String?   @db.VarChar(255)
   area             String?   @db.VarChar(100)
 
   equipos prestamo_equipos[]
+  evidencia        String?            @db.VarChar(255)
+  area             String?            @db.VarChar(100)
+  equipos          prestamo_equipos[]
+  equipo           equipos?           @relation(fields: [num_serie], references: [num_serie], onDelete: NoAction, onUpdate: NoActio
 }
 
 model usuarios {
@@ -95,12 +100,19 @@ model reset_tokens {
 }
 
 model prestamo_equipos {
+
   id_prestamo String    @db.Uuid
   num_serie   String    @db.VarChar(50)
   estado      String?   @default("prestado") @db.VarChar(50)
 
   prestamo prestamos @relation(fields: [id_prestamo], references: [id_prestamo], onDelete: Cascade, map: "prestamo_equipos_prestamo_fkey")
-  equipo equipos @relation(fields: [num_serie], references: [num_serie], onDelete: NoAction, map: "prestamo_equipos_equipo_fkey")
+
+  id_prestamo String   @db.Uuid
+  num_serie   String   @db.VarChar(50)
+  estado      String?  @default("prestado") @db.VarChar(50)
+  equipos     equipos  @relation(fields: [num_serie], references: [num_serie], onDelete: NoAction, map: "prestamo_equipos_num_serie_fkey")
+  prestamos   prestamos @relation(fields: [id_prestamo], references: [id_prestamo], onDelete: Cascade, map: "prestamo_equipos_id_prestamo_fkey")
+
 
   @@id([id_prestamo, num_serie])
 }
@@ -115,6 +127,7 @@ model productos_menor_cuantia {
 }
 
 model solicitudes {
+
   id        Int      @id @default(autoincrement())
   usuario   String   @db.VarChar(50)
   detalles  String?
@@ -135,4 +148,11 @@ model notificaciones {
   @@index([usuario])
   @@index([leida])
   @@index([creado_en])
+
+  id          Int      @id @default(autoincrement())
+  usuario     String   @db.VarChar(50)
+  detalles    String?
+  estado      String   @default("pendiente") @db.VarChar(20)
+  creado_en   DateTime @default(now()) @db.Timestamp(6)
+
 }

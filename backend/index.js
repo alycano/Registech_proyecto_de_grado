@@ -44,7 +44,7 @@ const loginLimiter = rateLimit({
     message: { error: 'Demasiados intentos de inicio de sesion. Intenta de nuevo en 15 minutos' }
 })
 app.use('/api/login', loginLimiter)
-
+app.use('/api/prestamos', prestamosRoutes)
 // LIMITE DE INTENTOS PARA RECUPERACION DE CONTRASENA
 const recuperacionLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,

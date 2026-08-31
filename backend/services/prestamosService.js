@@ -118,3 +118,15 @@ exports.historialEquipo = async (num_serie) => {
 exports.getEstadisticas = async () => {
     return await prestamosRepository.getEstadisticasData()
 }
+
+exports.devolverEquipoParcial = async (id_prestamo, num_serie, observaciones) => {
+    const idLimpio = sanitizarTexto(id_prestamo, 50)
+    const serieLimpia = sanitizarTexto(num_serie, 50)
+    const obsLimpia = observaciones ? sanitizarTexto(observaciones, 500) : null
+
+    if (!idLimpio || !serieLimpia) {
+        throw new Error('REQUERIDOS')
+    }
+
+    await prestamosRepository.devolverEquipoParcialTransaction(idLimpio, serieLimpia, obsLimpia)
+}
