@@ -125,4 +125,13 @@ if (process.env.NODE_ENV !== 'test') {
     })
 }
 
+// Red de seguridad: evita que errores asíncronos no controlados (ej. caídas
+// de la BD) derriben el proceso en producción. Se registran pero no matan la app.
+process.on('unhandledRejection', (reason) => {
+    console.error('Promesa rechazada no controlada:', reason?.message || reason)
+})
+process.on('uncaughtException', (err) => {
+    console.error('Excepción no controlada:', err?.message || err)
+})
+
 module.exports = app
