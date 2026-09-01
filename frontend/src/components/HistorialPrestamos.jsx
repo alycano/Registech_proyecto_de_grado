@@ -127,7 +127,7 @@ const HistorialPrestamos = () => {
                                     const duracion = getDuracion(p)
                                     const situacion = getSituacion(p)
                                     return (
-                                        <tr key={p.id_prestamo}>
+                                        <tr key={`${p.id_prestamo}-${p.num_serie}`}>
                                             <td>
                                                 <div className="fw-semibold">{p.equipo || '-'}</div>
                                                 <code className="equipo-card__ns">{p.num_serie}</code>
@@ -152,7 +152,7 @@ const HistorialPrestamos = () => {
                                                         href={API_ROUTES.ARCHIVO_EVIDENCIA(p.evidencia)} 
                                                         target="_blank" 
                                                         rel="noreferrer" 
-                                                        className="btn btn-sm btn-outline-primary mt-1"
+                                                        className="btn btn-sm btn-primary mt-1"
                                                     >
                                                         <i className="bi bi-image me-1"></i> Ver Foto
                                                     </a>

@@ -2,8 +2,10 @@ import { useState, useEffect } from "react"
 import axios from "axios"
 import Swal from "sweetalert2"
 import { API_ROUTES } from "../api/apiRoutes"
+import { useAuth } from "../context/AuthContext"
 
-const Departamentos = ({ usuario }) => {
+const Departamentos = () => {
+    const { usuario } = useAuth()
     const esAdmin = usuario?.rol === 'admin'
 
     const [areas, setAreas] = useState([])
@@ -76,21 +78,23 @@ const Departamentos = ({ usuario }) => {
             .finally(() => setGuardando(false))
     }
 
+    const pluralizar = (n, palabra) => `${n} ${palabra}${n === 1 ? '' : 's'}`
+
     const eliminar = (area, nEquipos, nUsuarios) => {
+        const enUso = nEquipos > 0 || nUsuarios > 0
         Swal.fire({
             icon: 'warning',
-            title: `¿Eliminar ${area}?`,
-            html: nEquipos > 0 || nUsuarios > 0
-                ? `Tiene <strong>${nEquipos}</strong> equipo(s) y <strong>${nUsuarios}</strong> usuario(s) asignados. No se puede eliminar.`
-                : 'Esta acción no se puede deshacer',
+            title: enUso ? `No se puede eliminar ${area}` : `¿Eliminar ${area}?`,
+            html: enUso
+                ? `Este departamento tiene ${pluralizar(nEquipos, 'equipo')} y ${pluralizar(nUsuarios, 'usuario')} asignados.<br>Mueve o libera estos registros para poder eliminarlo.`
+                : 'Esta acción no se puede deshacer.',
             showCancelButton: true,
             confirmButtonText: 'Sí, eliminar',
             cancelButtonText: 'Cancelar',
             confirmButtonColor: '#dc2626',
             allowOutsideClick: () => !Swal.isLoading()
         }).then(result => {
-            if (!result.isConfirmed) return
-            if (nEquipos > 0 || nUsuarios > 0) return
+            if (!result.isConfirmed || enUso) return
 
             axios.delete(API_ROUTES.ELIMINAR_AREA(area))
                 .then(() => {
@@ -154,17 +158,16 @@ const Departamentos = ({ usuario }) => {
                                             {esAdmin && (
                                                 <div className="d-flex gap-1">
                                                     <button
-                                                        className="btn btn-sm btn-outline-secondary"
+                                                        className="btn btn-sm btn-primary"
                                                         title="Renombrar"
                                                         onClick={() => abrirEditar(area)}
                                                     >
                                                         <i className="bi bi-pencil"></i>
                                                     </button>
                                                     <button
-                                                        className="btn btn-sm btn-outline-danger"
+                                                        className="btn btn-sm btn-danger"
                                                         title="Eliminar"
                                                         onClick={() => eliminar(area, nEq, nUs)}
-                                                        disabled={nEq > 0 || nUs > 0}
                                                     >
                                                         <i className="bi bi-trash"></i>
                                                     </button>
@@ -204,7 +207,6 @@ const Departamentos = ({ usuario }) => {
                         <div className="modal-content">
                             <div className="modal-header">
                                 <h5 className="modal-title fw-bold">
-                                    <i className={`bi ${modoEdicion ? 'bi-pencil' : 'bi-building-add'} me-2`}></i>
                                     {modoEdicion ? 'Renombrar Departamento' : 'Nuevo Departamento'}
                                 </h5>
                                 <button type="button" className="btn-close" onClick={() => setModalAbierto(false)} disabled={guardando}></button>

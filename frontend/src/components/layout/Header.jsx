@@ -25,7 +25,7 @@ export default function Header({ usuario, onToggleSidebar, theme, onToggleTheme 
         : 'US'
 
     const handleCampana = () => {
-        navigate('/dashboard')
+        navigate('/maintenance')
     }
 
     return (
@@ -34,10 +34,6 @@ export default function Header({ usuario, onToggleSidebar, theme, onToggleTheme 
                 <button className="btn btn-link app-header__toggle" onClick={onToggleSidebar}>
                     <i className="bi bi-list fs-4"></i>
                 </button>
-                <div className="app-header__search d-none d-md-flex">
-                    <i className="bi bi-search"></i>
-                    <input type="text" placeholder="Buscar..." className="form-control" />
-                </div>
             </div>
 
             <div className="d-flex align-items-center gap-2">

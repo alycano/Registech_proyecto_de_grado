@@ -150,17 +150,19 @@ export default function ModalPrestamo({ equipo, usuarios, areas, onClose, onConf
                                         </div>
                                     </div>
 
-                                    <div className="form-check notificacion-check">
-                                        <input className="form-check-input" type="checkbox" id="checkCorreo"
-                                            checked={enviarCorreo} onChange={(e) => setEnviarCorreo(e.target.checked)}
-                                        />
-                                        <label className="form-check-label" htmlFor="checkCorreo">
-                                            Enviar recibo por correo electrónico al usuario
-                                        </label>
+                                    <div className="notificacion-check">
+                                        <div className="form-check mb-0">
+                                            <input className="form-check-input" type="checkbox" id="checkCorreo"
+                                                checked={enviarCorreo} onChange={(e) => setEnviarCorreo(e.target.checked)}
+                                            />
+                                            <label className="form-check-label" htmlFor="checkCorreo">
+                                                Enviar recibo por correo electrónico al usuario
+                                            </label>
+                                        </div>
                                         {enviarCorreo && (() => {
                                             const usuarioObj = usuarios.find(u => u.nombre === usuarioDestino)
                                             return usuarioObj?.correo ? (
-                                                <div className="small text-muted mt-1 ps-1">
+                                                <div className="small text-muted mt-2">
                                                     Se enviará a: <span className="fw-semibold text-primary">{usuarioObj.correo}</span>
                                                 </div>
                                             ) : null

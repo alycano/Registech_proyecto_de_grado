@@ -44,7 +44,24 @@ exports.update = async (usuarioParam, data) => {
 }
 
 exports.delete = async (usuarioParam) => {
-    await db.query('DELETE FROM usuarios WHERE usuario = $1', [usuarioParam])
+    const client = await db.pool.connect()
+    try {
+        await client.query('BEGIN')
+        // Los reset_tokens referencian a usuarios por FK: se limpian primero
+        await client.query('DELETE FROM reset_tokens WHERE usuario = $1', [usuarioParam])
+        const { rowCount } = await client.query('DELETE FROM usuarios WHERE usuario = $1', [usuarioParam])
+        await client.query('COMMIT')
+        if (rowCount === 0) {
+            const err = new Error('NOT_FOUND')
+            err.code = 'P2025'
+            throw err
+        }
+    } catch (e) {
+        await client.query('ROLLBACK')
+        throw e
+    } finally {
+        client.release()
+    }
 }
 
 exports.createResetToken = async (usuario, codigo, expiraEn) => {

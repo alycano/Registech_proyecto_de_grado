@@ -17,7 +17,7 @@ const reporteFallaSchema = z.object({
 const resolverReporteSchema = z.object({
     body: z.object({
         num_serie: z.string({ required_error: 'El número de serie es requerido' }).min(1).max(50),
-        id_historial: z.string({ required_error: 'El id_historial es requerido' }).min(1).max(30),
+        id_historial: z.string({ required_error: 'El id_historial es requerido' }).min(1).max(40),
         tecnico: z.string({ required_error: 'El técnico es requerido' }).min(1).max(50),
         solucion: z.string({ required_error: 'La solución es requerida' }).min(1).max(1000)
     })
@@ -31,7 +31,7 @@ const buscarMantenimientosSchema = z.object({
 
 const decisionAprobacionSchema = z.object({
     body: z.object({
-        id_historial: z.string({ required_error: 'El id_historial es requerido' }).min(1).max(30),
+        id_historial: z.string({ required_error: 'El id_historial es requerido' }).min(1).max(40),
         decision: z.enum(['aprobada', 'rechazada'], { required_error: 'La decisión es requerida', invalid_type_error: 'Decisión inválida' })
     })
 });

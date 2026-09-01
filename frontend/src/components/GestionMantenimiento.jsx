@@ -3,8 +3,10 @@ import axios from "axios"
 import Soportes from "./Soportes"
 import Historiales from "./Historiales"
 import { API_ROUTES } from "../api/apiRoutes"
+import { useAuth } from "../context/AuthContext"
 
-const GestionMantenimiento = ({ usuario }) => {
+const GestionMantenimiento = () => {
+    const { usuario } = useAuth()
     const esAdmin = usuario?.rol === 'admin'
 
     const [vista, setVista] = useState('activas')

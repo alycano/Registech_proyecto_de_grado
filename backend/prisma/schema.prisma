@@ -11,6 +11,10 @@ model areas {
   area String @id @db.VarChar(100)
 }
 
+model estados_equipos {
+  estado String @id @db.VarChar(50)
+}
+
 model equipos {
   num_serie         String             @id @db.VarChar(50)
   equipo            String             @db.VarChar(100)
@@ -27,8 +31,29 @@ model equipos {
   prestamos_equipos prestamo_equipos[]
 }
 
-model estados_equipos {
-  estado String @id @db.VarChar(50)
+model prestamos {
+  id_prestamo      String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  num_serie        String?            @db.VarChar(50)
+  usuario_destino  String             @db.VarChar(50)
+  fecha_prestamo   DateTime           @db.Date
+  fecha_devolucion DateTime?          @db.Date
+  estado           String             @default("activo") @db.VarChar(20)
+  observaciones    String?
+  evidencia        String?            @db.VarChar(255)
+  area             String?            @db.VarChar(100)
+
+  equipos prestamo_equipos[]
+}
+
+model prestamo_equipos {
+  id_prestamo String    @db.Uuid
+  num_serie   String    @db.VarChar(50)
+  estado      String?   @default("prestado") @db.VarChar(50)
+
+  prestamo prestamos @relation(fields: [id_prestamo], references: [id_prestamo], onDelete: Cascade, map: "prestamo_equipos_prestamo_fkey")
+  equipo   equipos   @relation(fields: [num_serie], references: [num_serie], onDelete: NoAction, map: "prestamo_equipos_num_serie_fkey")
+
+  @@id([id_prestamo, num_serie])
 }
 
 model historial_mantenimientos {
@@ -43,26 +68,7 @@ model historial_mantenimientos {
   estado_orden     String?   @default("pendiente") @db.VarChar(20)
   aprobada_por     String?   @db.VarChar(50)
   fecha_aprobacion DateTime? @db.Date
-  evidencia        String?
-}
-
-model prestamos {
-  id_prestamo      String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  num_serie        String?   @db.VarChar(50)
-  usuario_destino  String    @db.VarChar(50)
-  fecha_prestamo   DateTime  @db.Date
-  fecha_devolucion DateTime? @db.Date
-  estado           String    @default("activo") @db.VarChar(20)
-  observaciones    String?
-
-  evidencia        String?   @db.VarChar(255)
-  area             String?   @db.VarChar(100)
-
-  equipos prestamo_equipos[]
-  evidencia        String?            @db.VarChar(255)
-  area             String?            @db.VarChar(100)
-  equipos          prestamo_equipos[]
-  equipo           equipos?           @relation(fields: [num_serie], references: [num_serie], onDelete: NoAction, onUpdate: NoActio
+  evidencia        String?   @db.Text
 }
 
 model usuarios {
@@ -78,13 +84,12 @@ model usuarios {
   rol          String   @default("inventario") @db.VarChar(20)
 
   reset_tokens   reset_tokens[]
-  notificaciones notificaciones[]
 }
 
 model auditoria {
   id_auditoria String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   usuario      String   @db.VarChar(50)
-  accion        String   @db.VarChar(500)
+  accion       String   @db.VarChar(500)
   fecha        DateTime @default(now()) @db.Timestamp(6)
 }
 
@@ -99,24 +104,6 @@ model reset_tokens {
   usuarios usuarios @relation(fields: [usuario], references: [usuario], onDelete: NoAction, onUpdate: NoAction)
 }
 
-model prestamo_equipos {
-
-  id_prestamo String    @db.Uuid
-  num_serie   String    @db.VarChar(50)
-  estado      String?   @default("prestado") @db.VarChar(50)
-
-  prestamo prestamos @relation(fields: [id_prestamo], references: [id_prestamo], onDelete: Cascade, map: "prestamo_equipos_prestamo_fkey")
-
-  id_prestamo String   @db.Uuid
-  num_serie   String   @db.VarChar(50)
-  estado      String?  @default("prestado") @db.VarChar(50)
-  equipos     equipos  @relation(fields: [num_serie], references: [num_serie], onDelete: NoAction, map: "prestamo_equipos_num_serie_fkey")
-  prestamos   prestamos @relation(fields: [id_prestamo], references: [id_prestamo], onDelete: Cascade, map: "prestamo_equipos_id_prestamo_fkey")
-
-
-  @@id([id_prestamo, num_serie])
-}
-
 model productos_menor_cuantia {
   id                  Int       @id @default(autoincrement())
   nombre              String    @db.VarChar(100)
@@ -127,32 +114,23 @@ model productos_menor_cuantia {
 }
 
 model solicitudes {
-
-  id        Int      @id @default(autoincrement())
-  usuario   String   @db.VarChar(50)
+  id        Int       @id @default(autoincrement())
+  usuario   String    @db.VarChar(50)
   detalles  String?
-  estado    String   @default("pendiente") @db.VarChar(20)
-  creado_en DateTime @default(now()) @db.Timestamp(6)
+  estado    String    @default("pendiente") @db.VarChar(20)
+  creado_en DateTime  @default(now()) @db.Timestamp(6)
 }
 
 model notificaciones {
-  id        String   @id @default(uuid()) @db.Uuid
-  usuario   String   @db.VarChar(50)
-  tipo      String   @db.VarChar(30)
-  mensaje   String   @db.VarChar(500)
-  leida     Boolean  @default(false)
-  creado_en DateTime @default(now()) @db.Timestamp(6)
-
-  usuario_relacionado usuarios @relation(fields: [usuario], references: [usuario], onDelete: Cascade, onUpdate: Cascade)
+  id        Int       @id @default(autoincrement())
+  usuario   String    @db.VarChar(50)
+  titulo    String?   @db.VarChar(200)
+  mensaje   String?   @db.Text
+  tipo      String    @db.VarChar(30)
+  leida     Boolean   @default(false)
+  creado_en DateTime  @default(now()) @db.Timestamp(6)
 
   @@index([usuario])
   @@index([leida])
   @@index([creado_en])
-
-  id          Int      @id @default(autoincrement())
-  usuario     String   @db.VarChar(50)
-  detalles    String?
-  estado      String   @default("pendiente") @db.VarChar(20)
-  creado_en   DateTime @default(now()) @db.Timestamp(6)
-
 }

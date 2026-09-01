@@ -13,16 +13,19 @@
   --text: #0f172a;
   --text-2: #475569;
   --text-3: #94a3b8;
-  --sidebar-bg: #0f172a;
-  --sidebar-hover: #1e293b;
+  --sidebar-bg: #ffffff;
+  --sidebar-hover: #f1f5f9;
   --sidebar-active: #2563eb;
-  --sidebar-text: #94a3b8;
+  --sidebar-text: #475569;
+  --sidebar-border: #e2e8f0;
+  --sidebar-accent: #2563eb;
   --sidebar-w: 250px;
   --sidebar-w-collapsed: 64px;
   --header-h: 56px;
 }
 
 [data-theme="dark"] {
+  --brand-light: #172554;
   --bg-app: #0f172a;
   --bg-surface: #1e293b;
   --bg-surface-2: #334155;
@@ -30,6 +33,11 @@
   --text: #f1f5f9;
   --text-2: #94a3b8;
   --text-3: #64748b;
+  --sidebar-bg: #0f172a;
+  --sidebar-hover: #1e293b;
+  --sidebar-text: #94a3b8;
+  --sidebar-border: #1e293b;
+  --sidebar-accent: #60a5fa;
 }
 
 [data-theme="dark"] .card {
@@ -111,23 +119,23 @@
 }
 
 [data-theme="dark"] .estado-disponible {
-  background: rgba(34, 197, 94, 0.2);
-  color: #4ade80;
+  background: rgba(34, 197, 94, 0.28);
+  color: #86efac;
 }
 
 [data-theme="dark"] .estado-prestamo {
-  background: rgba(249, 115, 22, 0.2);
-  color: #fb923c;
+  background: rgba(249, 115, 22, 0.28);
+  color: #fdba74;
 }
 
 [data-theme="dark"] .estado-mantenimiento {
-  background: rgba(234, 179, 8, 0.2);
-  color: #facc15;
+  background: rgba(234, 179, 8, 0.28);
+  color: #fde047;
 }
 
 [data-theme="dark"] .estado-baja {
-  background: rgba(239, 68, 68, 0.2);
-  color: #f87171;
+  background: rgba(239, 68, 68, 0.3);
+  color: #fecaca;
 }
 
 [data-theme="dark"] .dept-tag {
@@ -197,6 +205,11 @@
 [data-theme="dark"] .chip-alerta--ok { background: rgba(34,197,94,0.15); color: #86efac; }
 
 [data-theme="dark"] .equipo-card__responsable { background: rgba(194,65,12,0.1); color: #fb923c; }
+
+[data-theme="dark"] .equipo-card--baja {
+  opacity: 1;
+  filter: grayscale(0.25);
+}
 
 [data-theme="dark"] .status-badge { background: var(--bg-surface-2); color: var(--text-2); }
 
@@ -273,20 +286,21 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
-  border-bottom: 1px solid #1e293b;
-  min-height: 56px;
+  padding: 0 1rem;
+  border-bottom: 1px solid var(--sidebar-border);
+  height: var(--header-h);
+  min-height: var(--header-h);
 }
 
 .sidebar__brand-text {
   font-weight: 700;
   font-size: 1.15rem;
-  color: #fff;
+  color: var(--text);
   white-space: nowrap;
 }
 
 .sidebar__brand-text--center { font-size: 1rem; }
-.text-accent { color: #60a5fa; }
+.text-accent { color: var(--sidebar-accent); }
 
 .sidebar__nav {
   flex: 1;
@@ -315,7 +329,7 @@ body {
   cursor: pointer;
 }
 
-.sidebar__link:hover { background: var(--sidebar-hover); color: #e2e8f0; }
+.sidebar__link:hover { background: var(--sidebar-hover); color: var(--text); }
 
 .sidebar__link--active {
   background: var(--sidebar-active) !important;
@@ -326,7 +340,7 @@ body {
 
 .sidebar__footer {
   padding: 0.5rem;
-  border-top: 1px solid #1e293b;
+  border-top: 1px solid var(--sidebar-border);
 }
 
 .sidebar__logout:hover { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
@@ -708,6 +722,81 @@ body {
 .code-input { font-family: monospace; font-size: 1.25rem; letter-spacing: 0.3rem; text-align: center; font-weight: 700; }
 
 /* ============================================================
+   Acceso Rapido Demo (Login) - dropdown cuentas de demostracion
+   ============================================================ */
+.demo-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 1060;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.6rem;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14);
+  overflow: hidden;
+  padding: 0.35rem;
+}
+[data-theme="dark"] .demo-dropdown {
+  background: #0f172a;
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+.demo-dropdown__header {
+  display: flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  padding: 0.4rem 0.5rem 0.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 0.25rem;
+}
+[data-theme="dark"] .demo-dropdown__header { color: #94a3b8; border-bottom-color: rgba(255,255,255,0.08); }
+.demo-dropdown__item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.5rem 0.55rem;
+  border: none;
+  border-radius: 0.45rem;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.demo-dropdown__item:hover:not(:disabled) { background: #f1f5f9; }
+.demo-dropdown__item:disabled { opacity: 0.6; cursor: not-allowed; }
+[data-theme="dark"] .demo-dropdown__item:hover:not(:disabled) { background: rgba(255,255,255,0.06); }
+.demo-dropdown__icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #eff6ff;
+  color: var(--brand);
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+[data-theme="dark"] .demo-dropdown__icon { background: rgba(37,99,235,0.18); }
+.demo-dropdown__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  min-width: 0;
+}
+.demo-dropdown__rol { font-size: 0.84rem; font-weight: 600; color: #1e293b; }
+.demo-dropdown__correo { font-size: 0.72rem; color: #64748b; }
+[data-theme="dark"] .demo-dropdown__rol { color: #e2e8f0; }
+[data-theme="dark"] .demo-dropdown__correo { color: #94a3b8; }
+.demo-dropdown__go { margin-left: auto; color: #94a3b8; font-size: 0.9rem; }
+.demo-dropdown__item:hover .demo-dropdown__go { color: var(--brand); }
+
+/* ============================================================
    Grid de Equipos (tarjetas de inventario)
    ============================================================ */
 /* Los <code> de Bootstrap son rosados por defecto: se usan para numeros
@@ -748,6 +837,13 @@ code {
 .equipo-card__visual .bi {
   font-size: 2.8rem;
   color: var(--text-3);
+}
+
+.equipo-card__visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .equipo-card__badge {
@@ -884,6 +980,14 @@ code {
 }
 
 .prestamo-modal__imagen .bi { font-size: 2.6rem; color: var(--text-3); }
+
+.prestamo-modal__imagen img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  display: block;
+}
 
 .prestamo-modal__modelo {
   font-weight: 700;

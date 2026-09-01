@@ -10,6 +10,6 @@ router.post('/solicitudes', authMiddleware, crearSolicitud)
 router.get('/solicitudes/mis', authMiddleware, getMisSolicitudes)
 router.get('/solicitudes', authMiddleware, requireRol('admin'), getSolicitudes)
 router.put('/solicitudes/:id/responder', authMiddleware, requireRol('admin'), responderSolicitud)
-router.get('/actividad', authMiddleware, getActividadReciente)
+router.get('/actividad', authMiddleware, requireRol('admin'), getActividadReciente)
 
 module.exports = router

@@ -190,7 +190,7 @@ const RecursosHumanos = () => {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error al eliminar el usuario',
-                        text: 'Hubo un problema al eliminar el usuario'
+                        text: err.response?.data?.error || 'Hubo un problema al eliminar el usuario'
                     })
                 })
             }
@@ -278,24 +278,24 @@ const RecursosHumanos = () => {
                                     <td>{usuario.correo}</td>
                                     <td>
                                         <span className={`badge ${getEstadoClass(usuario.estado)}`}>
-                                            {usuario.estado}
+                                            {usuario.estado === 'activo' ? 'Activo' : 'Inactivo'}
                                         </span>
                                     </td>
                                     <td className="text-center">
                                         <button
-                                            className="btn btn-outline-primary btn-sm me-1"
+                                            className="btn btn-primary btn-sm me-1"
                                             onClick={() => editarUsuario(usuario)}
                                             title="Editar"
                                         >
-                                            Editar
+                                            <i className="bi bi-pencil me-1"></i>Editar
                                         </button>
 
                                         <button
-                                            className="btn btn-outline-danger btn-sm"
+                                            className="btn btn-danger btn-sm"
                                             onClick={() => borrarUsuario(usuario)}
                                             title="Eliminar"
                                         >
-                                            Eliminar
+                                            <i className="bi bi-trash me-1"></i>Eliminar
                                         </button>
                                     </td>
                                 </tr>

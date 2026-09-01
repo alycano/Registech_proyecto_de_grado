@@ -6,12 +6,20 @@ import Swal from 'sweetalert2'
 import { API_ROUTES } from "../api/apiRoutes"
 import { useAuth } from "../context/AuthContext"
 
+// Cuentas de demostración para la sustentación (credenciales reales de la BD, verificadas).
+const CUENTAS_DEMO = [
+    { rol: 'Administrador', icono: 'bi-shield-lock', correo: 'admin@registech.com', contrasena: 'admin123' },
+    { rol: 'Sistemas', icono: 'bi-gear', correo: 'soporte@registech.com', contrasena: 'soporte123' },
+    { rol: 'Inventario', icono: 'bi-box-seam', correo: 'test@test.com', contrasena: 'test1234' },
+]
+
 const Login = () => {
     const [correo, setCorreo] = useState("")
     const [contrasena, setContrasena] = useState("")
     const [loading, setLoading] = useState(false)
     const [verPassword, setVerPassword] = useState(false)
     const [recordarme, setRecordarme] = useState(false)
+    const [dropdownDemo, setDropdownDemo] = useState(false)
 
     const [modalRecuperar, setModalRecuperar] = useState(false)
     const [pasoRecuperacion, setPasoRecuperacion] = useState(1)
@@ -120,8 +128,12 @@ const Login = () => {
         }
     }
 
-    const handleAbrirRecuperar = () => {
-        setPasoRecuperacion(1)
+    const autocompletarPorCorreo = (correoValue) => {
+        const cuenta = CUENTAS_DEMO.find((c) => c.correo === correoValue)
+        if (cuenta) setContrasena(cuenta.contrasena)
+    }
+
+    const handleAbrirRecuperar = () => {        setPasoRecuperacion(1)
         setCorreoRecuperacion("")
         setCodigoRecuperacion("")
         setCodigoDemoGenerado("")
@@ -268,13 +280,52 @@ const Login = () => {
                                 <input
                                     type="email"
                                     autoComplete="email"
-                                    className="form-control"
+                                    className="form-control has-toggle"
                                     id="correo"
                                     value={correo}
-                                    onChange={(e) => setCorreo(e.target.value)}
-                                    placeholder="ejemplo@correo.com"
+                                    onChange={(e) => {
+                                        setCorreo(e.target.value)
+                                        autocompletarPorCorreo(e.target.value)
+                                    }}
+                                    placeholder="Selecciona o escribe tu correo"
                                     disabled={loading}
                                 />
+                                <button
+                                    type="button"
+                                    className="btn-toggle-pwd"
+                                    onClick={() => setDropdownDemo(!dropdownDemo)}
+                                    title="Cuentas de demostración"
+                                    tabIndex="-1"
+                                    disabled={loading}
+                                >
+                                    <i className={`bi ${dropdownDemo ? 'bi-chevron-up' : 'bi-chevron-down'}`}></i>
+                                </button>
+
+                                {dropdownDemo && (
+                                    <div className="demo-dropdown">
+                                        <div className="demo-dropdown__header">
+                                            Cuentas de demostración
+                                        </div>
+                                        {CUENTAS_DEMO.map((cuenta) => (
+                                            <button
+                                                key={cuenta.rol}
+                                                type="button"
+                                                className="demo-dropdown__item"
+                                                onClick={() => {
+                                                    setCorreo(cuenta.correo)
+                                                    setContrasena(cuenta.contrasena)
+                                                    setDropdownDemo(false)
+                                                }}
+                                                disabled={loading}
+                                            >
+                                                <span className="demo-dropdown__text">
+                                                    <span className="demo-dropdown__rol">{cuenta.rol}</span>
+                                                    <span className="demo-dropdown__correo">{cuenta.correo}</span>
+                                                </span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -370,7 +421,6 @@ const Login = () => {
 
                             <div className="modal-header">
                                 <h5 className="modal-title fw-bold text-primary">
-                                    <i className="bi bi-shield-lock me-2"></i>
                                     Recuperar Contraseña
                                 </h5>
                                 <button
@@ -431,7 +481,6 @@ const Login = () => {
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <i className="bi bi-send me-1"></i>
                                                         Solicitar Código
                                                     </>
                                                 )}

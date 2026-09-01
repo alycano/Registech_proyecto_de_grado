@@ -7,6 +7,12 @@ const PMC = () => {
     const [pmcs, setPmcs] = useState([])
     const [loading, setLoading] = useState(true)
 
+    const [modalCrear, setModalCrear] = useState(false)
+    const [nuevoNombre, setNuevoNombre] = useState('')
+    const [nuevaDescripcion, setNuevaDescripcion] = useState('')
+    const [nuevaCantidad, setNuevaCantidad] = useState('')
+    const [guardando, setGuardando] = useState(false)
+
     const fetchPMCs = async () => {
         try {
             const response = await axios.get(API_ROUTES.PMC)
@@ -26,40 +32,41 @@ const PMC = () => {
         fetchPMCs()
     }, [])
 
-    const handleCrear = async () => {
-        const { value: formValues } = await Swal.fire({
-            title: 'Registrar Nuevo Consumible (PMC)',
-            html:
-                '<input id="swal-input1" class="swal2-input" placeholder="Nombre (Ej: Mouse)">' +
-                '<input id="swal-input2" class="swal2-input" placeholder="Descripción">' +
-                '<input id="swal-input3" type="number" class="swal2-input" placeholder="Cantidad Total">',
-            focusConfirm: false,
-            showCancelButton: true,
-            confirmButtonText: 'Registrar',
-            cancelButtonText: 'Cancelar',
-            preConfirm: () => {
-                const nombre = document.getElementById('swal-input1').value
-                const cantidad_total = document.getElementById('swal-input3').value
-                if (!nombre || !cantidad_total) {
-                    Swal.showValidationMessage('Nombre y cantidad total son obligatorios')
-                }
-                return {
-                    nombre,
-                    descripcion: document.getElementById('swal-input2').value,
-                    cantidad_total: parseInt(cantidad_total)
-                }
-            }
-        })
+    const abrirModalCrear = () => {
+        setNuevoNombre('')
+        setNuevaDescripcion('')
+        setNuevaCantidad('')
+        setModalCrear(true)
+    }
 
-        if (formValues) {
-            try {
-                await axios.post(API_ROUTES.PMC, formValues)
-                Swal.fire('¡Creado!', 'El consumible ha sido registrado.', 'success')
-                fetchPMCs()
-            } catch (error) {
-                Swal.fire('Error', error.response?.data?.error || 'No se pudo crear', 'error')
-            }
+    const guardarConsumible = (e) => {
+        e.preventDefault()
+
+        const cantidad = parseInt(nuevaCantidad, 10)
+        if (!nuevoNombre.trim()) {
+            Swal.fire({ icon: 'warning', title: 'Falta el nombre', text: 'El nombre del consumible es obligatorio' })
+            return
         }
+        if (!cantidad || cantidad < 1) {
+            Swal.fire({ icon: 'warning', title: 'Cantidad inválida', text: 'La cantidad total debe ser mayor a 0' })
+            return
+        }
+
+        setGuardando(true)
+        axios.post(API_ROUTES.PMC, {
+            nombre: nuevoNombre.trim(),
+            descripcion: nuevaDescripcion.trim() || null,
+            cantidad_total: cantidad
+        })
+            .then(() => {
+                setModalCrear(false)
+                Swal.fire({ icon: 'success', title: '¡Creado!', text: 'El consumible ha sido registrado.', timer: 2000, showConfirmButton: false })
+                fetchPMCs()
+            })
+            .catch(error => {
+                Swal.fire('Error', error.response?.data?.error || 'No se pudo crear', 'error')
+            })
+            .finally(() => setGuardando(false))
     }
 
     const handleEntregar = async (id) => {
@@ -70,10 +77,8 @@ const PMC = () => {
                 icon: 'success',
                 title: 'Entregado',
                 text: 'Se ha restado 1 unidad del stock disponible',
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 3000
+                timer: 2000,
+                showConfirmButton: false
             })
         } catch (error) {
             Swal.fire('Error', error.response?.data?.error || 'Error al entregar', 'error')
@@ -88,10 +93,8 @@ const PMC = () => {
                 icon: 'success',
                 title: 'Devuelto',
                 text: 'Se ha sumado 1 unidad al stock disponible',
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 3000
+                timer: 2000,
+                showConfirmButton: false
             })
         } catch (error) {
             Swal.fire('Error', error.response?.data?.error || 'Error al devolver', 'error')
@@ -125,16 +128,18 @@ const PMC = () => {
 
     return (
         <div>
-            <div className="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                <h1 className="h2">Inventario Menor (PMC)</h1>
-                <button className="btn btn-primary" onClick={handleCrear}>
+            <div className="module-header">
+                <h2 className="module-title mb-0">
+                    Inventario Menor (PMC)
+                </h2>
+                <button className="btn btn-primary" onClick={abrirModalCrear}>
                     <i className="bi bi-plus-circle me-2"></i>Registrar PMC
                 </button>
             </div>
 
             <div className="table-responsive">
                 <table className="table table-striped table-hover align-middle">
-                    <thead className="table-dark">
+                    <thead className="table-header">
                         <tr>
                             <th>ID</th>
                             <th>Nombre</th>
@@ -153,25 +158,25 @@ const PMC = () => {
                                 <td className="text-center">{pmc.cantidad_total}</td>
                                 <td className="text-center text-success fw-bold">{pmc.cantidad_disponible}</td>
                                 <td className="text-center">
-                                    <div className="btn-group" role="group">
-                                        <button 
-                                            className="btn btn-sm btn-outline-danger" 
+                                    <div className="d-flex gap-2 justify-content-center">
+                                        <button
+                                            className="btn btn-sm btn-danger"
                                             onClick={() => handleEntregar(pmc.id)}
                                             title="Entregar 1 unidad (-1)"
                                             disabled={pmc.cantidad_disponible <= 0}
                                         >
-                                            Entregar (-1)
+                                            <i className="bi bi-box-arrow-right me-1"></i>Entregar (-1)
                                         </button>
-                                        <button 
-                                            className="btn btn-sm btn-outline-success" 
+                                        <button
+                                            className="btn btn-sm btn-success"
                                             onClick={() => handleDevolver(pmc.id)}
                                             title="Devolver 1 unidad (+1)"
                                             disabled={pmc.cantidad_disponible >= pmc.cantidad_total}
                                         >
-                                            Devolver (+1)
+                                            <i className="bi bi-arrow-return-left me-1"></i>Devolver (+1)
                                         </button>
-                                        <button 
-                                            className="btn btn-sm btn-danger ms-2" 
+                                        <button
+                                            className="btn btn-sm btn-danger"
                                             onClick={() => handleEliminar(pmc.id)}
                                             title="Eliminar registro"
                                         >
@@ -191,6 +196,85 @@ const PMC = () => {
                     </tbody>
                 </table>
             </div>
+
+            {/* MODAL REGISTRAR CONSUMIBLE */}
+            {modalCrear && (
+                <div
+                    className="modal fade show d-block"
+                    tabIndex="-1"
+                    style={{ display: 'block', zIndex: '1050', backgroundColor: 'rgba(0,0,0,0.5)' }}
+                    onClick={() => !guardando && setModalCrear(false)}
+                >
+                    <div className="modal-dialog modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title fw-bold">
+                                    Registrar Nuevo Consumible (PMC)
+                                </h5>
+                                <button
+                                    type="button"
+                                    className="btn-close"
+                                    onClick={() => !guardando && setModalCrear(false)}
+                                    disabled={guardando}
+                                ></button>
+                            </div>
+
+                            <form onSubmit={guardarConsumible}>
+                                <div className="modal-body">
+                                    <div className="mb-3">
+                                        <label className="form-label fw-semibold">Nombre</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            placeholder="Ej: Mouse"
+                                            value={nuevoNombre}
+                                            onChange={(e) => setNuevoNombre(e.target.value)}
+                                            disabled={guardando}
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="mb-3">
+                                        <label className="form-label fw-semibold">Descripción</label>
+                                        <textarea
+                                            className="form-control"
+                                            rows="2"
+                                            placeholder="Opcional..."
+                                            value={nuevaDescripcion}
+                                            onChange={(e) => setNuevaDescripcion(e.target.value)}
+                                            disabled={guardando}
+                                        ></textarea>
+                                    </div>
+
+                                    <div className="mb-3">
+                                        <label className="form-label fw-semibold">Cantidad Total</label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            step="1"
+                                            className="form-control"
+                                            placeholder="Ej: 10"
+                                            value={nuevaCantidad}
+                                            onChange={(e) => setNuevaCantidad(e.target.value)}
+                                            disabled={guardando}
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="modal-footer">
+                                    <button type="button" className="btn btn-secondary" onClick={() => setModalCrear(false)} disabled={guardando}>
+                                        Cancelar
+                                    </button>
+                                    <button type="submit" className="btn btn-primary" disabled={guardando}>
+                                        {guardando ? 'Guardando...' : 'Registrar'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
