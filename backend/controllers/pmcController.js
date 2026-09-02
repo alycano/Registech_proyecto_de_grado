@@ -1,4 +1,5 @@
 const pmcService = require('../services/pmcService');
+const notificacionesService = require('../services/notificacionesService');
 
 exports.obtenerTodos = async (req, res, next) => {
     const pmcs = await pmcService.obtenerTodos();
@@ -22,10 +23,18 @@ exports.eliminarProducto = async (req, res, next) => {
 
 exports.entregarProducto = async (req, res, next) => {
     const producto = await pmcService.entregarProducto(req.params.id);
+    await notificacionesService.notificarAdmins(
+        'pmc',
+        `El usuario ${req.usuario?.usuario || 'Sistema'} entregó 1 unidad del PMC: ${producto.nombre}.`
+    );
     res.json({ mensaje: 'Stock restado (Entregado)', producto });
 };
 
 exports.devolverProducto = async (req, res, next) => {
     const producto = await pmcService.devolverProducto(req.params.id);
+    await notificacionesService.notificarAdmins(
+        'pmc',
+        `El usuario ${req.usuario?.usuario || 'Sistema'} devolvió 1 unidad del PMC: ${producto.nombre}.`
+    );
     res.json({ mensaje: 'Stock sumado (Devuelto)', producto });
 };
