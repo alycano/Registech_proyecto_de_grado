@@ -1,4 +1,26 @@
 const notificacionesRepository = require('../repository/notificacionesRepository')
+const prisma = require('../lib/prisma')
+
+exports.notificarAdmins = async (tipo, mensaje) => {
+    try {
+        const administradores = await prisma.usuarios.findMany({
+            where: {
+                rol: 'admin',
+                estado: 'Activo'
+            }
+        })
+        for (const admin of administradores) {
+            await notificacionesRepository.crear({
+                usuario: admin.usuario,
+                tipo,
+                mensaje
+            })
+        }
+    } catch (error) {
+        console.error('Error al notificar a administradores:', error)
+    }
+}
+
 
 exports.crear = async (usuario, tipo, mensaje) => {
     if (!usuario || !mensaje) return null

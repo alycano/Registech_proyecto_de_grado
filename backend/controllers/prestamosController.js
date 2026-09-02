@@ -1,5 +1,5 @@
-const prestamosController = require('../controllers/prestamosController');
 const prestamosService = require('../services/prestamosService')
+const notificacionesService = require('../services/notificacionesService')
 
 exports.getPrestamos = async (req, res) => {
     try {
@@ -57,6 +57,12 @@ exports.crearPrestamo = async (req, res) => {
             `Prestó los equipos ${equipos} a ${req.body.usuario_destino}${rangoFechas}`
         )
 
+        // NOTIFICACIÓN PARA ADMINISTRADORES
+        await notificacionesService.notificarAdmins(
+            'prestamos',
+            `El usuario ${req.usuario.usuario} prestó los equipos ${equipos} a ${req.body.usuario_destino}.`
+        )
+
         res.status(201).json({
             mensaje: 'Prestamo registrado exitosamente'
         })
@@ -112,6 +118,12 @@ exports.devolverPrestamo = async (req, res) => {
             `Registró la devolución del préstamo ${req.params.id}`
         )
 
+        // NOTIFICACIÓN PARA ADMINISTRADORES
+        await notificacionesService.notificarAdmins(
+            'prestamos',
+            `El usuario ${req.usuario.usuario} registró la devolución total del préstamo #${req.params.id}.`
+        )
+
         res.status(200).json({
             mensaje: 'Devolución registrada exitosamente'
         })
@@ -161,6 +173,12 @@ exports.devolverEquipo = async (req, res) => {
         await auditoriaService.registrar(
             req.usuario.usuario,
             `Registró la devolución del equipo ${req.params.num_serie} del préstamo ${req.params.id}`
+        )
+
+        // NOTIFICACIÓN PARA ADMINISTRADORES
+        await notificacionesService.notificarAdmins(
+            'prestamos',
+            `El usuario ${req.usuario.usuario} devolvió el equipo ${req.params.num_serie} del préstamo #${req.params.id}.`
         )
 
         res.status(200).json({
@@ -233,6 +251,12 @@ exports.devolverEquipoParcial = async (req, res) => {
         await auditoriaService.registrar(
             req.usuario.usuario, 
             `Registró la devolución parcial de equipos (${series.join(', ')}) del préstamo ${prestamoId}`
+        );
+
+        // NOTIFICACIÓN PARA ADMINISTRADORES
+        await notificacionesService.notificarAdmins(
+            'prestamos',
+            `El usuario ${req.usuario.usuario} registró una devolución parcial (${series.join(', ')}) del préstamo #${prestamoId}.`
         );
 
         res.status(200).json({ mensaje: 'Devolución parcial registrada exitosamente' });
