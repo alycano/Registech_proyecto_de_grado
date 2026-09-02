@@ -90,7 +90,60 @@ exports.updateUsuario = async (usuarioParam, data) => {
 }
 
 exports.deleteUsuario = async (usuarioParam) => {
+
+    // Verificar si tiene un préstamo activo o parcial
+    const tieneActivo = await usuariosRepository.tienePrestamoActivo(usuarioParam)
+
+    if (tieneActivo) {
+        throw new Error('PRESTAMO_ACTIVO')
+    }
+
+    // Verificar si alguna vez ha tenido un préstamo
+    const tieneHistorial = await usuariosRepository.tieneHistorialPrestamos(usuarioParam)
+
+    if (tieneHistorial) {
+
+        // Tiene historial → no se elimina, se desactiva
+        await usuariosRepository.update(usuarioParam, {
+            estado: 'inactivo'
+        })
+
+        throw new Error('DESACTIVADO')
+    }
+
+    // Nunca ha tenido préstamos → se elimina normalmente
     await usuariosRepository.delete(usuarioParam)
+}
+
+
+
+exports.verificarEliminacion = async (usuarioParam) => {
+
+    const tieneActivo = await usuariosRepository.tienePrestamoActivo(usuarioParam)
+
+    if (tieneActivo) {
+        return {
+            puedeEliminar: false,
+            tieneHistorial: true,
+            tienePrestamoActivo: true
+        }
+    }
+
+    const tieneHistorial = await usuariosRepository.tieneHistorialPrestamos(usuarioParam)
+
+    if (tieneHistorial) {
+        return {
+            puedeEliminar: false,
+            tieneHistorial: true,
+            tienePrestamoActivo: false
+        }
+    }
+
+    return {
+        puedeEliminar: true,
+        tieneHistorial: false,
+        tienePrestamoActivo: false
+    }
 }
 
 exports.solicitarRecuperacion = async (correo) => {

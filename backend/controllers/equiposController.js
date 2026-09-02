@@ -659,10 +659,9 @@ try {
 
         return res.status(403).json({
 
-            error: 'Solo el administrador puede aprobar o rechazar órdenes'
+            error: 'Solo el adminiDstrador puede aprobar o rechazar órdenes'
 
         })
-
     }
 
 
@@ -892,6 +891,7 @@ try {
     console.error(
 
         'Error al obtener reportes:',
+    
 
         error
 

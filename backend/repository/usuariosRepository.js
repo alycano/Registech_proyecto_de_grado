@@ -43,19 +43,59 @@ exports.update = async (usuarioParam, data) => {
     return rows[0]
 }
 
+exports.tienePrestamoActivo = async (usuarioParam) => {
+    const { rows } = await db.query(
+        `SELECT 1
+         FROM prestamos p
+         INNER JOIN usuarios u ON u.id_usuario = p.usuario_destino
+         WHERE u.usuario = $1
+           AND p.estado IN ('activo', 'parcial')
+         LIMIT 1`,
+        [usuarioParam]
+    )
+
+    return rows.length > 0
+}
+
+exports.tieneHistorialPrestamos = async (usuarioParam) => {
+    const { rows } = await db.query(
+        `SELECT 1
+         FROM prestamos p
+         INNER JOIN usuarios u ON u.id_usuario = p.usuario_destino
+         WHERE u.usuario = $1
+         LIMIT 1`,
+        [usuarioParam]
+    )
+
+    return rows.length > 0
+}
+
+
 exports.delete = async (usuarioParam) => {
     const client = await db.pool.connect()
+
     try {
         await client.query('BEGIN')
-        // Los reset_tokens referencian a usuarios por FK: se limpian primero
-        await client.query('DELETE FROM reset_tokens WHERE usuario = $1', [usuarioParam])
-        const { rowCount } = await client.query('DELETE FROM usuarios WHERE usuario = $1', [usuarioParam])
+
+        // Los reset_tokens referencian a usuarios por FK
+        await client.query(
+            'DELETE FROM reset_tokens WHERE usuario = $1',
+            [usuarioParam]
+        )
+
+        const { rowCount } = await client.query(
+            'DELETE FROM usuarios WHERE usuario = $1',
+            [usuarioParam]
+        )
+
         await client.query('COMMIT')
+
         if (rowCount === 0) {
             const err = new Error('NOT_FOUND')
             err.code = 'P2025'
             throw err
         }
+
     } catch (e) {
         await client.query('ROLLBACK')
         throw e
