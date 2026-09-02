@@ -659,10 +659,9 @@ try {
 
         return res.status(403).json({
 
-            error: 'Solo el administrador puede aprobar o rechazar órdenes'
+            error: 'Solo el adminiDstrador puede aprobar o rechazar órdenes'
 
         })
-
     }
 
 
@@ -892,6 +891,7 @@ try {
     console.error(
 
         'Error al obtener reportes:',
+    
 
         error
 
@@ -954,176 +954,310 @@ try {
 
 exports.resolverReporte = async (req, res) => {
 
+    try {
 
-try {
+        // ==================================================
+        // SEGURIDAD
+        // ==================================================
 
-    // ==================================================
-    // SEGURIDAD
-    // ==================================================
+        if (
+            !req.usuario ||
+            req.usuario.rol?.toLowerCase() !== 'mantenimiento'
+        ) {
 
-    if (
+            return res.status(403).json({
 
-        !req.usuario ||
+                error:
+                    'Solo el personal de mantenimiento puede reparar equipos'
 
-        req.usuario.rol?.toLowerCase() !== 'mantenimiento'
+            })
 
-    ) {
-
-        return res.status(403).json({
-
-            error: 'Solo el personal de mantenimiento puede reparar equipos'
-
-        })
-
-    }
+        }
 
 
-    const {
+        // ==================================================
+        // RECIBIR DATOS
+        // ==================================================
 
-        num_serie,
-
-        id_historial,
-
-        tecnico,
-
-        solucion
-
-    } = req.body
-
-
-    if (
-
-        !num_serie ||
-
-        !id_historial ||
-
-        !tecnico ||
-
-        !solucion
-
-    ) {
-
-        return res.status(400).json({
-
-            error:
-
-                'Todos los campos requeridos deben estar completos'
-
-        })
-
-    }
-
-
-    const resultado =
-
-        await equiposService.resolverReporteTransaction(
-
+        const {
             num_serie,
-
             id_historial,
-
-            new Date(),
-
             tecnico,
+            solucion
+        } = req.body
 
-            solucion.trim()
+
+        // ==================================================
+        // MOSTRAR EN CONSOLA LOS DATOS RECIBIDOS
+        // ==================================================
+
+        console.log(
+            '=========================================='
+        )
+
+        console.log(
+            'DATOS RECIBIDOS PARA RESOLVER:'
+        )
+
+        console.log(
+            'num_serie:',
+            num_serie
+        )
+
+        console.log(
+            'id_historial:',
+            id_historial
+        )
+
+        console.log(
+            'tecnico:',
+            tecnico
+        )
+
+        console.log(
+            'solucion:',
+            solucion
+        )
+
+        console.log(
+            'BODY COMPLETO:',
+            req.body
+        )
+
+        console.log(
+            '=========================================='
+        )
+
+
+        // ==================================================
+        // VALIDAR DATOS
+        // ==================================================
+
+        if (
+            !num_serie ||
+            !id_historial ||
+            !tecnico ||
+            !solucion
+        ) {
+
+            console.log(
+                '❌ FALTAN DATOS PARA REGISTRAR LA SOLUCIÓN'
+            )
+
+            return res.status(400).json({
+
+                error:
+                    'Todos los campos requeridos deben estar completos'
+
+            })
+
+        }
+
+
+        // ==================================================
+        // LIMPIAR DATOS
+        // ==================================================
+
+        const numSerieLimpio =
+            String(num_serie).trim()
+
+        const idHistorialLimpio =
+            String(id_historial).trim()
+
+        const tecnicoLimpio =
+            String(tecnico).trim()
+
+        const solucionLimpia =
+            String(solucion).trim()
+
+
+        // ==================================================
+        // VALIDAR QUE NO ESTÉN VACÍOS
+        // ==================================================
+
+        if (
+            !numSerieLimpio ||
+            !idHistorialLimpio ||
+            !tecnicoLimpio ||
+            !solucionLimpia
+        ) {
+
+            return res.status(400).json({
+
+                error:
+                    'Los datos no pueden estar vacíos'
+
+            })
+
+        }
+
+
+        // ==================================================
+        // GUARDAR SOLUCIÓN
+        // ==================================================
+
+        console.log(
+            '🔄 Intentando registrar solución...'
+        )
+
+        const resultado =
+            await equiposService.resolverReporteTransaction(
+
+                numSerieLimpio,
+
+                idHistorialLimpio,
+
+                new Date(),
+
+                tecnicoLimpio,
+
+                solucionLimpia
+
+            )
+
+
+        // ==================================================
+        // VERIFICAR RESULTADO
+        // ==================================================
+
+        if (!resultado) {
+
+            console.log(
+                '❌ No se encontró una orden aprobada'
+            )
+
+            return res.status(409).json({
+
+                error:
+                    'La orden no está aprobada por el administrador o no existe'
+
+            })
+
+        }
+
+
+        // ==================================================
+        // AUDITORÍA
+        // ==================================================
+
+        await auditoriaService.registrar(
+
+            req.usuario.usuario,
+
+            `Resolvió la orden ${idHistorialLimpio} del equipo ${numSerieLimpio}`
 
         )
 
 
-    if (!resultado) {
+        // ==================================================
+        // NOTIFICAR A QUIEN REPORTÓ
+        // ==================================================
 
-        return res.status(409).json({
+        if (resultado.usuario_reporta) {
 
-            error:
+            await notificacionesService.crear(
 
-                'La orden no está aprobada por el administrador o no existe'
+                resultado.usuario_reporta,
 
-        })
+                'mantenimiento',
 
-    }
+                `La orden ${resultado.id_historial} del equipo ${numSerieLimpio} fue solucionada por ${tecnicoLimpio}.`
 
+            )
 
-    // ==================================================
-    // AUDITORÍA
-    // ==================================================
-
-    await auditoriaService.registrar(
-
-        req.usuario.usuario,
-
-        `Resolvió la orden ${id_historial} del equipo ${num_serie}`
-
-    )
+        }
 
 
-    // ==================================================
-    // NOTIFICAR A QUIEN REPORTÓ
-    // ==================================================
+        // ==================================================
+        // CONFIRMACIÓN EN CONSOLA
+        // ==================================================
 
-    if (resultado.usuario_reporta) {
-
-        await notificacionesService.crear(
-
-            resultado.usuario_reporta,
-
-            'mantenimiento',
-
-            `La orden ${resultado.id_historial} del equipo ${num_serie} fue solucionada por ${tecnico}.`
-
+        console.log(
+            '✅ SOLUCIÓN REGISTRADA CORRECTAMENTE'
         )
 
-    }
+        console.log(
+            'Orden:',
+            resultado.id_historial
+        )
+
+        console.log(
+            'Equipo:',
+            numSerieLimpio
+        )
+
+        console.log(
+            'Técnico:',
+            tecnicoLimpio
+        )
+
+        console.log(
+            'Solución:',
+            solucionLimpia
+        )
 
 
-    // ==================================================
-    // RESPUESTA
-    // ==================================================
+        // ==================================================
+        // RESPUESTA
+        // ==================================================
 
-    res.status(200).json({
+        res.status(200).json({
 
-        mensaje:
+            mensaje:
+                'Estado del equipo actualizado a disponible y mantenimiento registrado',
 
-            'Estado del equipo actualizado a disponible y mantenimiento registrado',
+            reporte: resultado
 
-        reporte: resultado
-
-    })
-
-} catch (error) {
-
-    console.error(
-
-        'Error al resolver reporte:',
-
-        error
-
-    )
+        })
 
 
-    if (error.code === 'P2025') {
+    } catch (error) {
 
-        return res.status(404).json({
+        console.error(
+            '=========================================='
+        )
+
+        console.error(
+            '❌ ERROR AL RESOLVER REPORTE:'
+        )
+
+        console.error(
+            error
+        )
+
+        console.error(
+            '=========================================='
+        )
+
+
+        // ==================================================
+        // ERROR PRISMA
+        // ==================================================
+
+        if (error.code === 'P2025') {
+
+            return res.status(404).json({
+
+                error:
+                    'Equipo o reporte no encontrado'
+
+            })
+
+        }
+
+
+        // ==================================================
+        // ERROR GENERAL
+        // ==================================================
+
+        res.status(500).json({
 
             error:
-
-                'Equipo o reporte no encontrado'
+                'Error al actualizar el reporte'
 
         })
 
     }
-
-
-    res.status(500).json({
-
-        error:
-
-            'Error al actualizar el reporte'
-
-    })
-
-}
-
 
 }
 

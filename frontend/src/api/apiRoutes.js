@@ -81,6 +81,8 @@ export const API_ROUTES = {
     CREAR_USUARIO: `${BASE_URL}/usuarios`,
     ACTUALIZAR_USUARIO: (usuario) => `${BASE_URL}/usuarios/${usuario}`,
     ELIMINAR_USUARIO: (usuario) => `${BASE_URL}/usuarios/${usuario}`,
+    VERIFICAR_ELIMINACION: (usuario) =>
+    `${BASE_URL}/usuarios/${usuario}/verificar-eliminacion`,
     OBTENER_AREAS: `${BASE_URL}/areas`,
     CREAR_AREA: `${BASE_URL}/areas`,
     ACTUALIZAR_AREA: (area) => `${BASE_URL}/areas/${encodeURIComponent(area)}`,

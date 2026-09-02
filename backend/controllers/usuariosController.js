@@ -94,16 +94,68 @@ exports.updateUsuario = async (req, res) => {
     }
 }
 
+
+// ======================================================
+// VERIFICAR SI EL USUARIO SE PUEDE ELIMINAR O DESACTIVAR
+// ======================================================
+exports.verificarEliminacion = async (req, res) => {
+    try {
+        const resultado = await usuariosService.verificarEliminacion(
+            req.params.usuario
+        )
+
+        return res.status(200).json(resultado)
+
+    } catch (error) {
+        console.error('Error al verificar eliminación:', error)
+
+        return res.status(500).json({
+            error: 'Error al verificar el usuario'
+        })
+    }
+}
+
+
+
 exports.deleteUsuario = async (req, res) => {
     try {
         await usuariosService.deleteUsuario(req.params.usuario)
-        res.json({ mensaje: 'Usuario eliminado' })
+
+        return res.status(200).json({
+            mensaje: 'Usuario eliminado correctamente'
+        })
+
     } catch (error) {
         console.error('Error al eliminar usuario:', error)
-        if (error.code === 'P2025') return res.status(404).json({ error: 'Usuario no encontrado' })
-        if (error.code === '23503') return res.status(409).json({ error: 'No se puede eliminar el usuario porque tiene préstamos, solicitudes u otros registros asociados. Puedes desactivarlo cambiando su estado a inactivo.' })
 
-        res.status(500).json({ error: 'Error al eliminar el usuario' })
+        if (error.message === 'PRESTAMO_ACTIVO') {
+            return res.status(409).json({
+                error: 'No se puede eliminar este usuario porque tiene un préstamo activo.'
+            })
+        }
+
+        if (error.message === 'DESACTIVADO') {
+            return res.status(200).json({
+                desactivado: true,
+                mensaje: 'El usuario tiene historial de préstamos, por lo tanto no se puede eliminar. Se ha desactivado correctamente.'
+            })
+        }
+
+        if (error.code === 'P2025') {
+            return res.status(404).json({
+                error: 'Usuario no encontrado'
+            })
+        }
+
+        if (error.code === '23503') {
+            return res.status(409).json({
+                error: 'No se puede eliminar el usuario porque tiene registros asociados.'
+            })
+        }
+
+        return res.status(500).json({
+            error: 'Error al eliminar usuario'
+        })
     }
 }
 
