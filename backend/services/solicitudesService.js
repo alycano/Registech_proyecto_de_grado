@@ -17,7 +17,7 @@ exports.responderSolicitud = async (id, admin, estado, respuesta) => {
     if (!['aprobada', 'rechazada'].includes(estado)) {
         throw new Error('ESTADO_INVALIDO')
     }
-    return await solicitudesRepository.responderSolicitud(id, admin, estado, respuesta)
+    return await solicitudesRepository.responderSolicitud(id, estado, respuesta)
 }
 
 exports.getActividadReciente = async () => {

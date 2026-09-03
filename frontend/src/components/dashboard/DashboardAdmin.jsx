@@ -68,7 +68,7 @@ export default function DashboardAdmin() {
     const rol = usuario?.rol
 
     const cargarOrdenes = () => {
-        if (rol === 'admin' || rol === 'sistemas') {
+        if (rol === 'admin' || rol === 'soporte') {
             return axios.get(API_ROUTES.OBTENER_MANTENIMIENTOS).then(o => setOrdenes(o.data)).catch(() => {})
         }
         return Promise.resolve()
@@ -138,7 +138,7 @@ export default function DashboardAdmin() {
         axios.put(API_ROUTES.RESPONDER_SOLICITUD(id), { estado, respuesta: estado === 'aprobada' ? 'Solicitud aprobada' : 'Solicitud rechazada' })
             .then(() => {
                 setSolicitudes(prev => prev.map(s =>
-                    s.id_solicitud === id ? { ...s, estado } : s
+                    s.id === id ? { ...s, estado } : s
                 ))
             })
     }
@@ -208,10 +208,10 @@ export default function DashboardAdmin() {
             <div className="dashboard-admin__header">
                 <div>
                     <h2 className="dashboard-admin__title">
-                        {rol === 'sistemas' ? 'Panel de Mantenimiento' : rol === 'inventario' ? 'Panel de Inventario' : 'Panel de Control'}
+                        {rol === 'soporte' ? 'Panel de Mantenimiento' : 'Panel de Control'}
                     </h2>
                     <p className="dashboard-admin__subtitle">
-                        {rol === 'sistemas' ? 'Gestión de órdenes y mantenimiento' : rol === 'inventario' ? 'Vista general de equipos y préstamos' : 'Vista general del sistema'}
+                        {rol === 'soporte' ? 'Gestión de órdenes y mantenimiento' : 'Vista general del sistema'}
                     </p>
                 </div>
                 {rol === 'admin' && (
@@ -284,7 +284,7 @@ export default function DashboardAdmin() {
                 )}
             </div>
 
-            {(rol === 'admin' || rol === 'sistemas') && ordenes.filter(o => o.estado_orden === 'pendiente').length > 0 && (
+            {(rol === 'admin' || rol === 'soporte') && ordenes.filter(o => o.estado_orden === 'pendiente').length > 0 && (
                 <div className="table-card mb-4">
                     <div className="table-card__header">
                         <h5 className="chart-card__title mb-0">
@@ -343,7 +343,7 @@ export default function DashboardAdmin() {
             )}
 
             <div className="row g-4 cards-equal-row">
-                {rol !== 'sistemas' && (
+                {rol !== 'soporte' && (
                 <div className={rol === 'admin' ? 'col-lg-7' : 'col-lg-12'}>
                     <div className="table-card">
                         <div className="table-card__header">
@@ -407,29 +407,29 @@ export default function DashboardAdmin() {
                                 <table className="table table-hover mb-0">
                                     <thead className="table-header">
                                         <tr>
-                                            <th>Equipo</th>
+                                            <th>Detalle</th>
                                             <th>Solicitante</th>
-                                            <th>Justificacion</th>
+                                            <th>Detalle</th>
                                             <th>Estado</th>
                                             <th></th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {solicitudes.slice(0, 5).map(s => (
-                                            <tr key={s.id_solicitud}>
-                                                <td><strong>{s.tipo_equipo}</strong></td>
-                                                <td>{s.usuario_solicita}</td>
-                                                <td><small className="text-muted">{s.justificacion || '-'}</small></td>
+                                            <tr key={s.id}>
+                                                <td><strong>{s.detalles || 'Solicitud'}</strong></td>
+                                                <td>{s.usuario}</td>
+                                                <td><small className="text-muted">{s.detalles || '-'}</small></td>
                                                     <td>
                                                     <span className={`badge ${s.estado === 'aprobada' ? 'estado-disponible' : s.estado === 'rechazada' ? 'estado-baja' : 'estado-mantenimiento'}`}>{s.estado}</span>
                                                 </td>
                                                 <td>
                                                     {s.estado === 'pendiente' && (
                                                         <div className="btn-group btn-group-sm">
-                                                            <button className="btn btn-success btn-sm" onClick={()=>handleResponder(s.id_solicitud,'aprobada')} title="Aprobar">
+                                                            <button className="btn btn-success btn-sm" onClick={()=>handleResponder(s.id,'aprobada')} title="Aprobar">
                                                                 <i className="bi bi-check-lg"></i>
                                                             </button>
-                                                            <button className="btn btn-danger btn-sm" onClick={()=>handleResponder(s.id_solicitud,'rechazada')} title="Rechazar">
+                                                            <button className="btn btn-danger btn-sm" onClick={()=>handleResponder(s.id,'rechazada')} title="Rechazar">
                                                                 <i className="bi bi-x-lg"></i>
                                                             </button>
                                                         </div>

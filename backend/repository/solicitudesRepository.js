@@ -1,10 +1,12 @@
 const db = require('../lib/db')
 
 exports.crearSolicitud = async (usuario, tipoEquipo, descripcion, justificacion) => {
+    const detalle = [tipoEquipo, descripcion, justificacion && `Justificación: ${justificacion}`]
+        .filter(Boolean)
+        .join(' | ')
     const { rows } = await db.query(
-        `INSERT INTO solicitudes (usuario_solicita, tipo_equipo, descripcion, justificacion)
-         VALUES ($1, $2, $3, $4) RETURNING *`,
-        [usuario, tipoEquipo, descripcion || null, justificacion || null]
+        `INSERT INTO solicitudes (usuario, detalles) VALUES ($1, $2) RETURNING *`,
+        [usuario, detalle]
     )
     return rows[0]
 }
@@ -23,18 +25,26 @@ exports.findSolicitudes = async (estado) => {
 
 exports.findMisSolicitudes = async (usuario) => {
     const { rows } = await db.query(
-        'SELECT * FROM solicitudes WHERE usuario_solicita = $1 ORDER BY creado_en DESC',
+        'SELECT * FROM solicitudes WHERE usuario = $1 ORDER BY creado_en DESC',
         [usuario]
     )
     return rows
 }
 
-exports.responderSolicitud = async (id, respondidoPor, estado, respuesta) => {
+exports.responderSolicitud = async (id, estado, respuesta) => {
+    if (respuesta) {
+        const { rows } = await db.query(
+            `UPDATE solicitudes SET estado = $1, detalles = CASE
+                 WHEN detalles IS NULL OR detalles = '' THEN $2
+                 ELSE detalles || ' | Respuesta: ' || $2
+             END WHERE id = $3 RETURNING *`,
+            [estado, respuesta, id]
+        )
+        return rows[0]
+    }
     const { rows } = await db.query(
-        `UPDATE solicitudes
-         SET estado = $1, respondido_por = $2, respuesta = $3, respondido_en = NOW()
-         WHERE id_solicitud = $4 RETURNING *`,
-        [estado, respondidoPor, respuesta || null, id]
+        `UPDATE solicitudes SET estado = $1 WHERE id = $2 RETURNING *`,
+        [estado, id]
     )
     return rows[0]
 }

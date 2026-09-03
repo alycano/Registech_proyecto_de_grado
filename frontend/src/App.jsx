@@ -26,7 +26,7 @@ function EquipmentPage() {
     switch (usuario?.rol) {
         case 'admin': return <Tecnologia usuario={usuario.usuario} />
         case 'inventario': return <Equipos />
-        case 'sistemas': return <Soportes usuario={usuario.usuario} />
+        case 'soporte': return <Soportes usuario={usuario.usuario} />
         default: return <Equipos />
     }
 }
