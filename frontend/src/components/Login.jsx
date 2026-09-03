@@ -10,7 +10,7 @@ import { useAuth } from "../context/AuthContext"
 const CUENTAS_DEMO = [
     { rol: 'Administrador', icono: 'bi-shield-lock', correo: 'admin@registech.com', contrasena: 'admin123' },
     { rol: 'Sistemas', icono: 'bi-gear', correo: 'soporte@registech.com', contrasena: 'soporte123' },
-    { rol: 'Inventario', icono: 'bi-box-seam', correo: 'test@test.com', contrasena: 'test1234' },
+    { rol: 'Inventario', icono: 'bi-box-seam', correo: 'rh@registech.com', contrasena: 'rh123' },
 ]
 
 const Login = () => {

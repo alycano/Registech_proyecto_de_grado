@@ -8,3 +8,6 @@ frontend/.env
 
 # Archivos subidos por los usuarios (evidencias)
 uploads/
+
+# Logs de ejecución
+*.log

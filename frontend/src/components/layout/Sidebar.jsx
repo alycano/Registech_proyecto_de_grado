@@ -3,14 +3,14 @@ import Swal from 'sweetalert2'
 import { useAuth } from '../../context/AuthContext'
 
 const MENU = [
-    { label: 'Panel Principal', icon: 'bi-grid-1x2', path: '/dashboard', roles: ['admin', 'inventario', 'sistemas'] },
+    { label: 'Panel Principal', icon: 'bi-grid-1x2', path: '/dashboard', roles: ['admin', 'soporte', 'inventario'] },
     { label: 'Equipos', icon: 'bi-pc-display', path: '/equipment', roles: ['admin', 'inventario'] },
-    { label: 'Prestamos', icon: 'bi-arrow-left-right', path: '/loans', roles: ['admin', 'inventario'] },
-    { label: 'Mantenimiento', icon: 'bi-tools', path: '/maintenance', roles: ['admin', 'sistemas'] },
+    { label: 'Prestamos', icon: 'bi-arrow-left-right', path: '/loans', roles: ['admin'] },
+    { label: 'Mantenimiento', icon: 'bi-tools', path: '/maintenance', roles: ['admin', 'soporte'] },
     { label: 'Departamentos', icon: 'bi-building', path: '/departments', roles: ['admin'] },
     { label: 'Inventario PMC', icon: 'bi-mouse', path: '/pmc', roles: ['admin', 'inventario'] },
-    { label: 'Reportes', icon: 'bi-file-earmark-bar-graph', path: '/reports', roles: ['admin', 'inventario', 'sistemas'] },
-    { label: 'Configuracion', icon: 'bi-gear', path: '/settings', roles: ['admin', 'inventario', 'sistemas'] },
+    { label: 'Reportes', icon: 'bi-file-earmark-bar-graph', path: '/reports', roles: ['admin'] },
+    { label: 'Configuracion', icon: 'bi-gear', path: '/settings', roles: ['admin', 'soporte', 'inventario'] },
 ]
 
 export default function Sidebar({ collapsed, onToggle, usuario, theme, onToggleTheme }) {
