@@ -1320,3 +1320,32 @@ try {
 
 
 }
+
+// ======================================================
+// OBTENER HISTORIAL DE USO DE UN EQUIPO
+// ======================================================
+
+exports.getHistorialEquipo = async (req, res) => {
+
+    try {
+
+        const numSerie = String(req.params.num_serie).trim()
+
+        const historial =
+            await equiposService.findHistorialEquipo(numSerie)
+
+        res.json(historial)
+
+    } catch (error) {
+
+        console.error(
+            'Error al obtener historial del equipo:',
+            error
+        )
+
+        res.status(500).json({
+            error: 'Error al obtener el historial del equipo'
+        })
+
+    }
+}

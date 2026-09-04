@@ -1,7 +1,7 @@
 const prisma = require('../lib/prisma')
+const db = require('../lib/db')
 const notificacionesService = require('./notificacionesService')
 const crypto = require('crypto')
-
 
 // ======================================================
 // OBTENER ESTADOS DE EQUIPOS
@@ -180,18 +180,16 @@ exports.obtenerUsuariosPorRol = async (rol) => {
 // ADMIN:
 // - Reporta
 // - Se aprueba automáticamente
-// - Se notifica a mantenimiento
+// - Se notifica a SOPORTE
 //
-// USUARIO:
+// SOPORTE / SISTEMAS:
 // - Reporta
 // - Queda pendiente
 // - Se notifica a los administradores
 // ======================================================
 
 exports.createReporteTransaction = async (
-
     numSerieLimpio,
-    id_historial,
     fecha_reporte,
     fallaLimpia,
     evidencia,
@@ -199,7 +197,6 @@ exports.createReporteTransaction = async (
     aprobadoPor = null,
     usuarioReporta = null,
     rolUsuario = null
-
 ) => {
 
     const esAdmin =
@@ -274,9 +271,11 @@ exports.createReporteTransaction = async (
 
                 data: {
 
-                    id_historial,
+                    // Prisma genera automáticamente
+                    // el id_historial mediante @default(uuid())
 
-                    num_serie: numSerieLimpio,
+                    num_serie:
+                        numSerieLimpio,
 
                     fecha_reporte:
                         new Date(fecha_reporte),
@@ -325,15 +324,15 @@ exports.createReporteTransaction = async (
 
 
         // ==============================================
-        // ADMIN → MANTENIMIENTO
+        // ADMIN → SOPORTE
         // ==============================================
 
-        const usuariosMantenimiento =
+        const usuariosSoporte =
             await prisma.usuarios.findMany({
 
                 where: {
 
-                    rol: 'mantenimiento',
+                    rol: 'soporte',
 
                     estado: 'Activo'
 
@@ -348,15 +347,15 @@ exports.createReporteTransaction = async (
             })
 
 
-        for (const tecnico of usuariosMantenimiento) {
+        for (const soporte of usuariosSoporte) {
 
             await notificacionesService.crear(
 
-                tecnico.usuario,
+                soporte.usuario,
 
                 'mantenimiento',
 
-                `La orden ${resultado.id_historial} del equipo ${resultado.equipo} fue registrada y aprobada automáticamente por el administrador ${usuarioReporta}. Número de serie: ${resultado.num_serie}. Diagnóstico: ${resultado.falla}. Ya puedes realizar la reparación.`
+                `La orden ${resultado.id_historial} del equipo ${resultado.equipo} fue registrada y aprobada automáticamente por el administrador ${usuarioReporta}. Número de serie: ${resultado.num_serie}. Diagnóstico: ${resultado.falla}. Ya puedes gestionar la reparación.`
 
             )
 
@@ -367,7 +366,7 @@ exports.createReporteTransaction = async (
 
 
         // ==============================================
-        // USUARIO → ADMINISTRADORES
+        // SOPORTE / SISTEMAS → ADMINISTRADORES
         // ==============================================
 
         const administradores =
@@ -984,4 +983,36 @@ exports.buscarMantenimientos = async (
 
 
     return resultado
+}
+
+
+// ======================================================
+// HISTORIAL DE USO DE UN EQUIPO
+// ======================================================
+
+exports.findHistorialEquipo = async (numSerie) => {
+
+    const { rows } = await db.query(`
+        SELECT
+            p.id_prestamo,
+            pe.num_serie,
+            p.usuario_destino AS usuario,
+            u.nombre,
+            u.correo,
+            u.area AS area_usuario,
+            u.rol,
+            p.fecha_prestamo,
+            p.fecha_devolucion,
+            p.estado,
+            p.observaciones
+        FROM prestamo_equipos pe
+        INNER JOIN prestamos p
+            ON p.id_prestamo = pe.id_prestamo
+        LEFT JOIN usuarios u
+            ON u.usuario = p.usuario_destino
+        WHERE pe.num_serie = $1
+        ORDER BY p.fecha_prestamo DESC
+    `, [numSerie])
+
+    return rows
 }
