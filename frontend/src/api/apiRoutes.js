@@ -94,7 +94,8 @@ export const API_ROUTES = {
     CREAR_PRESTAMO: `${BASE_URL}/prestamos`,
    DEVOLVER_EQUIPO: (id, num_serie) =>
     `${BASE_URL}/prestamos/${id}/equipos/${encodeURIComponent(num_serie)}/devolver`,
-    HISTORIAL_EQUIPO: (num_serie) => `${BASE_URL}/prestamos/historial/${num_serie}`,
+    HISTORIAL_EQUIPO: (num_serie) =>
+    `${BASE_URL}/equipos/${encodeURIComponent(num_serie)}/historial`,
     ESTADISTICAS: `${BASE_URL}/estadisticas`,
     DASHBOARD: `${BASE_URL}/dashboard`,
     EXPORTAR_EQUIPOS: `${BASE_URL}/dashboard/exportar-equipos`,
