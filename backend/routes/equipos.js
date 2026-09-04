@@ -1,5 +1,7 @@
 const express = require('express')
+
 const router = express.Router()
+
 const {
     getEquipos,
     getEstadosEquipo,
@@ -9,13 +11,16 @@ const {
     reporteFalla,
     getReportes,
     getHistorialMantenimientos,
+    getHistorialEquipo,
     resolverReporte,
     buscarMantenimientos,
     aprobarRechazarOrden
 } = require('../controllers/equiposController')
+
 const { authMiddleware, requireRol } = require('../middlewares/auth')
 const { upload } = require('../middlewares/upload')
 const { validate } = require('../middlewares/validate')
+
 const {
     asignarUsuarioSchema,
     reporteFallaSchema,
@@ -25,16 +30,81 @@ const {
     crearEquipoSchema
 } = require('../schemas/equipos.schema')
 
+
 router.get('/estados_equipo', authMiddleware, getEstadosEquipo)
+
 router.get('/equipos', authMiddleware, getEquipos)
-router.post('/equipos/add', authMiddleware, requireRol('admin'), upload.single('foto'), validate(crearEquipoSchema), agregarEquipo)
-router.post('/equipos/asignacion', authMiddleware, validate(asignarUsuarioSchema), asignarUsuario)
-router.post('/equipos/:num_serie/liberar', authMiddleware, liberarEquipo)
-router.post('/equipos/reporte/add', authMiddleware, requireRol('sistemas'), upload.single('foto'), validate(reporteFallaSchema), reporteFalla)
-router.get('/equipos/reporte', authMiddleware, getReportes)
-router.get('/equipos/mantenimientos', authMiddleware, requireRol('admin', 'sistemas'), getHistorialMantenimientos)
-router.post('/equipos/reporte/aprobacion', authMiddleware, requireRol('admin'), validate(decisionAprobacionSchema), aprobarRechazarOrden)
-router.post('/equipos/reporte/solucion', authMiddleware, validate(resolverReporteSchema), resolverReporte)
-router.post('/equipos/mantenimientos/find', authMiddleware, validate(buscarMantenimientosSchema), buscarMantenimientos)
+
+router.get(
+    '/equipos/:num_serie/historial',
+    authMiddleware,
+    getHistorialEquipo
+)
+
+router.post(
+    '/equipos/add',
+    authMiddleware,
+    requireRol('admin'),
+    upload.single('foto'),
+    validate(crearEquipoSchema),
+    agregarEquipo
+)
+
+router.post(
+    '/equipos/asignacion',
+    authMiddleware,
+    validate(asignarUsuarioSchema),
+    asignarUsuario
+)
+
+router.post(
+    '/equipos/:num_serie/liberar',
+    authMiddleware,
+    liberarEquipo
+)
+
+router.post(
+    '/equipos/reporte/add',
+    authMiddleware,
+    requireRol('soporte', 'sistemas', 'admin'),
+    upload.single('foto'),
+    validate(reporteFallaSchema),
+    reporteFalla
+)
+
+router.get(
+    '/equipos/reporte',
+    authMiddleware,
+    getReportes
+)
+
+router.get(
+    '/equipos/mantenimientos',
+    authMiddleware,
+    requireRol('admin', 'sistemas'),
+    getHistorialMantenimientos
+)
+
+router.post(
+    '/equipos/reporte/aprobacion',
+    authMiddleware,
+    requireRol('admin'),
+    validate(decisionAprobacionSchema),
+    aprobarRechazarOrden
+)
+
+router.post(
+    '/equipos/reporte/solucion',
+    authMiddleware,
+    validate(resolverReporteSchema),
+    resolverReporte
+)
+
+router.post(
+    '/equipos/mantenimientos/find',
+    authMiddleware,
+    validate(buscarMantenimientosSchema),
+    buscarMantenimientos
+)
 
 module.exports = router

@@ -10,23 +10,20 @@ const auditoriaService = require('../services/auditoriaService')
 
 exports.getEstadosEquipo = async (req, res) => {
 
+    try {
 
-try {
+        const estados = await equiposService.findEstados()
 
-    const estados = await equiposService.findEstados()
+        res.json(estados)
 
-    res.json(estados)
+    } catch (error) {
 
-} catch (error) {
+        console.error('Error al obtener estados:', error)
 
-    console.error('Error al obtener estados:', error)
-
-    res.status(500).json({
-        error: 'Error en la consulta'
-    })
-}
-
-
+        res.status(500).json({
+            error: 'Error en la consulta'
+        })
+    }
 }
 
 // ======================================================
@@ -35,23 +32,20 @@ try {
 
 exports.getEquipos = async (req, res) => {
 
+    try {
 
-try {
+        const equipos = await equiposService.findEquipos()
 
-    const equipos = await equiposService.findEquipos()
+        res.json(equipos)
 
-    res.json(equipos)
+    } catch (error) {
 
-} catch (error) {
+        console.error('Error al obtener equipos:', error)
 
-    console.error('Error al obtener equipos:', error)
-
-    res.status(500).json({
-        error: 'Error en la consulta'
-    })
-}
-
-
+        res.status(500).json({
+            error: 'Error en la consulta'
+        })
+    }
 }
 
 // ======================================================
@@ -60,116 +54,83 @@ try {
 
 exports.agregarEquipo = async (req, res) => {
 
+    const archivo = req.file
 
-const archivo = req.file
+    try {
 
-try {
+        const equipo = await equiposService.crearEquipo({
 
-    const equipo = await equiposService.crearEquipo({
-
-        ...req.body,
-
-        imagen: archivo?.filename || null
-
-    })
-
-
-    await auditoriaService.registrar(
-
-        req.usuario.usuario,
-
-        `Registró el equipo ${equipo.equipo} (${equipo.num_serie}) en el inventario`
-
-    )
-
-
-    res.status(201).json({
-
-        mensaje: 'Equipo registrado exitosamente',
-
-        equipo
-
-    })
-
-} catch (error) {
-
-    if (archivo) {
-
-        eliminarArchivo(archivo.filename)
-
-    }
-
-
-    console.error(
-
-        'Error al registrar equipo:',
-
-        error.message,
-
-        error.code
-
-    )
-
-
-    if (error.message === 'EQUIPO_DUPLICADO') {
-
-        return res.status(409).json({
-
-            error: 'Ya existe un equipo con ese número de serie'
+            ...req.body,
+            imagen: archivo?.filename || null
 
         })
 
-    }
+        res.status(201).json({
 
-
-    if (error.message === 'ESTADO_INVALIDO') {
-
-        return res.status(400).json({
-
-            error: 'El estado inicial del equipo es inválido'
+            mensaje: 'Equipo registrado exitosamente',
+            equipo
 
         })
 
-    }
+    } catch (error) {
 
+        if (archivo) {
 
-    if (error.message === 'SOLO_IMAGENES') {
+            eliminarArchivo(archivo.filename)
 
-        return res.status(400).json({
+        }
 
-            error: 'Solo se permiten imágenes (jpg, png, webp)'
+        console.error(
+            'Error al registrar equipo:',
+            error.message,
+            error.code
+        )
+
+        if (error.message === 'EQUIPO_DUPLICADO') {
+
+            return res.status(409).json({
+
+                error: 'Ya existe un equipo con ese número de serie'
+
+            })
+        }
+
+        if (error.message === 'ESTADO_INVALIDO') {
+
+            return res.status(400).json({
+
+                error: 'El estado inicial del equipo es inválido'
+
+            })
+        }
+
+        if (error.message === 'SOLO_IMAGENES') {
+
+            return res.status(400).json({
+
+                error: 'Solo se permiten imágenes (jpg, png, webp)'
+
+            })
+        }
+
+        if (
+            error.message &&
+            error.message.includes('requerido')
+        ) {
+
+            return res.status(400).json({
+
+                error: error.message
+
+            })
+        }
+
+        res.status(500).json({
+
+            error: 'Error al registrar el equipo'
 
         })
-
     }
-
-
-    if (
-
-        error.message &&
-
-        error.message.includes('requerido')
-
-    ) {
-
-        return res.status(400).json({
-
-            error: error.message
-
-        })
-
-    }
-
-
-    res.status(500).json({
-
-        error: 'Error al registrar el equipo'
-
-    })
-
-}
-
-
 }
 
 // ======================================================
@@ -178,152 +139,158 @@ try {
 
 exports.asignarUsuario = async (req, res) => {
 
+    try {
 
-try {
+        const {
+            num_serie,
+            usuario
+        } = req.body
 
-    const {
+        if (!num_serie || !usuario) {
 
-        num_serie,
+            return res.status(400).json({
 
-        usuario
+                error: 'El número de serie y el usuario son requeridos'
 
-    } = req.body
-
-
-    if (!num_serie || !usuario) {
-
-        return res.status(400).json({
-
-            error: 'El número de serie y el usuario son requeridos'
-
-        })
-
-    }
-
-
-    // ==================================================
-    // BUSCAR EQUIPO
-    // ==================================================
-
-    const equipo = await prisma.equipos.findUnique({
-
-        where: {
-
-            num_serie
-
+            })
         }
 
-    })
+        // ==================================================
+        // BUSCAR EQUIPO
+        // ==================================================
 
+        const equipo = await prisma.equipos.findUnique({
 
-    if (!equipo) {
-
-        return res.status(404).json({
-
-            error: 'Equipo no encontrado'
-
-        })
-
-    }
-
-
-    // ==================================================
-    // BUSCAR USUARIO
-    // ==================================================
-
-    const usuarioEncontrado =
-
-        await equiposService.buscarUsuario(usuario)
-
-
-    if (!usuarioEncontrado) {
-
-        return res.status(404).json({
-
-            error: 'Usuario no encontrado'
+            where: {
+                num_serie
+            }
 
         })
 
-    }
+        if (!equipo) {
 
+            return res.status(404).json({
 
-    // ==================================================
-    // ACTUALIZAR RESPONSABLE
-    // ==================================================
+                error: 'Equipo no encontrado'
 
-    await equiposService.updateResponsable(
+            })
+        }
 
-        num_serie,
+        // ==================================================
+        // BUSCAR USUARIO
+        // ==================================================
 
-        usuario
+        const usuarioEncontrado =
+            await equiposService.buscarUsuario(usuario)
 
-    )
+        if (!usuarioEncontrado) {
 
+            return res.status(404).json({
 
-    await auditoriaService.registrar(
+                error: 'Usuario no encontrado'
 
-        req.usuario.usuario,
+            })
+        }
 
-        `Asignó el equipo ${num_serie} a ${usuario}`
+        // ==================================================
+        // ACTUALIZAR RESPONSABLE
+        // ==================================================
 
-    )
+        await equiposService.updateResponsable(
 
+            num_serie,
+            usuario
 
-    res.status(200).json({
+        )
 
-        mensaje:
+        await auditoriaService.registrar(
 
-            'Se asignó exitosamente el usuario al equipo correspondiente'
+            req.usuario.usuario,
+            `Asignó el equipo ${num_serie} a ${usuario}`
 
-    })
+        )
 
-} catch (error) {
+        res.status(200).json({
 
-    console.error(
-
-        'Error al asignar usuario al equipo:',
-
-        error
-
-    )
-
-
-    if (error.code === 'P2025') {
-
-        return res.status(404).json({
-
-            error: 'Equipo no encontrado'
+            mensaje:
+                'Se asignó exitosamente el usuario al equipo correspondiente'
 
         })
 
+    } catch (error) {
+
+        console.error(
+            'Error al asignar usuario al equipo:',
+            error
+        )
+
+        if (error.code === 'P2025') {
+
+            return res.status(404).json({
+
+                error: 'Equipo no encontrado'
+
+            })
+        }
+
+        res.status(500).json({
+
+            error: 'Error al asignar el usuario al equipo'
+
+        })
     }
-
-
-    res.status(500).json({
-
-        error: 'Error al asignar el usuario al equipo'
-
-    })
-
 }
-
-}
-
 
 // ======================================================
 // LIBERAR EQUIPO
 // ======================================================
 
 exports.liberarEquipo = async (req, res) => {
+
     try {
-        const equipo = await equiposService.liberarEquipo(req.params.num_serie)
-        if (!equipo) return res.status(404).json({ error: 'Equipo no encontrado' })
-        const auditoriaService = require('../services/auditoriaService')
-        await auditoriaService.registrar(req.usuario.usuario, `Liberó el equipo ${equipo.num_serie} (${equipo.equipo}), quedó disponible`)
-        res.status(200).json({ mensaje: 'Equipo liberado y disponible nuevamente', equipo })
+
+        const equipo =
+            await equiposService.liberarEquipo(
+                req.params.num_serie
+            )
+
+        if (!equipo) {
+
+            return res.status(404).json({
+
+                error: 'Equipo no encontrado'
+
+            })
+        }
+
+        await auditoriaService.registrar(
+
+            req.usuario.usuario,
+            `Liberó el equipo ${equipo.num_serie} (${equipo.equipo}), quedó disponible`
+
+        )
+
+        res.status(200).json({
+
+            mensaje:
+                'Equipo liberado y disponible nuevamente',
+
+            equipo
+
+        })
+
     } catch (error) {
-        console.error('Error al liberar equipo:', error)
-        res.status(500).json({ error: 'Error al liberar el equipo' })
+
+        console.error(
+            'Error al liberar equipo:',
+            error
+        )
+
+        res.status(500).json({
+
+            error: 'Error al liberar el equipo'
+
+        })
     }
 }
 
@@ -333,265 +300,152 @@ exports.liberarEquipo = async (req, res) => {
 
 exports.reporteFalla = async (req, res) => {
 
+    try {
 
-try {
+        const {
+            num_serie,
+            falla
+        } = req.body
 
-    const {
-        num_serie,
-        falla
-    } = req.body
+        // ==================================================
+        // VALIDAR DATOS
+        // ==================================================
 
+        if (!num_serie || !falla) {
 
-    // ==================================================
-    // VALIDAR DATOS
-    // ==================================================
+            return res.status(400).json({
 
-    if (!num_serie || !falla) {
+                error: 'Número de serie y falla son obligatorios'
 
-        return res.status(400).json({
-
-            error: 'Número de serie y falla son obligatorios'
-
-        })
-
-    }
-
-
-    // ==================================================
-    // BUSCAR EQUIPO
-    // ==================================================
-
-    const equipo = await prisma.equipos.findUnique({
-
-        where: {
-
-            num_serie
-
+            })
         }
 
-    })
+        // ==================================================
+        // BUSCAR EQUIPO
+        // ==================================================
 
+        const equipo = await prisma.equipos.findUnique({
 
-    if (!equipo) {
-
-        return res.status(404).json({
-
-            error: 'El equipo no existe'
-
-        })
-
-    }
-
-
-    // ==================================================
-    // SABER QUIÉN REPORTA
-    // ==================================================
-
-    const usuarioReporta = req.usuario.usuario
-    const rolUsuario = req.usuario.rol
-    console.log('================================')
-console.log('USUARIO QUE REPORTA:', req.usuario)
-console.log('ROL:', req.usuario.rol)
-console.log('================================')
-
-
-    // ==================================================
-    // DETERMINAR SI ES ADMIN
-    // ==================================================
-
-    const esAdmin =
-
-        String(rolUsuario || '').toLowerCase() === 'admin'
-
-
-    // ==================================================
-    // ESTADO DE LA ORDEN
-    // ==================================================
-
-    const estadoOrden = esAdmin
-
-        ? 'aprobada'
-
-        : 'pendiente'
-
-
-    const aprobadoPor = esAdmin
-
-        ? usuarioReporta
-
-        : null
-
-
-    // ==================================================
-    // GENERAR ID DEL HISTORIAL
-    // ==================================================
-
-    const ultimo =
-
-        await prisma.historial_mantenimientos.findFirst({
-
-            orderBy: {
-
-                id_historial: 'desc'
-
-            },
-
-            select: {
-
-                id_historial: true
-
+            where: {
+                num_serie
             }
 
         })
 
+        if (!equipo) {
 
-    const id_historial = ultimo
+            return res.status(404).json({
 
-        ? String(Number(ultimo.id_historial) + 1)
-
-        : '1'
-
-
-    // ==================================================
-    // CREAR REPORTE
-    // ==================================================
-
-    const resultado =
-
-        await equiposService.createReporteTransaction(
-
-            num_serie,
-
-            id_historial,
-
-            new Date(),
-
-            falla.trim(),
-
-            req.file ? req.file.filename : null,
-
-            estadoOrden,
-
-            aprobadoPor,
-
-            usuarioReporta,
-
-            // IMPORTANTE:
-            // ENVIAR EL ROL DEL USUARIO
-            rolUsuario
-
-        )
-
-
-    // ==================================================
-    // AUDITORÍA
-    // ==================================================
-
-    await auditoriaService.registrar(
-
-        usuarioReporta,
-
-        esAdmin
-
-            ? `Registró y aprobó automáticamente la orden ${id_historial} del equipo ${num_serie}`
-
-            : `Reportó una falla del equipo ${num_serie}`
-
-    )
-
-
-    // ==================================================
-    // SI ES ADMINISTRADOR
-    // NOTIFICAR A MANTENIMIENTO
-    // ==================================================
-
-    if (esAdmin) {
-
-        const usuariosMantenimiento =
-
-            await prisma.usuarios.findMany({
-
-                where: {
-
-                    rol: 'mantenimiento',
-
-                    estado: 'Activo'
-
-                },
-
-                select: {
-
-                    usuario: true
-
-                }
+                error: 'El equipo no existe'
 
             })
+        }
 
+        // ==================================================
+        // SABER QUIÉN REPORTA
+        // ==================================================
 
-        for (const tecnico of usuariosMantenimiento) {
+        const usuarioReporta = req.usuario.usuario
+        const rolUsuario = req.usuario.rol
 
-            await notificacionesService.crear(
+        console.log('================================')
+        console.log('USUARIO QUE REPORTA:', req.usuario)
+        console.log('ROL:', req.usuario.rol)
+        console.log('================================')
 
-                tecnico.usuario,
+        // ==================================================
+        // DETERMINAR SI ES ADMIN
+        // ==================================================
 
-                'mantenimiento',
+        const esAdmin =
+            String(rolUsuario || '').toLowerCase() === 'admin'
 
-                `La orden ${resultado.id_historial} del equipo ${resultado.num_serie} fue registrada y aprobada automáticamente por el administrador ${usuarioReporta}. Diagnóstico: ${resultado.falla}. Ya puedes realizar la reparación.`
+        // ==================================================
+        // ESTADO DE LA ORDEN
+        // ==================================================
+
+        const estadoOrden = esAdmin
+            ? 'aprobada'
+            : 'pendiente'
+
+        const aprobadoPor = esAdmin
+            ? usuarioReporta
+            : null
+
+        // ==================================================
+        // CREAR REPORTE
+        // ==================================================
+
+        const resultado =
+            await equiposService.createReporteTransaction(
+
+                num_serie,
+                new Date(),
+                falla.trim(),
+                req.file
+                    ? req.file.filename
+                    : null,
+                estadoOrden,
+                aprobadoPor,
+                usuarioReporta,
+                rolUsuario
 
             )
 
-        }
+        // ==================================================
+        // AUDITORÍA
+        // ==================================================
 
-    }
+        await auditoriaService.registrar(
 
+            usuarioReporta,
 
-    // ==================================================
-    // RESPUESTA
-    // ==================================================
+            esAdmin
 
-    res.status(201).json({
+                ? `Registró y aprobó automáticamente la orden ${resultado.id_historial} del equipo ${num_serie}`
 
-        mensaje: esAdmin
+                : `Reportó una falla del equipo ${num_serie}`
 
-            ? 'Reporte registrado y aprobado automáticamente'
+        )
 
-            : 'Reporte registrado. Pendiente de aprobación del administrador',
+        // ==================================================
+        // RESPUESTA
+        // ==================================================
 
-        reporte: resultado
+        res.status(201).json({
 
-    })
+            mensaje: esAdmin
 
-} catch (error) {
+                ? 'Reporte registrado y aprobado automáticamente'
 
-    console.error(
+                : 'Reporte registrado. Pendiente de aprobación del administrador',
 
-        'Error al registrar reporte:',
-
-        error
-
-    )
-
-
-    if (error.code === 'P2002') {
-
-        return res.status(409).json({
-
-            error: 'Ya existe un reporte con ese ID'
+            reporte: resultado
 
         })
 
+    } catch (error) {
+
+        console.error(
+            'Error al registrar reporte:',
+            error
+        )
+
+        if (error.code === 'P2002') {
+
+            return res.status(409).json({
+
+                error: 'Ya existe un reporte con ese ID'
+
+            })
+        }
+
+        res.status(500).json({
+
+            error: 'No se pudo registrar el reporte'
+
+        })
     }
-
-
-    res.status(500).json({
-
-        error: 'No se pudo registrar el reporte'
-
-    })
-
-}
-
-
 }
 
 // ======================================================
@@ -601,273 +455,222 @@ console.log('================================')
 
 exports.aprobarRechazarOrden = async (req, res) => {
 
+    try {
 
-try {
+        const {
+            id_historial,
+            decision
+        } = req.body
 
-    const {
+        // ==================================================
+        // VALIDACIONES
+        // ==================================================
 
-        id_historial,
+        if (!id_historial || !decision) {
 
-        decision
+            return res.status(400).json({
 
-    } = req.body
+                error:
+                    'El ID de historial y la decisión son requeridos'
 
+            })
+        }
 
-    // ==================================================
-    // VALIDACIONES
-    // ==================================================
+        if (
+            decision !== 'aprobada' &&
+            decision !== 'rechazada'
+        ) {
 
-    if (!id_historial || !decision) {
+            return res.status(400).json({
 
-        return res.status(400).json({
+                error: 'Decisión inválida'
 
-            error: 'El ID de historial y la decisión son requeridos'
+            })
+        }
 
-        })
+        // ==================================================
+        // SOLO ADMIN
+        // ==================================================
 
-    }
+        if (
+            !req.usuario ||
+            String(req.usuario.rol || '').toLowerCase() !== 'admin'
+        ) {
 
+            return res.status(403).json({
 
-    if (
+                error:
+                    'Solo el administrador puede aprobar o rechazar órdenes'
 
-        decision !== 'aprobada' &&
+            })
+        }
 
-        decision !== 'rechazada'
+        // ==================================================
+        // DECIDIR ORDEN
+        // ==================================================
 
-    ) {
+        const resultado =
+            await equiposService.decidirOrden(
 
-        return res.status(400).json({
+                String(id_historial),
+                decision,
+                req.usuario.usuario
 
-            error: 'Decisión inválida'
+            )
 
-        })
+        if (!resultado) {
 
-    }
+            return res.status(409).json({
 
+                error:
+                    'La orden no existe o ya fue procesada'
 
-    // ==================================================
-    // SOLO ADMIN
-    // ==================================================
+            })
+        }
 
-    if (
+        // ==================================================
+        // AUDITORÍA
+        // ==================================================
 
-        !req.usuario ||
+        const accion =
+            decision === 'aprobada'
+                ? 'Aprobó'
+                : 'Rechazó'
 
-        String(req.usuario.rol || '').toLowerCase() !== 'admin'
+        await auditoriaService.registrar(
 
-    ) {
+            req.usuario.usuario,
 
-        return res.status(403).json({
-
-            error: 'Solo el adminiDstrador puede aprobar o rechazar órdenes'
-
-        })
-    }
-
-
-    // ==================================================
-    // DECIDIR ORDEN
-    // ==================================================
-
-    const resultado =
-
-        await equiposService.decidirOrden(
-
-            String(id_historial),
-
-            decision,
-
-            req.usuario.usuario
+            `${accion} la orden de mantenimiento ${resultado.id_historial}`
 
         )
 
-
-    if (!resultado) {
-
-        return res.status(409).json({
-
-            error: 'La orden no existe o ya fue procesada'
-
-        })
-
-    }
-
-
-    // ==================================================
-    // AUDITORÍA
-    // ==================================================
-
-    const accion =
-
-        decision === 'aprobada'
-
-            ? 'Aprobó'
-
-            : 'Rechazó'
-
-
-    await auditoriaService.registrar(
-
-        req.usuario.usuario,
-
-        `${accion} la orden de mantenimiento ${resultado.id_historial}`
-
-    )
-
-
-    // ==================================================
-    // SI SE APRUEBA
-    // NOTIFICAR AL USUARIO Y A MANTENIMIENTO
-    // ==================================================
-
-    if (decision === 'aprobada') {
-
         // ==================================================
-        // BUSCAR EQUIPO
+        // SI SE APRUEBA
+        // NOTIFICAR AL USUARIO Y A MANTENIMIENTO
         // ==================================================
 
-        const equipo =
+        if (decision === 'aprobada') {
 
-            await prisma.equipos.findUnique({
+            // ==================================================
+            // BUSCAR EQUIPO
+            // ==================================================
 
-                where: {
+            const equipo =
+                await prisma.equipos.findUnique({
 
-                    num_serie: resultado.num_serie
+                    where: {
+                        num_serie: resultado.num_serie
+                    }
 
-                }
+                })
 
-            })
+            // ==================================================
+            // NOTIFICAR AL USUARIO QUE REPORTÓ
+            // ==================================================
 
+            if (resultado.usuario_reporta) {
+
+                await notificacionesService.crear(
+
+                    resultado.usuario_reporta,
+                    'mantenimiento',
+
+                    `Tu reporte de daño de la orden ${resultado.id_historial} fue aprobado por el administrador ${req.usuario.usuario}. Equipo: ${equipo?.equipo || 'No disponible'}, número de serie ${resultado.num_serie}. El personal de mantenimiento ya puede realizar la reparación.`
+
+                )
+            }
+
+            // ==================================================
+            // BUSCAR PERSONAL DE MANTENIMIENTO
+            // ==================================================
+
+            const usuariosMantenimiento =
+                await prisma.usuarios.findMany({
+
+                    where: {
+
+                        rol: 'mantenimiento',
+                        estado: 'Activo'
+
+                    },
+
+                    select: {
+
+                        usuario: true
+
+                    }
+
+                })
+
+            // ==================================================
+            // NOTIFICAR A MANTENIMIENTO
+            // ==================================================
+
+            for (const tecnico of usuariosMantenimiento) {
+
+                await notificacionesService.crear(
+
+                    tecnico.usuario,
+                    'mantenimiento',
+
+                    `La orden ${resultado.id_historial} fue aprobada por ${req.usuario.usuario}. Equipo: ${equipo?.equipo || 'No disponible'}. Número de serie: ${resultado.num_serie}. Diagnóstico: ${resultado.falla}. Ya puedes realizar la reparación.`
+
+                )
+            }
+        }
 
         // ==================================================
-        // NOTIFICAR AL USUARIO QUE REPORTÓ
+        // SI SE RECHAZA
+        // NOTIFICAR AL USUARIO
         // ==================================================
 
-        if (resultado.usuario_reporta) {
+        if (
+            decision === 'rechazada' &&
+            resultado.usuario_reporta
+        ) {
 
             await notificacionesService.crear(
 
                 resultado.usuario_reporta,
-
                 'mantenimiento',
 
-                `Tu reporte de daño de la orden ${resultado.id_historial} fue aprobado por el administrador ${req.usuario.usuario}. Equipo: ${equipo?.equipo || 'No disponible'}, número de serie ${resultado.num_serie}. El personal de mantenimiento ya puede realizar la reparación.`
+                `Tu reporte de daño de la orden ${resultado.id_historial} fue rechazado por el administrador ${req.usuario.usuario}. El equipo vuelve a estar disponible.`
 
             )
-
         }
 
-
         // ==================================================
-        // BUSCAR PERSONAL DE MANTENIMIENTO
-        // ==================================================
-
-        const usuariosMantenimiento =
-
-            await prisma.usuarios.findMany({
-
-                where: {
-
-                    rol: 'mantenimiento',
-
-                    estado: 'Activo'
-
-                },
-
-                select: {
-
-                    usuario: true
-
-                }
-
-            })
-
-
-        // ==================================================
-        // NOTIFICAR A MANTENIMIENTO
+        // RESPUESTA
         // ==================================================
 
-        for (const tecnico of usuariosMantenimiento) {
+        res.status(200).json({
 
-            await notificacionesService.crear(
+            mensaje:
 
-                tecnico.usuario,
+                decision === 'aprobada'
 
-                'mantenimiento',
+                    ? 'Orden aprobada. Se notificó al usuario y al personal de mantenimiento'
 
-                `La orden ${resultado.id_historial} fue aprobada por ${req.usuario.usuario}. Equipo: ${equipo?.equipo || 'No disponible'}. Número de serie: ${resultado.num_serie}. Diagnóstico: ${resultado.falla}. Ya puedes realizar la reparación.`
+                    : 'Orden rechazada. Se notificó al usuario y el equipo regresa a disponible',
 
-            )
+            ...resultado
 
-        }
+        })
 
-    }
+    } catch (error) {
 
-
-    // ==================================================
-    // SI SE RECHAZA
-    // NOTIFICAR AL USUARIO
-    // ==================================================
-
-    if (
-
-        decision === 'rechazada' &&
-
-        resultado.usuario_reporta
-
-    ) {
-
-        await notificacionesService.crear(
-
-            resultado.usuario_reporta,
-
-            'mantenimiento',
-
-            `Tu reporte de daño de la orden ${resultado.id_historial} fue rechazado por el administrador ${req.usuario.usuario}. El equipo vuelve a estar disponible.`
-
+        console.error(
+            'Error al decidir la orden:',
+            error
         )
 
+        res.status(500).json({
+
+            error: 'Error al procesar la orden'
+
+        })
     }
-
-
-    // ==================================================
-    // RESPUESTA
-    // ==================================================
-
-    res.status(200).json({
-
-        mensaje:
-
-            decision === 'aprobada'
-
-                ? 'Orden aprobada. Se notificó al usuario y al personal de mantenimiento'
-
-                : 'Orden rechazada. Se notificó al usuario y el equipo regresa a disponible',
-
-        ...resultado
-
-    })
-
-} catch (error) {
-
-    console.error(
-
-        'Error al decidir la orden:',
-
-        error
-
-    )
-
-
-    res.status(500).json({
-
-        error: 'Error al procesar la orden'
-
-    })
-
-}
-
-
 }
 
 // ======================================================
@@ -876,37 +679,26 @@ try {
 
 exports.getReportes = async (req, res) => {
 
+    try {
 
-try {
+        const reportes =
+            await equiposService.findReportesPendientes()
 
-    const reportes =
+        res.json(reportes)
 
-        await equiposService.findReportesPendientes()
+    } catch (error) {
 
+        console.error(
+            'Error al obtener reportes:',
+            error
+        )
 
-    res.json(reportes)
+        res.status(500).json({
 
-} catch (error) {
+            error: 'Error en la consulta'
 
-    console.error(
-
-        'Error al obtener reportes:',
-    
-
-        error
-
-    )
-
-
-    res.status(500).json({
-
-        error: 'Error en la consulta'
-
-    })
-
-}
-
-
+        })
+    }
 }
 
 // ======================================================
@@ -915,36 +707,26 @@ try {
 
 exports.getHistorialMantenimientos = async (req, res) => {
 
+    try {
 
-try {
+        const historial =
+            await equiposService.findHistorialCompleto()
 
-    const historial =
+        res.json(historial)
 
-        await equiposService.findHistorialCompleto()
+    } catch (error) {
 
+        console.error(
+            'Error al obtener historial de mantenimientos:',
+            error
+        )
 
-    res.json(historial)
+        res.status(500).json({
 
-} catch (error) {
+            error: 'Error en la consulta'
 
-    console.error(
-
-        'Error al obtener historial de mantenimientos:',
-
-        error
-
-    )
-
-
-    res.status(500).json({
-
-        error: 'Error en la consulta'
-
-    })
-
-}
-
-
+        })
+    }
 }
 
 // ======================================================
@@ -971,9 +753,7 @@ exports.resolverReporte = async (req, res) => {
                     'Solo el personal de mantenimiento puede reparar equipos'
 
             })
-
         }
-
 
         // ==================================================
         // RECIBIR DATOS
@@ -985,7 +765,6 @@ exports.resolverReporte = async (req, res) => {
             tecnico,
             solucion
         } = req.body
-
 
         // ==================================================
         // MOSTRAR EN CONSOLA LOS DATOS RECIBIDOS
@@ -1028,7 +807,6 @@ exports.resolverReporte = async (req, res) => {
             '=========================================='
         )
 
-
         // ==================================================
         // VALIDAR DATOS
         // ==================================================
@@ -1050,9 +828,7 @@ exports.resolverReporte = async (req, res) => {
                     'Todos los campos requeridos deben estar completos'
 
             })
-
         }
-
 
         // ==================================================
         // LIMPIAR DATOS
@@ -1069,7 +845,6 @@ exports.resolverReporte = async (req, res) => {
 
         const solucionLimpia =
             String(solucion).trim()
-
 
         // ==================================================
         // VALIDAR QUE NO ESTÉN VACÍOS
@@ -1088,9 +863,7 @@ exports.resolverReporte = async (req, res) => {
                     'Los datos no pueden estar vacíos'
 
             })
-
         }
-
 
         // ==================================================
         // GUARDAR SOLUCIÓN
@@ -1104,17 +877,12 @@ exports.resolverReporte = async (req, res) => {
             await equiposService.resolverReporteTransaction(
 
                 numSerieLimpio,
-
                 idHistorialLimpio,
-
                 new Date(),
-
                 tecnicoLimpio,
-
                 solucionLimpia
 
             )
-
 
         // ==================================================
         // VERIFICAR RESULTADO
@@ -1132,9 +900,7 @@ exports.resolverReporte = async (req, res) => {
                     'La orden no está aprobada por el administrador o no existe'
 
             })
-
         }
-
 
         // ==================================================
         // AUDITORÍA
@@ -1148,7 +914,6 @@ exports.resolverReporte = async (req, res) => {
 
         )
 
-
         // ==================================================
         // NOTIFICAR A QUIEN REPORTÓ
         // ==================================================
@@ -1158,15 +923,12 @@ exports.resolverReporte = async (req, res) => {
             await notificacionesService.crear(
 
                 resultado.usuario_reporta,
-
                 'mantenimiento',
 
                 `La orden ${resultado.id_historial} del equipo ${numSerieLimpio} fue solucionada por ${tecnicoLimpio}.`
 
             )
-
         }
-
 
         // ==================================================
         // CONFIRMACIÓN EN CONSOLA
@@ -1196,7 +958,6 @@ exports.resolverReporte = async (req, res) => {
             solucionLimpia
         )
 
-
         // ==================================================
         // RESPUESTA
         // ==================================================
@@ -1209,7 +970,6 @@ exports.resolverReporte = async (req, res) => {
             reporte: resultado
 
         })
-
 
     } catch (error) {
 
@@ -1229,7 +989,6 @@ exports.resolverReporte = async (req, res) => {
             '=========================================='
         )
 
-
         // ==================================================
         // ERROR PRISMA
         // ==================================================
@@ -1242,9 +1001,7 @@ exports.resolverReporte = async (req, res) => {
                     'Equipo o reporte no encontrado'
 
             })
-
         }
-
 
         // ==================================================
         // ERROR GENERAL
@@ -1256,9 +1013,7 @@ exports.resolverReporte = async (req, res) => {
                 'Error al actualizar el reporte'
 
         })
-
     }
-
 }
 
 // ======================================================
@@ -1267,56 +1022,73 @@ exports.resolverReporte = async (req, res) => {
 
 exports.buscarMantenimientos = async (req, res) => {
 
+    try {
 
-try {
+        const filtro = req.body.filter
 
-    const filtro = req.body.filter
+        if (!filtro) {
 
+            return res.status(400).json({
 
-    if (!filtro) {
+                error:
+                    'Debe proporcionar un filtro'
 
-        return res.status(400).json({
+            })
+        }
 
-            error:
+        const resultados =
+            await equiposService.buscarMantenimientos(
+                filtro
+            )
 
-                'Debe proporcionar un filtro'
+        res.json(resultados)
 
-        })
+    } catch (error) {
 
-    }
-
-
-    const resultados =
-
-        await equiposService.buscarMantenimientos(
-
-            filtro
-
+        console.error(
+            'Error al buscar mantenimientos:',
+            error
         )
 
+        res.status(500).json({
 
-    res.json(resultados)
+            error:
+                'Error en la consulta'
 
-} catch (error) {
-
-    console.error(
-
-        'Error al buscar mantenimientos:',
-
-        error
-
-    )
-
-
-    res.status(500).json({
-
-        error:
-
-            'Error en la consulta'
-
-    })
-
+        })
+    }
 }
 
+// ======================================================
+// OBTENER HISTORIAL DE USO DE UN EQUIPO
+// ======================================================
 
+exports.getHistorialEquipo = async (req, res) => {
+
+    try {
+
+        const numSerie =
+            String(req.params.num_serie).trim()
+
+        const historial =
+            await equiposService.findHistorialEquipo(
+                numSerie
+            )
+
+        res.json(historial)
+
+    } catch (error) {
+
+        console.error(
+            'Error al obtener historial del equipo:',
+            error
+        )
+
+        res.status(500).json({
+
+            error:
+                'Error al obtener el historial del equipo'
+
+        })
+    }
 }

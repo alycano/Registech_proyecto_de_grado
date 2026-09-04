@@ -57,7 +57,7 @@ model prestamo_equipos {
 }
 
 model historial_mantenimientos {
-  id_historial     String    @id @db.VarChar(100)
+  id_historial     String    @id @default(uuid()) @db.VarChar(100)
   num_serie        String    @db.VarChar(50)
   fecha_reporte    DateTime  @db.Date
   fecha_solucion   DateTime? @db.Date
