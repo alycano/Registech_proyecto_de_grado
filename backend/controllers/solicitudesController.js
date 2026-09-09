@@ -1,8 +1,15 @@
 const solicitudesService = require('../services/solicitudesService')
+const notificacionesService = require('../services/notificacionesService')
 
 exports.crearSolicitud = async (req, res) => {
     try {
         const solicitud = await solicitudesService.crearSolicitud(req.usuario.usuario, req.body)
+        
+        await notificacionesService.notificarAdmins(
+            'solicitud',
+            `Nueva solicitud de ${req.usuario.usuario}: ${solicitud.detalles || 'Sin detalles'}`
+        )
+
         res.status(201).json(solicitud)
     } catch (error) {
         console.error('Error al crear solicitud:', error)
