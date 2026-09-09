@@ -194,6 +194,44 @@ export default function EquipoCard({ equipo, onPrestamo, onDevolver, vencimiento
     // ACCIONES DEL MODAL
     // ======================================================
 
+    // ======================================================
+    // CANCELAR REPORTE
+    // ======================================================
+
+    const handleCancelarReporte = async () => {
+        const { isConfirmed } = await Swal.fire({
+            icon: 'warning',
+            title: '¿Cancelar reporte?',
+            html: `¿Estás seguro de que deseas cancelar el reporte de falla del equipo <strong>${equipo.equipo}</strong>? El equipo volverá a estar disponible/asignado.`,
+            showCancelButton: true,
+            confirmButtonText: 'Sí, cancelar reporte',
+            cancelButtonText: 'No, mantener',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#64748b'
+        })
+
+        if (!isConfirmed) return
+
+        try {
+            const res = await axios.delete(API_ROUTES.CANCELAR_REPORTE(equipo.num_serie))
+            Swal.fire({
+                icon: 'success',
+                title: 'Reporte cancelado',
+                text: res.data?.mensaje || 'El reporte de mantenimiento ha sido cancelado.',
+                timer: 3000,
+                showConfirmButton: false
+            })
+            setVerDetalle(false)
+            if (onEquipoActualizado) onEquipoActualizado(res.data.equipo || { ...equipo, estado: res.data.equipo_estado })
+        } catch (error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: error.response?.data?.error || 'No se pudo cancelar el reporte'
+            })
+        }
+    }
+
     const AccionesDetalle = (
         <>
             {equipo.estado === 'Disponible' && (
@@ -242,6 +280,16 @@ export default function EquipoCard({ equipo, onPrestamo, onDevolver, vencimiento
                 >
                     <i className="bi bi-cone-striped me-1"></i>
                     Registrar daño
+                </button>
+            )}
+
+            {equipo.estado === 'En mantenimiento' && puedeReportarDano && (
+                <button
+                    className="btn btn-outline-danger"
+                    onClick={handleCancelarReporte}
+                >
+                    <i className="bi bi-x-circle me-1"></i>
+                    Cancelar reporte de daño
                 </button>
             )}
         </>

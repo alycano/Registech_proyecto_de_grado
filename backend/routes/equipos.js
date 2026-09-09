@@ -1,4 +1,4 @@
-﻿const express = require('express')
+const express = require('express')
 
 const router = express.Router()
 
@@ -18,7 +18,8 @@ const {
     moverEquipo,
     reportarEquipoExtraviado,
     obtenerEvidencia,
-    reintegrarEquipo
+    reintegrarEquipo,
+    cancelarReporte
 } = require('../controllers/equiposController')
 
 const { authMiddleware, requireRol } = require('../middlewares/auth')
@@ -74,6 +75,13 @@ router.post(
     upload.single('foto'),
     validate(reporteFallaSchema),
     reporteFalla
+)
+
+router.delete(
+    '/equipos/:num_serie/reporte/cancelar',
+    authMiddleware,
+    requireRol('soporte', 'admin', 'inventario'),
+    cancelarReporte
 )
 
 router.get(

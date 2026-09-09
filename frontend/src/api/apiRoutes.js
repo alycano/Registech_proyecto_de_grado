@@ -75,6 +75,7 @@
         ESTADOS_EQUIPO: `${BASE_URL}/estados_equipo`,
         LIBERAR_EQUIPO: (numSerie) => `${BASE_URL}/equipos/${encodeURIComponent(numSerie)}/liberar`,
         REPORTE_FALLA: `${BASE_URL}/equipos/reporte/add`,
+        CANCELAR_REPORTE: (numSerie) => `${BASE_URL}/equipos/${encodeURIComponent(numSerie)}/reporte/cancelar`,
         OBTENER_MANTENIMIENTOS: `${BASE_URL}/equipos/reporte`,
         HISTORIAL_MANTENIMIENTOS: `${BASE_URL}/equipos/mantenimientos`,
         ACTUALIZAR_MANTENIMIENTOS: `${BASE_URL}/equipos/reporte/solucion`,

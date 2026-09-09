@@ -1302,3 +1302,29 @@ exports.obtenerEvidencia = (req, res) => {
 
     res.sendFile(ruta)
 }
+
+// ======================================================
+// CANCELAR REPORTE DE MANTENIMIENTO
+// ======================================================
+exports.cancelarReporte = async (req, res) => {
+    try {
+        const num_serie = req.params.num_serie;
+        const reporte = await prisma.historial_mantenimientos.findFirst({
+            where: { num_serie: num_serie, estado_orden: 'pendiente' }
+        });
+        if (!reporte) {
+            return res.status(404).json({ error: 'No hay reportes pendientes para este equipo' });
+        }
+        const equipo = await prisma.equipos.findUnique({ where: { num_serie } });
+        const nuevoEstado = equipo.responsable ? 'Asignado' : 'Disponible';
+        await prisma.$transaction([
+            prisma.historial_mantenimientos.delete({ where: { id_historial: reporte.id_historial } }),
+            prisma.equipos.update({ where: { num_serie }, data: { estado: nuevoEstado } })
+        ]);
+        await auditoriaService.registrar(req.usuario.usuario, "Canceló el reporte de mantenimiento del equipo ${num_serie}");
+        res.json({ mensaje: 'Reporte cancelado exitosamente', equipo: { ...equipo, estado: nuevoEstado } });
+    } catch (error) {
+        console.error('Error al cancelar reporte:', error);
+        res.status(500).json({ error: 'Error al cancelar reporte' });
+    }
+}
