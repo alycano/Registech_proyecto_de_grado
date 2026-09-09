@@ -47,7 +47,7 @@ const HistorialPrestamos = () => {
         const matchTexto = !texto ||
             p.num_serie?.toLowerCase().includes(texto) ||
             p.equipo?.toLowerCase().includes(texto) ||
-            p.usuario_destino?.toLowerCase().includes(texto)
+            (p.usuario || p.empleado || '').toLowerCase().includes(texto)
         const matchEstado = !filtroEstado || p.estado === filtroEstado
         return matchTexto && matchEstado
     })
@@ -139,7 +139,7 @@ const HistorialPrestamos = () => {
                                                 <div className="fw-semibold">{p.equipo || '-'}</div>
                                                 <code className="equipo-card__ns">{p.num_serie}</code>
                                             </td>
-                                            <td>{p.usuario_destino}</td>
+                                            <td>{p.usuario || p.empleado || '-'}</td>
                                             <td>{String(p.fecha_prestamo).substring(0, 10)}</td>
                                             <td>
                                                 {String(p.fecha_devolucion || '').substring(0, 10) || '—'}

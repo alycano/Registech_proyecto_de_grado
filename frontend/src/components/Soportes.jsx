@@ -4,7 +4,7 @@
     import Swal from "sweetalert2"
     import { API_ROUTES } from "../api/apiRoutes"
 
-    const Soportes = ({ usuario, esAdmin }) => {
+    const Soportes = ({ usuario, esAdmin, esInventario }) => {
         const [mantenimientos, setMantenimientos] = useState([])
         const [equipos, setEquipos] = useState([])
         const [loading, setLoading] = useState(true)
@@ -536,6 +536,13 @@
                                                                     Detalles
                                                                 </button>
                                                             </>
+                                                        ) : esInventario ? (
+
+                                                            /* INVENTARIO: SOLO LECTURA */
+                                                            <span className="text-muted small">
+                                                                Solo lectura
+                                                            </span>
+
                                                         ) : (
 
                                                             /* MANTENIMIENTO */
@@ -747,7 +754,7 @@
                                                 ) : (
                                                     <>
                                                         <i className="bi bi-send me-1"></i>
-                                                        {esAdmin ? 'Registrar y aprobar' : 'Enviar para aprobación'}Enviar para aprobación
+                                                        {esAdmin ? 'Registrar y aprobar' : 'Enviar para aprobación'}
                                                     </>
                                                 )}
 

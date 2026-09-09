@@ -172,7 +172,7 @@ exports.solicitarRecuperacion = async (correo) => {
     await usuariosRepository.createResetToken(usuarioEncontrado.usuario, codigo, expiraEn)
 
     try {
-        const { enviarCorreo } = require('./mailService')
+        const { enviarCorreo } = require('./emailService')
         await enviarCorreo({
             para: correoLimpio,
             asunto: 'Registech - Código de recuperación de contraseña',

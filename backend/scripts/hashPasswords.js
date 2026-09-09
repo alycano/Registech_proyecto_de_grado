@@ -11,7 +11,7 @@ async function hashExistingPasswords() {
             if (user.contrasena && !user.contrasena.startsWith('$2')) {
                 const hash = bcrypt.hashSync(user.contrasena, 10)
                 await db.query('UPDATE usuarios SET contrasena = $1 WHERE usuario = $2', [hash, user.usuario])
-                console.log(`  Hasheada: ${user.usuario} (${user.contrasena} -> bcrypt)`)
+                console.log(`  Hasheada: ${user.usuario} (-> bcrypt)`)
                 updated++
             }
         }

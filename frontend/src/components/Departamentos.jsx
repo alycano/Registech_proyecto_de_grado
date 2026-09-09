@@ -13,6 +13,7 @@ const Departamentos = () => {
     const [prestamosActivos, setPrestamosActivos] = useState([])
     const [usuarios, setUsuarios] = useState([])
     const [empleados, setEmpleados] = useState([])
+    const [equipos, setEquipos] = useState([])
 
     const [loading, setLoading] = useState(true)
 
@@ -40,12 +41,14 @@ const Departamentos = () => {
                 respuestaAreas,
                 respuestaPrestamos,
                 respuestaUsuarios,
-                respuestaEmpleados
+                respuestaEmpleados,
+                respuestaEquipos
             ] = await Promise.all([
                 axios.get(API_ROUTES.OBTENER_AREAS),
                 axios.get(API_ROUTES.PRESTAMOS_ACTIVOS),
                 axios.get(API_ROUTES.OBTENER_USUARIOS),
-                axios.get(API_ROUTES.OBTENER_EMPLEADOS)
+                axios.get(API_ROUTES.OBTENER_EMPLEADOS),
+                axios.get(API_ROUTES.EQUIPOS)
             ])
 
             setAreas(
@@ -69,6 +72,12 @@ const Departamentos = () => {
             setEmpleados(
                 Array.isArray(respuestaEmpleados.data)
                     ? respuestaEmpleados.data
+                    : []
+            )
+
+            setEquipos(
+                Array.isArray(respuestaEquipos.data)
+                    ? respuestaEquipos.data
                     : []
             )
 
@@ -285,7 +294,11 @@ const Departamentos = () => {
     // ======================================================
 
     const contarEquipos = (area) => {
-        return obtenerEquiposArea(area).length
+        if (!area) return 0
+        return equipos.filter(e =>
+            String(e.area || '').toLowerCase() === area.toLowerCase() &&
+            String(e.estado).toLowerCase() !== 'baja'
+        ).length
     }
 
 
@@ -529,7 +542,7 @@ const Departamentos = () => {
             if (cantidadEquipos > 0) {
 
                 partes.push(
-                    `${cantidadEquipos} equipo(s) prestado(s)`
+                    `${cantidadEquipos} equipo(s)`
                 )
             }
 
@@ -999,7 +1012,7 @@ const Departamentos = () => {
 
                                         <button
                                             type="button"
-                                            className="btn btn-outline-primary w-100"
+                                            className="btn btn-primary btn-detalle-solid w-100"
                                             onClick={() =>
                                                 abrirDetalles(area)
                                             }

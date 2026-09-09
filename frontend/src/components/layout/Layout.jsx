@@ -34,7 +34,6 @@ export default function Layout({ children }) {
             <div className="app-main" data-theme={theme}>
                 <Header
                     usuario={usuario}
-                    onToggleSidebar={() => setCollapsed(!collapsed)}
                     theme={theme}
                     onToggleTheme={toggleTheme}
                 />

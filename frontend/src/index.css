@@ -362,7 +362,7 @@ body {
   z-index: 50;
 }
 
-.app-header__toggle { color: var(--text-2); text-decoration: none; padding: 0.2rem; }
+.app-header__actions { margin-left: auto; }
 
 .app-header__search { position: relative; align-items: center; }
 .app-header__search i { position: absolute; left: 0.65rem; color: var(--text-3); font-size: 0.85rem; }
@@ -1057,3 +1057,26 @@ code {
   .sidebar .sidebar__brand-text, .sidebar .sidebar__link span { display: none; }
   .app-main { margin-left: var(--sidebar-w-collapsed); }
 }
+
+/* ============================================================
+   Botón "Ver detalles" sólido (sin efecto hover)
+   ============================================================ */
+.btn-detalle-solid {
+  background-color: #2563eb !important;
+  border-color: #2563eb !important;
+  color: #fff !important;
+}
+.btn-detalle-solid:hover,
+.btn-detalle-solid:focus,
+.btn-detalle-solid:active {
+  background-color: #2563eb !important;
+  border-color: #2563eb !important;
+  color: #fff !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* ============================================================
+   Footer del sidebar (reducir menú + cerrar sesión)
+   ============================================================ */
+.sidebar__footer { display: flex; flex-direction: column; gap: 0.35rem; }

@@ -221,10 +221,6 @@ try {
 
     const usuarioReporta = req.usuario.usuario
     const rolUsuario = req.usuario.rol
-    console.log('================================')
-console.log('USUARIO QUE REPORTA:', req.usuario)
-console.log('ROL:', req.usuario.rol)
-console.log('================================')
 
 
     // ==================================================
@@ -303,7 +299,7 @@ const resultado =
 
                     rol: 'mantenimiento',
 
-                    estado: 'Activo'
+                    estado: { equals: 'activo', mode: 'insensitive' }
 
                 },
 
@@ -558,7 +554,7 @@ try {
 
                     rol: 'mantenimiento',
 
-                    estado: 'Activo'
+                    estado: { equals: 'activo', mode: 'insensitive' }
 
                 },
 

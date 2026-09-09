@@ -77,7 +77,7 @@ const Reportes = ({ usuario }) => {
                     `prestamos_${new Date().toISOString().slice(0, 10)}.xls`,
                     ['ID Prestamo', 'Num Serie', 'Equipo', 'Usuario Destino', 'Area', 'Fecha Inicio', 'Fecha Limite/Devolucion', 'Estado', 'Observaciones'],
                     res.data.map(p => [
-                        p.id_prestamo, p.num_serie, p.equipo || '', p.usuario_destino,
+                        p.id_prestamo, p.num_serie, p.equipo || '', p.usuario || p.empleado || '',
                         p.area || '', String(p.fecha_prestamo || '').slice(0, 10),
                         String(p.fecha_devolucion || '').slice(0, 10), p.estado, p.observaciones || ''
                     ])

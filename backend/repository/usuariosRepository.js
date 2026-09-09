@@ -12,7 +12,7 @@ exports.findByCorreo = async (correo) => {
 
 exports.findAll = async () => {
     const { rows } = await db.query(
-        'SELECT usuario, nombre, area, rol, correo, estado FROM usuarios'
+        'SELECT id_usuario, usuario, nombre, area, rol, correo, estado FROM usuarios'
     )
     return rows
 }
@@ -47,7 +47,7 @@ exports.tienePrestamoActivo = async (usuarioParam) => {
     const { rows } = await db.query(
         `SELECT 1
          FROM prestamos p
-         INNER JOIN usuarios u ON u.id_usuario = p.usuario_destino
+         INNER JOIN usuarios u ON u.id_usuario = p.id_usuario
          WHERE u.usuario = $1
            AND p.estado IN ('activo', 'parcial')
          LIMIT 1`,
@@ -61,7 +61,7 @@ exports.tieneHistorialPrestamos = async (usuarioParam) => {
     const { rows } = await db.query(
         `SELECT 1
          FROM prestamos p
-         INNER JOIN usuarios u ON u.id_usuario = p.usuario_destino
+         INNER JOIN usuarios u ON u.id_usuario = p.id_usuario
          WHERE u.usuario = $1
          LIMIT 1`,
         [usuarioParam]

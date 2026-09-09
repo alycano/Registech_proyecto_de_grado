@@ -238,25 +238,10 @@ exports.contarUso = async (area) => {
 
 
             (
-                SELECT COUNT(DISTINCT pe.num_serie)::int
-                FROM prestamo_equipos pe
-
-                INNER JOIN prestamos p
-                    ON p.id_prestamo = pe.id_prestamo
-
-                INNER JOIN equipos e
-                    ON e.num_serie = pe.num_serie
-
-                WHERE LOWER(p.area) = LOWER($1)
-
-                  AND p.estado IN (
-                      'activo',
-                      'parcial'
-                  )
-
-                  AND pe.estado = 'prestado'
-
-                  AND e.estado = 'Asignado'
+                SELECT COUNT(*)::int
+                FROM equipos e
+                WHERE LOWER(e.area) = LOWER($1)
+                  AND e.estado <> 'Baja'
             ) AS equipos
 
         `,

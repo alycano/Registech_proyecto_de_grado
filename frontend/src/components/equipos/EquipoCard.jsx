@@ -5,7 +5,7 @@ import { getEstadoClass, getEstadoLabel, getEspecificaciones } from '../../utils
 import { API_ROUTES } from '../../api/apiRoutes'
 import { useAuth } from '../../context/AuthContext'
 
-export default function EquipoCard({ equipo, onPrestamo, onDevolver, vencimiento, areas = [], onEquipoActualizado }) {
+export default function EquipoCard({ equipo, onPrestamo, onDevolver, vencimiento, onEquipoActualizado }) {
     const { usuario } = useAuth()
     const [verDetalle, setVerDetalle] = useState(false)
     const [historial, setHistorial] = useState([])
@@ -30,101 +30,7 @@ export default function EquipoCard({ equipo, onPrestamo, onDevolver, vencimiento
     const especificaciones = getEspecificaciones(equipo)
 
     const puedeGestionar = usuario && (usuario.rol === 'admin' || usuario.rol === 'inventario')
-
-    // ======================================================
-    // MOVER EQUIPO DE ÁREA / DEPARTAMENTO
-    // ======================================================
-
-    const handleMoverArea = async () => {
-        const opciones = {}
-        areas.forEach((a) => {
-            opciones[a.area] = a.area
-        })
-        if (equipo.area && opciones[equipo.area]) {
-            delete opciones[equipo.area]
-        }
-
-        const { value: area } = await Swal.fire({
-            title: 'Mover de departamento',
-            html: `Equipo: <strong>${equipo.equipo}</strong><br /><small>${equipo.num_serie}</small>`,
-            input: 'select',
-            inputOptions: opciones,
-            inputPlaceholder: 'Selecciona el departamento de destino',
-            showCancelButton: true,
-            confirmButtonColor: '#2b5797',
-            confirmButtonText: 'Mover',
-            cancelButtonText: 'Cancelar',
-            inputValidator: (value) => {
-                if (!value) return 'Debes seleccionar un departamento'
-            },
-            preConfirm: (value) => {
-                if (value === equipo.area) {
-                    return Swal.showValidationMessage('El equipo ya está en ese departamento')
-                }
-                return value
-            }
-        })
-
-        if (area) {
-            try {
-                const res = await axios.patch(API_ROUTES.MOVER_EQUIPO(equipo.num_serie), { area })
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Equipo reubicado',
-                    text: `Ahora está en: ${res.data.equipo.area}`,
-                    timer: 2500,
-                    showConfirmButton: false
-                })
-                if (onEquipoActualizado) onEquipoActualizado(res.data.equipo)
-            } catch (error) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: error.response?.data?.error || 'No se pudo mover el equipo'
-                })
-            }
-        }
-    }
-
-    // ======================================================
-    // REPORTAR EQUIPO NO LOCALIZADO (EXTRAVÍO)
-    // ======================================================
-
-    const handleReportarExtraviado = async () => {
-        const { value: observaciones, isConfirmed } = await Swal.fire({
-            title: 'Reportar extravío',
-            html: `<p>El equipo <strong>${equipo.equipo}</strong> (${equipo.num_serie}) no fue localizado.</p>`,
-            input: 'textarea',
-            inputLabel: 'Observaciones (opcional)',
-            inputPlaceholder: 'Última ubicación conocida, quién lo tenía, etc.',
-            showCancelButton: true,
-            confirmButtonColor: '#dc3545',
-            confirmButtonText: 'Reportar',
-            cancelButtonText: 'Cancelar',
-            inputValidator: (value) => {
-                if (value && value.length > 500) return 'Máximo 500 caracteres'
-            }
-        })
-
-        if (isConfirmed) {
-            try {
-                await axios.post(API_ROUTES.REPORTAR_EXTRAVIADO(equipo.num_serie), { observaciones: observaciones || '' })
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Alerta enviada',
-                    text: 'Los administradores han sido notificados.',
-                    timer: 2500,
-                    showConfirmButton: false
-                })
-            } catch (error) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: error.response?.data?.error || 'No se pudo reportar el extravío'
-                })
-            }
-        }
-    }
+    const puedeReportarDano = usuario && (usuario.rol === 'admin' || usuario.rol === 'soporte')
 
     // ======================================================
     // REINTEGRAR EQUIPO (DE BAJA O EXTRAVIADO A DISPONIBLE)
@@ -236,6 +142,55 @@ export default function EquipoCard({ equipo, onPrestamo, onDevolver, vencimiento
 
     
     // ======================================================
+    // REGISTRAR DAÑO
+    // ======================================================
+
+    const handleReportarDano = async () => {
+        const { value: falla, isConfirmed } = await Swal.fire({
+            icon: 'warning',
+            title: 'Registrar daño',
+            html: `Describe el daño del equipo <strong>${equipo.equipo}</strong> (${equipo.num_serie})`,
+            input: 'textarea',
+            inputPlaceholder: 'Ej. Pantalla rota, no enciende, teclado dañado...',
+            inputAttributes: { maxlength: '500' },
+            inputValidator: (value) =>
+                !value || !value.trim()
+                    ? 'Describe el daño detectado'
+                    : null,
+            showCancelButton: true,
+            confirmButtonText: '<i class="bi bi-cone-striped me-1"></i>Registrar daño',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#64748b'
+        })
+
+        if (!isConfirmed || !falla || !falla.trim()) return
+
+        const formData = new FormData()
+        formData.append('num_serie', equipo.num_serie)
+        formData.append('falla', falla.trim())
+
+        try {
+            const res = await axios.post(API_ROUTES.REPORTE_FALLA, formData)
+            Swal.fire({
+                icon: 'success',
+                title: 'Daño registrado',
+                text: res.data?.mensaje || 'Se creó la orden de soporte para este equipo.',
+                timer: 3000,
+                showConfirmButton: false
+            })
+            setVerDetalle(false)
+            if (onEquipoActualizado) onEquipoActualizado({ ...equipo, estado: 'En mantenimiento' })
+        } catch (error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: error.response?.data?.error || 'No se pudo registrar el daño'
+            })
+        }
+    }
+
+    // ======================================================
     // ACCIONES DEL MODAL
     // ======================================================
 
@@ -277,6 +232,16 @@ export default function EquipoCard({ equipo, onPrestamo, onDevolver, vencimiento
                 >
                     <i className="bi bi-arrow-counterclockwise me-1"></i>
                     Reintegrar Equipo
+                </button>
+            )}
+
+            {(equipo.estado === 'Disponible' || equipo.estado === 'Asignado') && puedeReportarDano && (
+                <button
+                    className="btn btn-outline-danger"
+                    onClick={handleReportarDano}
+                >
+                    <i className="bi bi-cone-striped me-1"></i>
+                    Registrar daño
                 </button>
             )}
         </>
@@ -342,7 +307,7 @@ export default function EquipoCard({ equipo, onPrestamo, onDevolver, vencimiento
                     <div className="mt-auto">
                         <div className="d-flex gap-2 mb-2">
                             <button
-                                className="btn btn-sm btn-primary flex-grow-1"
+                                className="btn btn-sm btn-primary btn-detalle-solid flex-grow-1"
                                 onClick={() => setVerDetalle(true)}
                             >
                                 <i className="bi bi-info-circle me-1"></i>
@@ -382,35 +347,15 @@ export default function EquipoCard({ equipo, onPrestamo, onDevolver, vencimiento
                             </div>
                         )}
 
-                        {puedeGestionar && (
+                        {puedeGestionar && (equipo.estado === 'Baja' || equipo.estado === 'Extraviado') && (
                             <div className="d-flex gap-2 mt-2">
-                                {(equipo.estado === 'Baja' || equipo.estado === 'Extraviado') ? (
-                                    <button
-                                        className="btn btn-sm btn-success w-100"
-                                        onClick={handleReintegrar}
-                                        title="Reintegrar al inventario"
-                                    >
-                                        <i className="bi bi-arrow-counterclockwise me-1"></i> Reintegrar
-                                    </button>
-                                ) : (
-                                    <>
-                                        <button
-                                            className="btn btn-sm btn-primary flex-grow-1"
-                                            onClick={handleMoverArea}
-                                            title="Mover de departamento"
-                                        >
-                                            Mover
-                                        </button>
-
-                                        <button
-                                            className="btn btn-sm btn-danger flex-grow-1"
-                                            onClick={handleReportarExtraviado}
-                                            title="Reportar extravío"
-                                        >
-                                            Extravío
-                                        </button>
-                                    </>
-                                )}
+                                <button
+                                    className="btn btn-sm btn-success w-100"
+                                    onClick={handleReintegrar}
+                                    title="Reintegrar al inventario"
+                                >
+                                    <i className="bi bi-arrow-counterclockwise me-1"></i> Reintegrar
+                                </button>
                             </div>
                         )}
 

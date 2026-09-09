@@ -6,7 +6,7 @@ exports.notificarAdmins = async (tipo, mensaje) => {
         const administradores = await prisma.usuarios.findMany({
             where: {
                 rol: 'admin',
-                estado: 'Activo'
+                estado: { equals: 'activo', mode: 'insensitive' }
             }
         })
         for (const admin of administradores) {

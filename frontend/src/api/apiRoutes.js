@@ -60,7 +60,7 @@
         }
     )
 
-    const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+    const BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
     export const API_ROUTES = {
         LOGIN: `${BASE_URL}/login`,
@@ -99,12 +99,6 @@
        PRESTAMOS: `${BASE_URL}/prestamos`,
 
 PRESTAMOS_ACTIVOS: `${BASE_URL}/prestamos/activos`,
-
-HISTORIAL_EMPLEADO: (id) =>
-    `${BASE_URL}/prestamos/historial/empleado/${id}`,
-
-HISTORIAL_USUARIO: (id) =>
-    `${BASE_URL}/prestamos/historial/usuario/${id}`,
 
 HISTORIAL_EMPLEADO: (id) =>
     `${BASE_URL}/prestamos/historial/empleado/${id}`,

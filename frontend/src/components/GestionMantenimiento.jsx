@@ -145,7 +145,7 @@ const GestionMantenimiento = () => {
                     ? <Soportes usuario={usuario?.usuario} esAdmin />
                     : <Historiales usuario={usuario?.usuario} />
             ) : (
-                <Soportes usuario={usuario?.usuario} esAdmin={false} />
+                <Soportes usuario={usuario?.usuario} esAdmin={false} esInventario={usuario?.rol === 'inventario'} />
             )}
         </div>
     )

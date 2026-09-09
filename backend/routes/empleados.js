@@ -8,6 +8,7 @@ const { authMiddleware, requireRol } = require('../middlewares/auth')
 
 router.get(
     '/empleados',
+    authMiddleware,
     empleadosController.getEmpleados
 )
 

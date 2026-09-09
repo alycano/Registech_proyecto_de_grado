@@ -140,7 +140,7 @@ const obtenerHistorial = () => {
                                     <td>{equipo.fecha_solucion ? equipo.fecha_solucion.slice(0, 10) : '-'}</td>
                                     <td className="text-center">
                                         <button
-                                            className="btn btn-sm btn-primary"
+                                            className="btn btn-sm btn-primary btn-detalle-solid"
                                             onClick={() => setDetalle(equipo)}
                                         >
                                             <i className="bi bi-eye me-1"></i>Ver detalles

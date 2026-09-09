@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import Notificaciones from '../Notificaciones'
 
-export default function Header({ usuario, onToggleSidebar, theme, onToggleTheme }) {
+export default function Header({ usuario, theme, onToggleTheme }) {
     const navigate = useNavigate()
 
     const iniciales = usuario?.nombre
@@ -10,13 +10,7 @@ export default function Header({ usuario, onToggleSidebar, theme, onToggleTheme 
 
     return (
         <header className="app-header">
-            <div className="d-flex align-items-center gap-3">
-                <button className="btn btn-link app-header__toggle" onClick={onToggleSidebar}>
-                    <i className="bi bi-list fs-4"></i>
-                </button>
-            </div>
-
-            <div className="d-flex align-items-center gap-2">
+            <div className="app-header__actions d-flex align-items-center gap-2">
                 <button className="btn btn-link app-header__icon-btn" onClick={onToggleTheme} title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
                     <i className={`bi ${theme === 'dark' ? 'bi-sun-fill' : 'bi-moon-fill'} fs-5`}></i>
                 </button>

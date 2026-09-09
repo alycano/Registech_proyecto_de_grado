@@ -27,10 +27,18 @@ export default function ModalPrestamo({ equipo, usuarios, areas, onClose, onConf
         }
         setEnviando(true)
         const observacionesAuto = `Prestamo del ${fechaInicio} al ${fechaLimite}`
+        const usuarioDestinoObj = usuarios.find(u => u.nombre === usuarioDestino)
+        const idUsuario = usuarioDestinoObj?.id_usuario ?? null
+
+        if (!idUsuario) {
+            setEnviando(false)
+            Swal.fire({ icon: 'error', title: 'Usuario no válido', text: 'No se pudo identificar al usuario seleccionado. Intenta con otro.' })
+            return
+        }
 
         axios.post(API_ROUTES.PRESTAMOS, {
-            num_serie: equipo.num_serie,
-            usuario_destino: usuarioDestino,
+            num_series: [equipo.num_serie],
+            id_usuario: idUsuario,
             fecha_inicio: fechaInicio,
             fecha_limite: fechaLimite,
             observaciones: observacionesAuto

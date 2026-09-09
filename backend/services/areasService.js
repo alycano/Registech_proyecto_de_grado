@@ -237,7 +237,7 @@ exports.eliminarArea = async (area) => {
         if (equipos > 0) {
 
             detalles.push(
-                `${equipos} equipo(s) prestado(s)`
+                `${equipos} equipo(s)`
             )
         }
 

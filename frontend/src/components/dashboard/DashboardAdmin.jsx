@@ -330,7 +330,7 @@ export default function DashboardAdmin() {
                                         <td>{o.nombre_tecnico || o.usuario_tecnico || '-'}</td>
                                         <td className="text-end">
                                             <button
-                                                className="btn btn-sm btn-primary"
+                                                className="btn btn-sm btn-primary btn-detalle-solid"
                                                 onClick={() => setDetalleOrden(o)}
                                             >
                                                 <i className="bi bi-eye me-1"></i>Ver detalles
@@ -370,7 +370,7 @@ export default function DashboardAdmin() {
                                             {paginatedLoans.map(p => (
                                                 <tr key={`${p.id_prestamo}-${p.num_serie}`}>
                                                     <td><strong>{p.equipo}</strong><br/><small className="text-muted">{p.num_serie}</small></td>
-                                                    <td>{p.usuario_destino}</td>
+                                                    <td>{p.usuario || p.empleado}</td>
                                                     <td><span className="dept-tag">{p.equipo_area}</span></td>
                                                     <td>{formatDate(p.fecha_prestamo)}</td>
                                                     <td>
@@ -409,7 +409,7 @@ export default function DashboardAdmin() {
                                 <table className="table table-hover mb-0">
                                     <thead className="table-header">
                                         <tr>
-                                            <th>Detalle</th>
+                                            <th>ID</th>
                                             <th>Solicitante</th>
                                             <th>Detalle</th>
                                             <th>Estado</th>
@@ -419,9 +419,9 @@ export default function DashboardAdmin() {
                                     <tbody>
                                         {solicitudes.slice(0, 5).map(s => (
                                             <tr key={s.id}>
-                                                <td><strong>{s.detalles || 'Solicitud'}</strong></td>
+                                                <td><strong className="text-dark">SOL-{String(s.id).padStart(4, '0')}</strong></td>
                                                 <td>{s.usuario}</td>
-                                                <td><small className="text-muted">{s.detalles || '-'}</small></td>
+                                                <td>{s.detalles || '-'}</td>
                                                     <td>
                                                     <span className={`badge ${s.estado === 'aprobada' ? 'estado-disponible' : s.estado === 'rechazada' ? 'estado-baja' : 'estado-mantenimiento'}`}>{s.estado}</span>
                                                 </td>

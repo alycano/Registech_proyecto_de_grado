@@ -109,7 +109,7 @@ exports.obtenerUsuariosPorRol = async (rol) => {
 
             rol,
 
-            estado: 'Activo'
+            estado: { equals: 'activo', mode: 'insensitive' }
 
         },
 

@@ -75,6 +75,7 @@ const PMC = () => {
 
     const [entregas, setEntregas] = useState([])
     const [loadingEntregas, setLoadingEntregas] = useState(false)
+    const [busquedaHistorial, setBusquedaHistorial] = useState('')
 
     // ======================================================
     // OBTENER INVENTARIO
@@ -851,6 +852,46 @@ const PMC = () => {
     }
 
     // ======================================================
+    // ABREVIAR UUID
+    // ======================================================
+
+    const abreviarUuid = (id) => {
+        const s = String(id || '')
+        const partes = s.split('-')
+        if (partes.length > 1) {
+            return `${partes[0]}-${partes[1]}…`
+        }
+        return s
+    }
+
+    // ======================================================
+    // FILTRAR HISTORIAL
+    // ======================================================
+
+    const entregasFiltradas = entregas.filter(
+        (entrega) => {
+            const q = busquedaHistorial
+                .trim()
+                .toLowerCase()
+
+            if (!q) return true
+
+            const texto = [
+                entrega.producto,
+                obtenerNombreEntrega(entrega),
+                entrega.area,
+                entrega.observaciones,
+                String(entrega.cantidad || '')
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase()
+
+            return texto.includes(q)
+        }
+    )
+
+    // ======================================================
     // ESTADO DE CARGA
     // ======================================================
 
@@ -1080,7 +1121,14 @@ const PMC = () => {
                                 <tr key={pmc.id}>
 
                                     <td>
-                                        {pmc.id}
+
+                                        <code
+                                            className="text-dark fw-bold"
+                                            title={pmc.id}
+                                        >
+                                            {abreviarUuid(pmc.id)}
+                                        </code>
+
                                     </td>
 
                                     <td>
@@ -1245,7 +1293,11 @@ const PMC = () => {
                                 <tr key={s.id}>
 
                                     <td>
-                                        {s.id}
+                                        <strong
+                                            className="text-dark"
+                                        >
+                                            SOL-{String(s.id).padStart(4, '0')}
+                                        </strong>
                                     </td>
 
                                     <td>
@@ -1387,6 +1439,46 @@ const PMC = () => {
 
                     <div className="table-responsive">
 
+                        <div className="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+
+                            <div className="input-group" style={{ maxWidth: '340px' }}>
+
+                                <span className="input-group-text">
+                                    <i className="bi bi-search"></i>
+                                </span>
+
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    placeholder="Buscar por producto, destinatario, área..."
+                                    value={busquedaHistorial}
+                                    onChange={(e) =>
+                                        setBusquedaHistorial(e.target.value)
+                                    }
+                                />
+
+                                {busquedaHistorial && (
+                                    <button
+                                        className="btn btn-outline-secondary"
+                                        type="button"
+                                        onClick={() =>
+                                            setBusquedaHistorial('')
+                                        }
+                                    >
+                                        <i className="bi bi-x-lg"></i>
+                                    </button>
+                                )}
+
+                            </div>
+
+                            {busquedaHistorial && (
+                                <span className="text-muted small">
+                                    {entregasFiltradas.length} de {entregas.length}
+                                </span>
+                            )}
+
+                        </div>
+
                         {loadingEntregas ? (
 
                             <div className="text-center py-5">
@@ -1410,6 +1502,8 @@ const PMC = () => {
 
                                     <tr>
 
+                                        <th>ID</th>
+
                                         <th>Producto</th>
 
                                         <th>Cantidad</th>
@@ -1432,7 +1526,7 @@ const PMC = () => {
 
                                 <tbody>
 
-                                    {entregas.map(
+                                    {entregasFiltradas.map(
                                         entrega => (
 
                                             <tr
@@ -1440,6 +1534,17 @@ const PMC = () => {
                                                     entrega.id_entrega
                                                 }
                                             >
+
+                                                <td>
+
+                                                    <code
+                                                        className="text-dark fw-bold"
+                                                        title={entrega.id_entrega}
+                                                    >
+                                                        {abreviarUuid(entrega.id_entrega)}
+                                                    </code>
+
+                                                </td>
 
                                                 <td>
                                                     {entrega.producto}
@@ -1511,12 +1616,12 @@ const PMC = () => {
                                         )
                                     )}
 
-                                    {entregas.length === 0 && (
+                                    {entregasFiltradas.length === 0 && (
 
                                         <tr>
 
                                             <td
-                                                colSpan="8"
+                                                colSpan="9"
                                                 className="text-center text-muted py-4"
                                             >
                                                 No hay entregas PMC registradas.

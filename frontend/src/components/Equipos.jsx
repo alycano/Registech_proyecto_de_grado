@@ -40,7 +40,7 @@ const Equipos = ({ usuario }) => {
         ])
         .then(([resEquipos, resUsuarios, resAreas, resPrestamos]) => {
             setEquipos(resEquipos.data)
-            setUsuarios(resUsuarios.data.filter(u => u.estado === 'activo'))
+            setUsuarios(resUsuarios.data.filter(u => (u.estado || '').toLowerCase() === 'activo'))
             setAreas(resAreas.data)
             setPrestamosActivos(resPrestamos.data)
             setLoading(false)
@@ -83,9 +83,10 @@ const Equipos = ({ usuario }) => {
 
     const getVencimiento = (numSerie) => {
         const prestamo = prestamosActivos.find(p => p.num_serie === numSerie)
-        if (!prestamo?.fecha_devolucion) return null
+        const fechaDev = prestamo?.fecha_devolucion_programada || prestamo?.fecha_devolucion
+        if (!fechaDev) return null
         const hoy = new Date(); hoy.setHours(0, 0, 0, 0)
-        const limite = new Date(`${String(prestamo.fecha_devolucion).substring(0, 10)}T00:00:00`)
+        const limite = new Date(`${String(fechaDev).substring(0, 10)}T00:00:00`)
         const dias = Math.round((limite - hoy) / 86400000)
         if (dias < 0) return { tipo: 'vencido', dias: Math.abs(dias), fecha: limite }
         if (dias <= 2) return { tipo: 'por_vencer', dias, fecha: limite }
@@ -131,7 +132,7 @@ const Equipos = ({ usuario }) => {
             cancelButtonText: 'Cancelar', confirmButtonColor: '#16a34a'
         }).then(result => {
             if (!result.isConfirmed) return
-            axios.post(API_ROUTES.DEVOLVER_PRESTAMO(prestamo.id_prestamo))
+            axios.post(API_ROUTES.DEVOLVER_EQUIPO(prestamo.id_prestamo, equipo.num_serie))
             .then(() => {
                 cargarDatos()
                 Swal.fire({ icon: 'success', title: 'Devolución registrada', text: `${equipo.equipo} está disponible nuevamente`, timer: 2500, showConfirmButton: false })

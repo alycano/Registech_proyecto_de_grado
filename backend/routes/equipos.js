@@ -70,7 +70,7 @@ router.post(
 router.post(
     '/equipos/reporte/add',
     authMiddleware,
-    requireRol('soporte', 'admin'),
+    requireRol('soporte', 'admin', 'inventario'),
     upload.single('foto'),
     validate(reporteFallaSchema),
     reporteFalla
@@ -100,6 +100,7 @@ router.post(
 router.post(
     '/equipos/reporte/solucion',
     authMiddleware,
+    requireRol('soporte', 'admin'),
     validate(resolverReporteSchema),
     resolverReporte
 )
