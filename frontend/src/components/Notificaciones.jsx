@@ -2,8 +2,10 @@ import { useEffect, useState } from "react"
 import axios from "axios"
 import Swal from "sweetalert2"
 import { API_ROUTES } from "../api/apiRoutes"
+import { useNavigate } from "react-router-dom"
 
 const Notificaciones = () => {
+    const navigate = useNavigate()
     const [notificaciones, setNotificaciones] = useState([])
     const [mostrar, setMostrar] = useState(false)
     const [cargando, setCargando] = useState(false)
@@ -88,13 +90,29 @@ const Notificaciones = () => {
             await marcarComoLeida(notificacion.id)
         }
 
-        if (notificacion.id_historial) {
-            Swal.fire({
-                icon: "info",
-                title: notificacion.titulo,
-                text: notificacion.mensaje,
-                confirmButtonText: "Entendido"
-            })
+        setMostrar(false) // Cerrar la campanita
+
+        // Redirigir segun el tipo de notificacion
+        switch (notificacion.tipo) {
+            case 'mantenimiento':
+                navigate('/maintenance')
+                break
+            case 'solicitud':
+                navigate('/dashboard')
+                break
+            case 'pmc':
+                navigate('/pmc')
+                break
+            case 'extravio':
+                navigate('/equipment')
+                break
+            default:
+                Swal.fire({
+                    icon: "info",
+                    title: notificacion.titulo || "Notificación",
+                    text: notificacion.mensaje,
+                    confirmButtonText: "Entendido"
+                })
         }
     }
 
