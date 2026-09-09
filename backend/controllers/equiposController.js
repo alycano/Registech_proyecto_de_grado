@@ -326,6 +326,11 @@ const resultado =
 
         }
 
+    } else {
+        await notificacionesService.notificarAdmins(
+            'mantenimiento',
+            `El usuario ${usuarioReporta} ha reportado una falla en el equipo ${resultado.num_serie}. Diagnóstico: ${resultado.falla}. La orden ${resultado.id_historial} está pendiente de tu aprobación.`
+        )
     }
 
 
