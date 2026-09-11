@@ -12,6 +12,7 @@ const {
     getHistorialMantenimientos,
     getHistorialEquipo,
     resolverReporte,
+    darDeBajaReporte,
     buscarMantenimientos,
     aprobarRechazarOrden,
     actualizarFoto,
@@ -23,7 +24,9 @@ const {
 } = require('../controllers/equiposController')
 
 const { authMiddleware, requireRol } = require('../middlewares/auth')
+
 const { upload, uploadMemoria } = require('../middlewares/upload')
+
 const { validate } = require('../middlewares/validate')
 
 const {
@@ -111,6 +114,14 @@ router.post(
     requireRol('soporte', 'admin'),
     validate(resolverReporteSchema),
     resolverReporte
+)
+
+router.post(
+    '/equipos/reporte/baja',
+    authMiddleware,
+    requireRol('soporte', 'admin'),
+    validate(resolverReporteSchema),
+    darDeBajaReporte
 )
 
 router.post(
