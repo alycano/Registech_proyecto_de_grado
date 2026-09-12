@@ -8,7 +8,6 @@ const crypto = require('crypto')
 // ======================================================
 
 exports.findEstados = async () => {
-
     return await prisma.estados_equipos.findMany({
         orderBy: {
             estado: 'asc'
@@ -16,13 +15,11 @@ exports.findEstados = async () => {
     })
 }
 
-
 // ======================================================
 // OBTENER EQUIPOS
 // ======================================================
 
 exports.findEquipos = async () => {
-
     return await prisma.equipos.findMany({
         orderBy: {
             num_serie: 'asc'
@@ -30,19 +27,14 @@ exports.findEquipos = async () => {
     })
 }
 
-
 // ======================================================
 // CREAR EQUIPO
 // ======================================================
 
 exports.crearEquipo = async (datos) => {
-
     try {
-
         const equipo = await prisma.equipos.create({
-
             data: {
-
                 num_serie: datos.num_serie,
                 equipo: datos.equipo,
                 area: datos.area || 'Sin asignar',
@@ -54,15 +46,12 @@ exports.crearEquipo = async (datos) => {
                 fecha_adquisicion: datos.fecha_adquisicion
                     ? new Date(datos.fecha_adquisicion)
                     : new Date()
-
             }
-
         })
 
         return equipo
 
     } catch (e) {
-
         if (e.code === 'P2002') {
             throw new Error('EQUIPO_DUPLICADO')
         }
@@ -71,17 +60,12 @@ exports.crearEquipo = async (datos) => {
     }
 }
 
-
-
-
 // ======================================================
 // LIBERAR EQUIPO
 // ======================================================
 
 exports.liberarEquipo = async (numSerieLimpio) => {
-
     return await prisma.equipos.update({
-
         where: {
             num_serie: numSerieLimpio
         },
@@ -90,47 +74,35 @@ exports.liberarEquipo = async (numSerieLimpio) => {
             estado: 'Disponible',
             responsable: null
         }
-
     })
 }
-
-
-
 
 // ======================================================
 // OBTENER USUARIOS POR ROL
 // ======================================================
 
 exports.obtenerUsuariosPorRol = async (rol) => {
-
     return await prisma.usuarios.findMany({
-
         where: {
-
             rol,
-
-            estado: { equals: 'activo', mode: 'insensitive' }
-
+            estado: {
+                equals: 'activo',
+                mode: 'insensitive'
+            }
         },
 
         select: {
-
             usuario: true,
             nombre: true,
             correo: true,
             rol: true
-
         },
 
         orderBy: {
-
             usuario: 'asc'
-
         }
-
     })
 }
-
 
 // ======================================================
 // CREAR REPORTE DE FALLA
@@ -145,6 +117,7 @@ exports.obtenerUsuariosPorRol = async (rol) => {
 // - Queda pendiente
 // - Se notifica a los administradores
 // ======================================================
+
 exports.createReporteTransaction = async (
     numSerieLimpio,
     id_historial,
@@ -155,11 +128,9 @@ exports.createReporteTransaction = async (
     aprobadoPor = null,
     usuarioReporta = null
 ) => {
-
     const client = await db.pool.connect()
 
     try {
-
         await client.query('BEGIN')
 
         // ==================================================
@@ -231,32 +202,25 @@ exports.createReporteTransaction = async (
         return resultado.rows[0]
 
     } catch (e) {
-
         await client.query('ROLLBACK')
-
         throw e
 
     } finally {
-
         client.release()
     }
 }
-
 
 // ======================================================
 // ANEXAR NOMBRE REAL DEL TÉCNICO Y DE QUIEN REPORTA
 // ======================================================
 
 async function anexarNombresUsuarios(lista) {
-
     const usuarios =
         await prisma.usuarios.findMany({
-
             select: {
                 usuario: true,
                 nombre: true
             }
-
         })
 
     const mapa = new Map(
@@ -265,17 +229,18 @@ async function anexarNombresUsuarios(lista) {
 
     return lista.map(r => ({
         ...r,
+
         nombre_tecnico:
             r.usuario_tecnico
                 ? (mapa.get(r.usuario_tecnico) || r.usuario_tecnico)
                 : null,
+
         nombre_reporta:
             r.usuario_reporta
                 ? (mapa.get(r.usuario_reporta) || r.usuario_reporta)
                 : null
     }))
 }
-
 
 // ======================================================
 // OBTENER REPORTES ACTIVOS
@@ -290,50 +255,32 @@ async function anexarNombresUsuarios(lista) {
 // ======================================================
 
 exports.findReportesPendientes = async () => {
-
     const reportes =
         await prisma.historial_mantenimientos.findMany({
-
             where: {
-
                 fecha_solucion: null,
 
                 NOT: {
-
                     estado_orden: 'rechazada'
-
                 }
-
             },
 
             orderBy: {
-
                 fecha_reporte: 'asc'
-
             }
-
         })
-
 
     const resultado = []
 
-
     for (const reporte of reportes) {
-
         const equipo =
             await prisma.equipos.findUnique({
-
                 where: {
-
                     num_serie: reporte.num_serie
-
                 }
-
             })
 
-
         resultado.push({
-
             ...reporte,
 
             equipo:
@@ -350,53 +297,35 @@ exports.findReportesPendientes = async () => {
 
             responsable:
                 equipo?.responsable || null
-
         })
-
     }
-
 
     return anexarNombresUsuarios(resultado)
 }
-
 
 // ======================================================
 // HISTORIAL COMPLETO
 // ======================================================
 
 exports.findHistorialCompleto = async () => {
-
     const reportes =
         await prisma.historial_mantenimientos.findMany({
-
             orderBy: {
-
                 fecha_reporte: 'desc'
-
             }
-
         })
-
 
     const resultado = []
 
-
     for (const reporte of reportes) {
-
         const equipo =
             await prisma.equipos.findUnique({
-
                 where: {
-
                     num_serie: reporte.num_serie
-
                 }
-
             })
 
-
         resultado.push({
-
             ...reporte,
 
             equipo:
@@ -413,15 +342,11 @@ exports.findHistorialCompleto = async () => {
 
             responsable:
                 equipo?.responsable || null
-
         })
-
     }
-
 
     return anexarNombresUsuarios(resultado)
 }
-
 
 // ======================================================
 // BUSCAR REPORTE POR ID
@@ -430,42 +355,27 @@ exports.findHistorialCompleto = async () => {
 exports.buscarReportePorId = async (
     idHistorialLimpio
 ) => {
-
     const reporte =
         await prisma.historial_mantenimientos.findUnique({
-
             where: {
-
                 id_historial:
                     idHistorialLimpio
-
             }
-
         })
 
-
     if (!reporte) {
-
         return null
-
     }
-
 
     const equipo =
         await prisma.equipos.findUnique({
-
             where: {
-
                 num_serie:
                     reporte.num_serie
-
             }
-
         })
 
-
     return {
-
         ...reporte,
 
         equipo:
@@ -482,35 +392,41 @@ exports.buscarReportePorId = async (
 
         responsable:
             equipo?.responsable || null
-
     }
 }
 
-
 // ======================================================
-// APROBAR / RECHAZAR ORDEN
+// APROBAR ORDEN
+// SOLO ADMIN
+//
+// IMPORTANTE:
+// YA NO EXISTE LA OPCIÓN DE RECHAZAR.
+// El administrador únicamente puede aprobar.
 // ======================================================
 
 exports.decidirOrden = async (
-
     idHistorialLimpio,
     decision,
     aprobadoPor = null
-
 ) => {
+
+    // ==================================================
+    // SEGURIDAD EXTRA
+    // ==================================================
+
+    if (decision !== 'aprobada') {
+        return null
+    }
 
     return await prisma.$transaction(async (tx) => {
 
-
         // ==============================================
-        // BUSCAR ORDEN
+        // BUSCAR ORDEN PENDIENTE
         // ==============================================
 
         const orden =
             await tx.historial_mantenimientos.findFirst({
-
                 where: {
-
                     id_historial:
                         idHistorialLimpio,
 
@@ -519,122 +435,54 @@ exports.decidirOrden = async (
 
                     fecha_solucion:
                         null
-
                 }
-
             })
 
-
         if (!orden) {
-
             return null
-
         }
-
 
         // ==============================================
         // APROBAR
         // ==============================================
 
-        if (decision === 'aprobada') {
-
-            return await tx.historial_mantenimientos.update({
-
-                where: {
-
-                    id_historial:
-                        idHistorialLimpio
-
-                },
-
-                data: {
-
-                    estado_orden:
-                        'aprobada',
-
-                    aprobada_por:
-                        aprobadoPor,
-
-                    fecha_aprobacion:
-                        new Date()
-
-                }
-
-            })
-
-        }
-
-
-        // ==============================================
-        // RECHAZAR
-        // ==============================================
-
-        const resultado =
-            await tx.historial_mantenimientos.update({
-
-                where: {
-
-                    id_historial:
-                        idHistorialLimpio
-
-                },
-
-                data: {
-
-                    estado_orden:
-                        'rechazada'
-
-                }
-
-            })
-
-
-        // ==============================================
-        // EQUIPO DISPONIBLE
-        // ==============================================
-
-        await tx.equipos.update({
-
+        return await tx.historial_mantenimientos.update({
             where: {
-
-                num_serie:
-                    orden.num_serie
-
+                id_historial:
+                    idHistorialLimpio
             },
 
             data: {
+                estado_orden:
+                    'aprobada',
 
-                estado:
-                    'Disponible'
+                aprobada_por:
+                    aprobadoPor,
 
+                fecha_aprobacion:
+                    new Date()
             }
-
         })
-
-
-        return resultado
-
     })
 }
 
-
 // ======================================================
 // RESOLVER REPORTE
-// SOLO MANTENIMIENTO
+// REPARACIÓN EXITOSA
+//
+// Resultado:
+// EQUIPO -> Disponible
 // ======================================================
 
 exports.resolverReporteTransaction = async (
-
     numSerieLimpio,
     idHistorialLimpio,
     fecha_solucion,
     tecnicoLimpio,
     solucionLimpia
-
 ) => {
 
     return await prisma.$transaction(async (tx) => {
-
 
         // ==============================================
         // BUSCAR ORDEN APROBADA
@@ -642,9 +490,7 @@ exports.resolverReporteTransaction = async (
 
         const orden =
             await tx.historial_mantenimientos.findFirst({
-
                 where: {
-
                     id_historial:
                         idHistorialLimpio,
 
@@ -653,18 +499,12 @@ exports.resolverReporteTransaction = async (
 
                     fecha_solucion:
                         null
-
                 }
-
             })
 
-
         if (!orden) {
-
             return null
-
         }
-
 
         // ==============================================
         // VERIFICAR QUE EL EQUIPO COINCIDA
@@ -674,11 +514,8 @@ exports.resolverReporteTransaction = async (
             orden.num_serie !==
             numSerieLimpio
         ) {
-
             return null
-
         }
-
 
         // ==============================================
         // REGISTRAR SOLUCIÓN
@@ -686,16 +523,12 @@ exports.resolverReporteTransaction = async (
 
         const resultado =
             await tx.historial_mantenimientos.update({
-
                 where: {
-
                     id_historial:
                         idHistorialLimpio
-
                 },
 
                 data: {
-
                     fecha_solucion:
                         new Date(fecha_solucion),
 
@@ -704,40 +537,122 @@ exports.resolverReporteTransaction = async (
 
                     solucion:
                         solucionLimpia
-
                 }
-
             })
-
 
         // ==============================================
         // EQUIPO DISPONIBLE
         // ==============================================
 
         await tx.equipos.update({
-
             where: {
-
                 num_serie:
                     numSerieLimpio
-
             },
 
             data: {
-
                 estado:
                     'Disponible'
-
             }
-
         })
 
-
         return resultado
-
     })
 }
 
+// ======================================================
+// DAR DE BAJA REPORTE
+// NO SE PUEDE REPARAR
+//
+// Resultado:
+// EQUIPO -> Baja
+// ======================================================
+
+exports.darDeBajaReporteTransaction = async (
+    numSerieLimpio,
+    idHistorialLimpio,
+    fecha_solucion,
+    tecnicoLimpio,
+    motivoLimpio
+) => {
+
+    return await prisma.$transaction(async (tx) => {
+
+        // ==============================================
+        // BUSCAR ORDEN APROBADA
+        // ==============================================
+
+        const orden =
+            await tx.historial_mantenimientos.findFirst({
+                where: {
+                    id_historial:
+                        idHistorialLimpio,
+
+                    estado_orden:
+                        'aprobada',
+
+                    fecha_solucion:
+                        null
+                }
+            })
+
+        if (!orden) {
+            return null
+        }
+
+        // ==============================================
+        // VERIFICAR QUE EL EQUIPO COINCIDA
+        // ==============================================
+
+        if (
+            orden.num_serie !==
+            numSerieLimpio
+        ) {
+            return null
+        }
+
+        // ==============================================
+        // REGISTRAR MOTIVO DE BAJA
+        // ==============================================
+
+        const resultado =
+            await tx.historial_mantenimientos.update({
+                where: {
+                    id_historial:
+                        idHistorialLimpio
+                },
+
+                data: {
+                    fecha_solucion:
+                        new Date(fecha_solucion),
+
+                    usuario_tecnico:
+                        tecnicoLimpio,
+
+                    solucion:
+                        `No se puede reparar: ${motivoLimpio}`
+                }
+            })
+
+        // ==============================================
+        // PONER EQUIPO EN BAJA
+        // ==============================================
+
+        await tx.equipos.update({
+            where: {
+                num_serie:
+                    numSerieLimpio
+            },
+
+            data: {
+                estado:
+                    'Baja'
+            }
+        })
+
+        return resultado
+    })
+}
 
 // ======================================================
 // BUSCAR MANTENIMIENTOS
@@ -749,93 +664,62 @@ exports.buscarMantenimientos = async (
 
     const reportes =
         await prisma.historial_mantenimientos.findMany({
-
             where: {
-
                 solucion: {
-
                     not: null
-
                 },
 
                 OR: [
-
                     {
-
                         id_historial: {
-
                             contains:
                                 filtroLimpio,
 
                             mode:
                                 'insensitive'
-
                         }
-
                     },
 
                     {
-
                         num_serie: {
-
                             contains:
                                 filtroLimpio,
 
                             mode:
                                 'insensitive'
-
                         }
-
                     },
 
                     {
-
                         usuario_tecnico: {
-
                             contains:
                                 filtroLimpio,
 
                             mode:
                                 'insensitive'
-
                         }
-
                     }
-
                 ]
-
             },
 
             orderBy: {
-
                 fecha_solucion:
                     'desc'
-
             }
-
         })
-
 
     const resultado = []
 
-
     for (const reporte of reportes) {
-
         const equipo =
             await prisma.equipos.findUnique({
-
                 where: {
-
                     num_serie:
                         reporte.num_serie
-
                 }
-
             })
 
-
         resultado.push({
-
             ...reporte,
 
             equipo:
@@ -843,19 +727,11 @@ exports.buscarMantenimientos = async (
 
             area:
                 equipo?.area || null
-
         })
-
     }
-
 
     return anexarNombresUsuarios(resultado)
 }
-
-
-// ======================================================
-// HISTORIAL DE USO DE UN EQUIPO
-// ======================================================
 
 // ======================================================
 // HISTORIAL DE USO DE UN EQUIPO
@@ -920,16 +796,27 @@ exports.findHistorialEquipo = async (numSerie) => {
                 ELSE 4
             END,
             p.fecha_prestamo DESC
-
     `, [numSerie])
 
     return rows
 }
 
-exports.actualizarFotoEquipo = async (numSerie, urlImagen) => {
+// ======================================================
+// ACTUALIZAR FOTO
+// ======================================================
+
+exports.actualizarFotoEquipo = async (
+    numSerie,
+    urlImagen
+) => {
     return await prisma.equipos.update({
-        where: { num_serie: numSerie },
-        data: { imagen: urlImagen }
+        where: {
+            num_serie: numSerie
+        },
+
+        data: {
+            imagen: urlImagen
+        }
     })
 }
 
@@ -939,21 +826,35 @@ exports.actualizarFotoEquipo = async (numSerie, urlImagen) => {
 
 exports.encontrarEquipo = async (numSerie) => {
     return await prisma.equipos.findUnique({
-        where: { num_serie: numSerie }
+        where: {
+            num_serie: numSerie
+        }
     })
 }
 
 exports.verificarArea = async (area) => {
-    const encontrada = await prisma.areas.findUnique({
-        where: { area }
-    })
+    const encontrada =
+        await prisma.areas.findUnique({
+            where: {
+                area
+            }
+        })
+
     return !!encontrada
 }
 
-exports.moverEquipo = async (numSerie, area) => {
+exports.moverEquipo = async (
+    numSerie,
+    area
+) => {
     return await prisma.equipos.update({
-        where: { num_serie: numSerie },
-        data: { area }
+        where: {
+            num_serie: numSerie
+        },
+
+        data: {
+            area
+        }
     })
 }
 
@@ -961,9 +862,13 @@ exports.moverEquipo = async (numSerie, area) => {
 // REPORTAR EQUIPO NO LOCALIZADO (EXTRAVÍO)
 // ======================================================
 
-exports.reportarExtraviado = async (numSerie) => {
+exports.reportarExtraviado = async (
+    numSerie
+) => {
     return await prisma.equipos.findUnique({
-        where: { num_serie: numSerie }
+        where: {
+            num_serie: numSerie
+        }
     })
 }
 
@@ -971,19 +876,32 @@ exports.reportarExtraviado = async (numSerie) => {
 // REINTEGRAR EQUIPO EN LA BASE DE DATOS
 // ======================================================
 
-exports.reintegrarEquipo = async (num_serie) => {
-    const equipoExistente = await prisma.equipos.findUnique({
-        where: { num_serie }
-    });
+exports.reintegrarEquipo = async (
+    num_serie
+) => {
 
-    if (!equipoExistente) return null;
+    const equipoExistente =
+        await prisma.equipos.findUnique({
+            where: {
+                num_serie
+            }
+        })
 
-    const equipoActualizado = await prisma.equipos.update({
-        where: { num_serie },
-        data: { 
-            estado: 'Disponible' 
-        }
-    });
+    if (!equipoExistente) {
+        return null
+    }
 
-    return equipoActualizado;
-};
+    const equipoActualizado =
+        await prisma.equipos.update({
+            where: {
+                num_serie
+            },
+
+            data: {
+                estado:
+                    'Disponible'
+            }
+        })
+
+    return equipoActualizado
+}

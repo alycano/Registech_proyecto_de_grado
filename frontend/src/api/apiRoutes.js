@@ -1,142 +1,195 @@
-    import axios from 'axios'
+import axios from 'axios'
 
-    axios.defaults.withCredentials = true
+axios.defaults.withCredentials = true
 
-    function getCsrfToken() {
-        return localStorage.getItem('csrf_token')
+function getCsrfToken() {
+    return localStorage.getItem('csrf_token')
+}
+
+function getCookie(name) {
+    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
+    return match ? match[2] : null
+}
+
+axios.interceptors.request.use((config) => {
+    const token = localStorage.getItem('token')
+
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`
     }
 
-    function getCookie(name) {
-        const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
-        return match ? match[2] : null
+    const method = config.method?.toUpperCase()
+    if (method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH') {
+        const csrf = getCsrfToken() || getCookie('csrf_token')
+        if (csrf) {
+            config.headers['X-CSRF-Token'] = csrf
+        }
     }
 
-    axios.interceptors.request.use((config) => {
-        const token = localStorage.getItem('token')
+    return config
+})
 
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`
+axios.interceptors.response.use(
+    (response) => {
+        const newCsrf = response.data?.csrf_token
+        if (newCsrf) {
+            localStorage.setItem('csrf_token', newCsrf)
         }
 
-        const method = config.method?.toUpperCase()
-        if (method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH') {
-            const csrf = getCsrfToken() || getCookie('csrf_token')
-            if (csrf) {
-                config.headers['X-CSRF-Token'] = csrf
+        const newToken = response.headers['x-refresh-token']
+        if (newToken) {
+            localStorage.setItem('token', newToken)
+        }
+
+        return response
+    },
+    (error) => {
+        const url = error?.config?.url || ''
+        const esLogin =
+            url.includes('/login') ||
+            url.includes('/solicitar-recuperacion') ||
+            url.includes('/restablecer-password')
+
+        if (error.response) {
+            if (error.response.status === 401 && !esLogin) {
+                localStorage.removeItem('token')
+                localStorage.removeItem('usuario')
+                localStorage.removeItem('csrf_token')
+                window.location.href = '/login'
+            }
+
+            if (
+                error.response.status === 403 &&
+                error.response.data?.error?.includes('CSRF')
+            ) {
+                localStorage.removeItem('csrf_token')
+                window.location.href = '/login'
             }
         }
 
-        return config
-    })
+        return Promise.reject(error)
+    }
+)
 
-    axios.interceptors.response.use(
-        (response) => {
-            const newCsrf = response.data?.csrf_token
-            if (newCsrf) {
-                localStorage.setItem('csrf_token', newCsrf)
-            }
-            const newToken = response.headers['x-refresh-token']
-            if (newToken) {
-                localStorage.setItem('token', newToken)
-            }
-            return response
-        },
-        (error) => {
-            const url = error?.config?.url || ''
-            const esLogin = url.includes('/login') || url.includes('/solicitar-recuperacion') || url.includes('/restablecer-password')
-            if (error.response) {
-                if (error.response.status === 401 && !esLogin) {
-                    localStorage.removeItem('token')
-                    localStorage.removeItem('usuario')
-                    localStorage.removeItem('csrf_token')
-                    window.location.href = '/login'
-                }
-                if (error.response.status === 403 && error.response.data?.error?.includes('CSRF')) {
-                    localStorage.removeItem('csrf_token')
-                    window.location.href = '/login'
-                }
-            }
-            return Promise.reject(error)
-        }
-    )
+const BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
-    const BASE_URL = import.meta.env.VITE_API_URL || '/api'
+export const API_ROUTES = {
+    LOGIN: `${BASE_URL}/login`,
+    SOLICITAR_RECUPERACION: `${BASE_URL}/usuarios/solicitar-recuperacion`,
+    RESTABLECER_PASSWORD: `${BASE_URL}/usuarios/restablecer-password`,
 
-    export const API_ROUTES = {
-        LOGIN: `${BASE_URL}/login`,
-        SOLICITAR_RECUPERACION: `${BASE_URL}/usuarios/solicitar-recuperacion`,
-        RESTABLECER_PASSWORD: `${BASE_URL}/usuarios/restablecer-password`,
-        EQUIPOS: `${BASE_URL}/equipos`,
-        CREAR_EQUIPO: `${BASE_URL}/equipos/add`,
-        ACTUALIZAR_FOTO: (numSerie) => `${BASE_URL}/equipos/${encodeURIComponent(numSerie)}/foto`,
-        MOVER_EQUIPO: (numSerie) => `${BASE_URL}/equipos/${encodeURIComponent(numSerie)}/ubicacion`,
-        REPORTAR_EXTRAVIADO: (numSerie) => `${BASE_URL}/equipos/${encodeURIComponent(numSerie)}/reportar-extraviado`,
-        ARCHIVO_EVIDENCIA: (nombre) => `${BASE_URL}/equipos/evidencia/${nombre}`,
-        ESTADOS_EQUIPO: `${BASE_URL}/estados_equipo`,
-        LIBERAR_EQUIPO: (numSerie) => `${BASE_URL}/equipos/${encodeURIComponent(numSerie)}/liberar`,
-        REPORTE_FALLA: `${BASE_URL}/equipos/reporte/add`,
-        CANCELAR_REPORTE: (numSerie) => `${BASE_URL}/equipos/${encodeURIComponent(numSerie)}/reporte/cancelar`,
-        OBTENER_MANTENIMIENTOS: `${BASE_URL}/equipos/reporte`,
-        HISTORIAL_MANTENIMIENTOS: `${BASE_URL}/equipos/mantenimientos`,
-        ACTUALIZAR_MANTENIMIENTOS: `${BASE_URL}/equipos/reporte/solucion`,
-        MANTENIMIENTOS_FIND: `${BASE_URL}/equipos/mantenimientos/find`,
-        OBTENER_USUARIOS: `${BASE_URL}/usuarios`,
-        CREAR_USUARIO: `${BASE_URL}/usuarios`,
-        ACTUALIZAR_USUARIO: (usuario) => `${BASE_URL}/usuarios/${usuario}`,
-        ELIMINAR_USUARIO: (usuario) => `${BASE_URL}/usuarios/${usuario}`,
-        VERIFICAR_ELIMINACION: (usuario) =>
+    EQUIPOS: `${BASE_URL}/equipos`,
+    CREAR_EQUIPO: `${BASE_URL}/equipos/add`,
+    ACTUALIZAR_FOTO: (numSerie) =>
+        `${BASE_URL}/equipos/${encodeURIComponent(numSerie)}/foto`,
+    MOVER_EQUIPO: (numSerie) =>
+        `${BASE_URL}/equipos/${encodeURIComponent(numSerie)}/ubicacion`,
+    REPORTAR_EXTRAVIADO: (numSerie) =>
+        `${BASE_URL}/equipos/${encodeURIComponent(numSerie)}/reportar-extraviado`,
+    ARCHIVO_EVIDENCIA: (nombre) =>
+        `${BASE_URL}/equipos/evidencia/${nombre}`,
+    ESTADOS_EQUIPO: `${BASE_URL}/estados_equipo`,
+    LIBERAR_EQUIPO: (numSerie) =>
+        `${BASE_URL}/equipos/${encodeURIComponent(numSerie)}/liberar`,
+
+    // MANTENIMIENTO
+    REPORTE_FALLA: `${BASE_URL}/equipos/reporte/add`,
+    CANCELAR_REPORTE: (numSerie) =>
+        `${BASE_URL}/equipos/${encodeURIComponent(numSerie)}/reporte/cancelar`,
+    OBTENER_MANTENIMIENTOS: `${BASE_URL}/equipos/reporte`,
+    HISTORIAL_MANTENIMIENTOS: `${BASE_URL}/equipos/mantenimientos`,
+    ACTUALIZAR_MANTENIMIENTOS: `${BASE_URL}/equipos/reporte/solucion`,
+    DAR_DE_BAJA_REPORTE: `${BASE_URL}/equipos/reporte/baja`,
+    MANTENIMIENTOS_FIND: `${BASE_URL}/equipos/mantenimientos/find`,
+    APROBACION_ORDEN: `${BASE_URL}/equipos/reporte/aprobacion`,
+
+    // USUARIOS
+    OBTENER_USUARIOS: `${BASE_URL}/usuarios`,
+    CREAR_USUARIO: `${BASE_URL}/usuarios`,
+    ACTUALIZAR_USUARIO: (usuario) =>
+        `${BASE_URL}/usuarios/${usuario}`,
+    ELIMINAR_USUARIO: (usuario) =>
+        `${BASE_URL}/usuarios/${usuario}`,
+    VERIFICAR_ELIMINACION: (usuario) =>
         `${BASE_URL}/usuarios/${usuario}/verificar-eliminacion`,
-        OBTENER_AREAS: `${BASE_URL}/areas`,
-        CREAR_AREA: `${BASE_URL}/areas`,
-        ACTUALIZAR_AREA: (area) => `${BASE_URL}/areas/${encodeURIComponent(area)}`,
-        ELIMINAR_AREA: (area) => `${BASE_URL}/areas/${encodeURIComponent(area)}`,
 
+    // ÁREAS
+    OBTENER_AREAS: `${BASE_URL}/areas`,
+    CREAR_AREA: `${BASE_URL}/areas`,
+    ACTUALIZAR_AREA: (area) =>
+        `${BASE_URL}/areas/${encodeURIComponent(area)}`,
+    ELIMINAR_AREA: (area) =>
+        `${BASE_URL}/areas/${encodeURIComponent(area)}`,
+
+    // EMPLEADOS
     OBTENER_EMPLEADOS: `${BASE_URL}/empleados`,
     CREAR_EMPLEADO: `${BASE_URL}/empleados`,
-    ACTUALIZAR_EMPLEADO: (id) => `${BASE_URL}/empleados/${id}`,
-    ELIMINAR_EMPLEADO: (id) => `${BASE_URL}/empleados/${id}`,
+    ACTUALIZAR_EMPLEADO: (id) =>
+        `${BASE_URL}/empleados/${id}`,
+    ELIMINAR_EMPLEADO: (id) =>
+        `${BASE_URL}/empleados/${id}`,
 
-        CAMBIAR_PASSWORD: `${BASE_URL}/usuarios/cambiar-password`,
-       PRESTAMOS: `${BASE_URL}/prestamos`,
+    CAMBIAR_PASSWORD: `${BASE_URL}/usuarios/cambiar-password`,
 
-PRESTAMOS_ACTIVOS: `${BASE_URL}/prestamos/activos`,
+    // PRÉSTAMOS
+    PRESTAMOS: `${BASE_URL}/prestamos`,
+    PRESTAMOS_ACTIVOS: `${BASE_URL}/prestamos/activos`,
 
-HISTORIAL_EMPLEADO: (id) =>
-    `${BASE_URL}/prestamos/historial/empleado/${id}`,
+    HISTORIAL_EMPLEADO: (id) =>
+        `${BASE_URL}/prestamos/historial/empleado/${id}`,
 
-HISTORIAL_USUARIO: (id) =>
-    `${BASE_URL}/prestamos/historial/usuario/${id}`,
+    HISTORIAL_USUARIO: (id) =>
+        `${BASE_URL}/prestamos/historial/usuario/${id}`,
 
-// ======================================================
-// HISTORIAL DE ENTREGAS PMC
-// ======================================================
+    PRESTAMOS_ACTIVOS_POR_EQUIPO: (num_serie) =>
+        `${BASE_URL}/prestamos/activos/${encodeURIComponent(num_serie)}`,
 
-PMC_ENTREGAS_EMPLEADO: (id) =>
-    `${BASE_URL}/pmc/entregas/empleado/${id}`,
+    CREAR_PRESTAMO: `${BASE_URL}/prestamos`,
 
-PMC_ENTREGAS_USUARIO: (id) =>
-    `${BASE_URL}/pmc/entregas/usuario/${id}`,
-
-        PRESTAMOS_ACTIVOS_POR_EQUIPO: (num_serie) => `${BASE_URL}/prestamos/activos/${encodeURIComponent(num_serie)}`,
-        CREAR_PRESTAMO: `${BASE_URL}/prestamos`,
     DEVOLVER_EQUIPO: (id, num_serie) =>
         `${BASE_URL}/prestamos/${id}/equipos/${encodeURIComponent(num_serie)}/devolver`,
-        HISTORIAL_EQUIPO: (num_serie) =>
+
+    HISTORIAL_EQUIPO: (num_serie) =>
         `${BASE_URL}/equipos/${encodeURIComponent(num_serie)}/historial`,
-        ESTADISTICAS: `${BASE_URL}/estadisticas`,
-        DASHBOARD: `${BASE_URL}/dashboard`,
-        EXPORTAR_EQUIPOS: `${BASE_URL}/dashboard/exportar-equipos`,
-        ACTIVIDAD: `${BASE_URL}/actividad`,
-        SOLICITUDES: `${BASE_URL}/solicitudes`,
-        MIS_SOLICITUDES: `${BASE_URL}/solicitudes/mis`,
-        RESPONDER_SOLICITUD: (id) => `${BASE_URL}/solicitudes/${id}/responder`,
-        PMC: `${BASE_URL}/pmc`,
-        PMC_ENTREGAR: (id) => `${BASE_URL}/pmc/${id}/entregar`,
-        PMC_DEVOLVER: (id) => `${BASE_URL}/pmc/${id}/devolver`,
-        APROBACION_ORDEN: `${BASE_URL}/equipos/reporte/aprobacion`,
+
+    // ======================================================
+    // HISTORIAL DE ENTREGAS PMC
+    // ======================================================
+
+    PMC_ENTREGAS_EMPLEADO: (id) =>
+        `${BASE_URL}/pmc/entregas/empleado/${id}`,
+
+    PMC_ENTREGAS_USUARIO: (id) =>
+        `${BASE_URL}/pmc/entregas/usuario/${id}`,
+
+    // DASHBOARD
+    ESTADISTICAS: `${BASE_URL}/estadisticas`,
+    DASHBOARD: `${BASE_URL}/dashboard`,
+    EXPORTAR_EQUIPOS: `${BASE_URL}/dashboard/exportar-equipos`,
+    ACTIVIDAD: `${BASE_URL}/actividad`,
+
+    // SOLICITUDES
+    SOLICITUDES: `${BASE_URL}/solicitudes`,
+    MIS_SOLICITUDES: `${BASE_URL}/solicitudes/mis`,
+    RESPONDER_SOLICITUD: (id) =>
+        `${BASE_URL}/solicitudes/${id}/responder`,
+
+    // PMC
+    PMC: `${BASE_URL}/pmc`,
+    PMC_ENTREGAR: (id) =>
+        `${BASE_URL}/pmc/${id}/entregar`,
+    PMC_DEVOLVER: (id) =>
+        `${BASE_URL}/pmc/${id}/devolver`,
+
+    // NOTIFICACIONES
     NOTIFICACIONES: `${BASE_URL}/notificaciones`,
     NOTIFICACIONES_NO_LEIDAS: `${BASE_URL}/notificaciones/no-leidas`,
-    MARCAR_NOTIFICACION_LEIDA: (id) => `${BASE_URL}/notificaciones/${id}/leida`,
-    MARCAR_NOTIFICACIONES_LEIDAS: `${BASE_URL}/notificaciones/marcar-todas-leidas`,
-    REINTEGRAR_EQUIPO: (numSerie) => `${BASE_URL}/equipos/${encodeURIComponent(numSerie)}/reintegrar`,
-    }
+    MARCAR_NOTIFICACION_LEIDA: (id) =>
+        `${BASE_URL}/notificaciones/${id}/leida`,
+    MARCAR_NOTIFICACIONES_LEIDAS:
+        `${BASE_URL}/notificaciones/marcar-todas-leidas`,
+
+    // REINTEGRAR EQUIPO
+    REINTEGRAR_EQUIPO: (numSerie) =>
+        `${BASE_URL}/equipos/${encodeURIComponent(numSerie)}/reintegrar`,
+}

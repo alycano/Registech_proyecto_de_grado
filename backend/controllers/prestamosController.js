@@ -89,7 +89,8 @@ exports.crearPrestamo = async (req, res) => {
             id_usuario,
             observaciones,
             fecha_inicio,
-            fecha_limite
+            fecha_limite,
+            enviarCorreo = true
         } = req.body
 
 
@@ -114,58 +115,61 @@ exports.crearPrestamo = async (req, res) => {
 
         let correoEnviado = false
 
-        try {
+        if (enviarCorreo) {
 
-            const prestamos =
-                await prestamosService.getPrestamos()
+            try {
 
-            const prestamoCompleto =
-                prestamos.find(
-                    prestamo =>
-                        prestamo.id_prestamo ===
-                        prestamoCreado.id_prestamo
-                )
+                const prestamos =
+                    await prestamosService.getPrestamos()
 
-            if (prestamoCompleto) {
-
-                const correo =
-                    prestamoCompleto.correo ||
-                    prestamoCompleto.correo_empleado ||
-                    prestamoCompleto.correo_usuario
-
-                if (correo) {
-
-                    await emailService.enviarReciboPrestamo({
-                        ...prestamoCompleto,
-                        correo
-                    })
-
-                    correoEnviado = true
-
-                    console.log(
-                        `Correo de préstamo enviado a ${correo}`
+                const prestamoCompleto =
+                    prestamos.find(
+                        prestamo =>
+                            prestamo.id_prestamo ===
+                            prestamoCreado.id_prestamo
                     )
+
+                if (prestamoCompleto) {
+
+                    const correo =
+                        prestamoCompleto.correo ||
+                        prestamoCompleto.correo_empleado ||
+                        prestamoCompleto.correo_usuario
+
+                    if (correo) {
+
+                        await emailService.enviarReciboPrestamo({
+                            ...prestamoCompleto,
+                            correo
+                        })
+
+                        correoEnviado = true
+
+                        console.log(
+                            `Correo de préstamo enviado a ${correo}`
+                        )
+
+                    } else {
+
+                        console.warn(
+                            'No se pudo enviar el correo: el destinatario no tiene correo registrado.'
+                        )
+                    }
 
                 } else {
 
                     console.warn(
-                        'No se pudo enviar el correo: el destinatario no tiene correo registrado.'
+                        'No se pudo obtener la información completa del préstamo para enviar el correo.'
                     )
                 }
 
-            } else {
+            } catch (error) {
 
-                console.warn(
-                    'No se pudo obtener la información completa del préstamo para enviar el correo.'
+                console.error(
+                    'El préstamo fue creado, pero no se pudo enviar el correo:',
+                    error.message
                 )
             }
-
-        } catch (error) {
-
-            console.error(
-                'El préstamo fue creado, pero no se pudo enviar el correo:',
-                error.message
-            )
         }
 
 
@@ -210,11 +214,24 @@ exports.crearPrestamo = async (req, res) => {
         // RESPUESTA
         // ==============================================
 
+        let mensaje =
+            'Préstamo registrado exitosamente'
+
+        if (enviarCorreo && correoEnviado) {
+
+            mensaje =
+                'Préstamo registrado y correo enviado exitosamente'
+
+        } else if (enviarCorreo && !correoEnviado) {
+
+            mensaje =
+                'Préstamo registrado exitosamente, pero no se pudo enviar el correo'
+        }
+
+
         res.status(201).json({
 
-            mensaje: correoEnviado
-                ? 'Préstamo registrado y correo enviado exitosamente'
-                : 'Préstamo registrado exitosamente, pero no se pudo enviar el correo',
+            mensaje,
 
             correoEnviado
 
@@ -411,7 +428,7 @@ exports.devolverEquipo = async (req, res) => {
     try {
 
         const observaciones =
-            req.body.observaciones || null
+            req.body?.observaciones || null
 
         const evidencia =
             req.file
@@ -637,6 +654,6 @@ exports.historialUsuario = async (req, res) => {
 
         res.status(500).json({
             error: 'Error al obtener historial del usuario'
-        })
+            })
     }
 }

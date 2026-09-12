@@ -9,12 +9,18 @@ const MENU = [
         path: '/dashboard',
         roles: ['admin', 'soporte', 'inventario']
     },
-    {
-        label: 'Equipos/Personal',
-        icon: 'bi-pc-display',
-        path: '/equipment',
-        roles: ['admin', 'inventario']
-    },
+   {
+    label: 'Equipos/Personal',
+    icon: 'bi-pc-display',
+    path: '/equipment',
+    roles: ['admin']
+},
+{
+    label: 'Equipos',
+    icon: 'bi-pc-display',
+    path: '/equipment',
+    roles: ['inventario']
+},
     {
         label: 'Préstamos',
         icon: 'bi-arrow-left-right',

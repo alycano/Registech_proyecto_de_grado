@@ -23,10 +23,18 @@ const buscarMantenimientosSchema = z.object({
 });
 
 const decisionAprobacionSchema = z.object({
+
     body: z.object({
+
         id_historial: z.string({ required_error: 'El id_historial es requerido' }).min(1).max(40),
-        decision: z.enum(['aprobada', 'rechazada'], { required_error: 'La decisión es requerida', invalid_type_error: 'Decisión inválida' })
+
+        decision: z.enum(['aprobada'], {
+            required_error: 'La decisión es requerida',
+            invalid_type_error: 'La única decisión disponible es aprobar la orden'
+        })
+
     })
+
 });
 
 const crearEquipoSchema = z.object({

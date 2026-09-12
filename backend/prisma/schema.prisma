@@ -27,52 +27,49 @@ model equipos {
   fecha_baja        DateTime?          @db.Date
   sistema_operativo String?            @db.VarChar(60)
   imagen            String?            @db.VarChar(255)
-
   prestamos_equipos prestamo_equipos[]
 }
 
 model empleados {
-  id_empleado    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nombre         String   @db.VarChar(200)
-  tipo_documento String   @db.VarChar(30)
-  documento      String   @db.VarChar(30)
-  correo         String?  @db.VarChar(100)
-  area           String   @db.VarChar(100)
-  estado         String   @db.VarChar(15)
-
-  prestamos              prestamos[]
+  nombre                 String                   @db.VarChar(200)
+  tipo_documento         String                   @db.VarChar(30)
+  documento              String                   @db.VarChar(30)
+  correo                 String?                  @db.VarChar(100)
+  area                   String                   @db.VarChar(100)
+  estado                 String                   @db.VarChar(15)
+  id_empleado            String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   entregas_menor_cuantia entregas_menor_cuantia[]
+  prestamos              prestamos[]
 }
-
 
 model prestamos {
   id_prestamo                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  id_empleado                 String?            @db.Uuid
-  id_usuario                  Int?
-
   fecha_prestamo              DateTime           @db.Date
-  fecha_devolucion_programada DateTime?          @db.Date
   fecha_devolucion            DateTime?          @db.Date
-
   estado                      String             @default("activo") @db.VarChar(20)
   observaciones               String?
   evidencia                   String?            @db.VarChar(255)
   area                        String?            @db.VarChar(100)
-
-  empleado empleados? @relation(fields: [id_empleado], references: [id_empleado], onDelete: NoAction, onUpdate: NoAction, map: "prestamos_empleado_fkey")
-  usuario  usuarios?  @relation(fields: [id_usuario], references: [id_usuario], onDelete: NoAction, onUpdate: NoAction, map: "prestamos_usuario_fkey")
-  equipos  prestamo_equipos[]
+  id_empleado                 String?            @db.Uuid
+  id_usuario                  Int?
+  fecha_devolucion_programada DateTime?          @db.Date
+  equipos                     prestamo_equipos[]
+  empleado                    empleados?         @relation(fields: [id_empleado], references: [id_empleado], onDelete: NoAction, onUpdate: NoAction, map: "prestamos_empleado_fkey")
+  usuario                     usuarios?          @relation(fields: [id_usuario], references: [id_usuario], onDelete: NoAction, onUpdate: NoAction, map: "prestamos_usuario_fkey")
 }
 
-
-
 model prestamo_equipos {
-  id_prestamo String    @db.Uuid
-  num_serie   String    @db.VarChar(50)
-  estado      String?   @default("prestado") @db.VarChar(50)
+  id_prestamo              String    @db.Uuid
+  num_serie                String    @db.VarChar(50)
+  estado                   String?   @default("prestado") @db.VarChar(50)
 
-  prestamo prestamos @relation(fields: [id_prestamo], references: [id_prestamo], onDelete: Cascade, map: "prestamo_equipos_prestamo_fkey")
-  equipo   equipos   @relation(fields: [num_serie], references: [num_serie], onDelete: NoAction, map: "prestamo_equipos_num_serie_fkey")
+  estado_devolucion        String?   @db.VarChar(50)
+  observaciones_devolucion String?
+  evidencia_devolucion     String?   @db.VarChar(255)
+  fecha_devolucion         DateTime? @db.Date
+
+  equipo      equipos   @relation(fields: [num_serie], references: [num_serie], onDelete: NoAction, map: "prestamo_equipos_num_serie_fkey")
+  prestamo    prestamos @relation(fields: [id_prestamo], references: [id_prestamo], onDelete: Cascade, map: "prestamo_equipos_prestamo_fkey")
 
   @@id([id_prestamo, num_serie])
 }
@@ -82,37 +79,36 @@ model historial_mantenimientos {
   num_serie        String    @db.VarChar(50)
   fecha_reporte    DateTime  @db.Date
   fecha_solucion   DateTime? @db.Date
-  usuario_reporta  String?   @db.VarChar(50)
   usuario_tecnico  String?   @db.VarChar(20)
   falla            String
   solucion         String?
   estado_orden     String?   @default("pendiente") @db.VarChar(20)
   aprobada_por     String?   @db.VarChar(50)
   fecha_aprobacion DateTime? @db.Date
-  evidencia        String?   @db.Text
+  evidencia        String?
+  usuario_reporta  String?   @db.VarChar(50)
 }
 
 model usuarios {
-  id_usuario   Int      @id @default(autoincrement())
-  usuario      String   @unique @db.VarChar(50)
-  nombre       String   @db.VarChar(200)
-  correo       String   @unique @db.VarChar(50)
-  contrasena   String   @db.VarChar(100)
-  area         String   @db.VarChar(100)
-  estado       String   @db.VarChar(15)
-  foto_url     String?
-  google_id    String?  @db.VarChar(100)
-  rol          String   @default("inventario") @db.VarChar(20)
-
-  reset_tokens           reset_tokens[]
-  prestamos              prestamos[]
+  id_usuario             Int                      @id @default(autoincrement())
+  usuario                String                   @unique @db.VarChar(50)
+  nombre                 String                   @db.VarChar(200)
+  correo                 String                   @unique @db.VarChar(50)
+  contrasena             String                   @db.VarChar(100)
+  area                   String                   @db.VarChar(100)
+  estado                 String                   @db.VarChar(15)
+  foto_url               String?
+  google_id              String?                  @db.VarChar(100)
+  rol                    String                   @default("inventario") @db.VarChar(20)
   entregas_menor_cuantia entregas_menor_cuantia[]
+  prestamos              prestamos[]
+  reset_tokens           reset_tokens[]
 }
 
 model auditoria {
   id_auditoria String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   usuario      String   @db.VarChar(50)
-  accion        String   @db.VarChar(500)
+  accion       String   @db.VarChar(500)
   fecha        DateTime @default(now()) @db.Timestamp(6)
 }
 
@@ -123,58 +119,55 @@ model reset_tokens {
   expira_en DateTime  @db.Timestamp(6)
   usado     Boolean?  @default(false)
   creado_en DateTime? @default(now()) @db.Timestamp(6)
-
-  usuarios usuarios @relation(fields: [usuario], references: [usuario], onDelete: NoAction, onUpdate: NoAction)
+  usuarios  usuarios  @relation(fields: [usuario], references: [usuario], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model productos_menor_cuantia {
-  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nombre              String    @db.VarChar(100)
+  id                  String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nombre              String                   @db.VarChar(100)
   descripcion         String?
-  cantidad_total      Int?      @default(0)
-  cantidad_disponible Int?      @default(0)
-  creado_en           DateTime? @default(now()) @db.Timestamp(6)
-
-  entregas entregas_menor_cuantia[]
+  cantidad_total      Int?                     @default(0)
+  cantidad_disponible Int?                     @default(0)
+  creado_en           DateTime?                @default(now()) @db.Timestamp(6)
+  entregas            entregas_menor_cuantia[]
 }
 
 model entregas_menor_cuantia {
-  id_entrega    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  id_producto   String   @db.Uuid
+  id_entrega    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_producto   String                  @db.Uuid
   cantidad      Int
-  id_empleado   String?  @db.Uuid
+  id_empleado   String?                 @db.Uuid
   id_usuario    Int?
-  area          String   @db.VarChar(100)
-  fecha_entrega DateTime @default(now()) @db.Date
+  area          String                  @db.VarChar(100)
+  fecha_entrega DateTime                @default(dbgenerated("CURRENT_DATE")) @db.Date
   observaciones String?
+  empleado      empleados?              @relation(fields: [id_empleado], references: [id_empleado], onDelete: NoAction, onUpdate: NoAction, map: "entregas_menor_cuantia_empleado_fkey")
+  producto      productos_menor_cuantia @relation(fields: [id_producto], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "entregas_menor_cuantia_producto_fkey")
+  usuario       usuarios?               @relation(fields: [id_usuario], references: [id_usuario], onDelete: NoAction, onUpdate: NoAction, map: "entregas_menor_cuantia_usuario_fkey")
 
-  producto productos_menor_cuantia @relation(fields: [id_producto], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  empleado empleados? @relation(fields: [id_empleado], references: [id_empleado], onDelete: NoAction, onUpdate: NoAction)
-  usuario usuarios? @relation(fields: [id_usuario], references: [id_usuario], onDelete: NoAction, onUpdate: NoAction)
-
-  @@index([id_producto])
-  @@index([id_empleado])
-  @@index([id_usuario])
-  @@index([area])
-  @@index([fecha_entrega])
+  @@index([area], map: "idx_entregas_pmc_area")
+  @@index([id_empleado], map: "idx_entregas_pmc_empleado")
+  @@index([fecha_entrega], map: "idx_entregas_pmc_fecha")
+  @@index([id_producto], map: "idx_entregas_pmc_producto")
+  @@index([id_usuario], map: "idx_entregas_pmc_usuario")
 }
 
 model solicitudes {
-  id        Int       @id @default(autoincrement())
-  usuario   String    @db.VarChar(50)
+  id        Int      @id @default(autoincrement())
+  usuario   String   @db.VarChar(50)
   detalles  String?
-  estado    String    @default("pendiente") @db.VarChar(20)
-  creado_en DateTime  @default(now()) @db.Timestamp(6)
+  estado    String   @default("pendiente") @db.VarChar(20)
+  creado_en DateTime @default(now()) @db.Timestamp(6)
 }
 
 model notificaciones {
-  id        Int       @id @default(autoincrement())
-  usuario   String    @db.VarChar(50)
-  titulo    String?   @db.VarChar(200)
-  mensaje   String?   @db.Text
-  tipo       String    @db.VarChar(30)
-  leida      Boolean   @default(false)
-  creado_en  DateTime  @default(now()) @db.Timestamp(6)
+  id        Int      @id @default(autoincrement())
+  usuario   String   @db.VarChar(50)
+  titulo    String?  @db.VarChar(200)
+  mensaje   String?
+  tipo      String   @db.VarChar(30)
+  leida     Boolean  @default(false)
+  creado_en DateTime @default(now()) @db.Timestamp(6)
 
   @@index([usuario])
   @@index([leida])
