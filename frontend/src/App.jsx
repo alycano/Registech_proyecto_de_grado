@@ -17,9 +17,9 @@ import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap-icons/font/bootstrap-icons.css'
 
 const ProtectedRoute = ({ children }) => {
-    const token = localStorage.getItem('token')
+    const { usuario } = useAuth()
 
-    if (!token) {
+    if (!usuario) {
         return <Navigate to="/login" />
     }
 

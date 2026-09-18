@@ -10,7 +10,8 @@ exports.login = async (req, res) => {
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            sameSite: 'strict',
+            path: '/',
             maxAge: 15 * 60 * 1000
         })
 
@@ -18,9 +19,10 @@ exports.login = async (req, res) => {
         const csrfToken = generarTokenCsrf(sessionId)
 
         res.cookie('session_id', sessionId, {
-            httpOnly: false,
+            httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            sameSite: 'strict',
+            path: '/',
             maxAge: 60 * 60 * 1000
         })
 
@@ -48,6 +50,30 @@ exports.login = async (req, res) => {
 
         return res.status(500).json({ error: 'Error interno del servidor' })
     }
+}
+
+exports.logout = (req, res) => {
+    const { eliminarToken } = require('../middlewares/csrf')
+
+    if (req.cookies?.session_id) {
+        eliminarToken(req.cookies.session_id)
+    }
+
+    res.clearCookie('token', {
+        path: '/',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+    })
+
+    res.clearCookie('session_id', {
+        path: '/',
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+    })
+
+    return res.status(200).json({ mensaje: 'Sesión cerrada' })
 }
 
 exports.getUsuarios = async (req, res) => {

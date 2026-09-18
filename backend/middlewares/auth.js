@@ -32,12 +32,10 @@ function authMiddleware(req, res, next) {
         res.cookie('token', newToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            sameSite: 'strict',
+            path: '/',
             maxAge: 15 * 60 * 1000 // 15 MINUTOS
         })
-
-        // EL FRONTEND PUEDE RECIBIR EL TOKEN ACTUALIZADO
-        res.setHeader('x-refresh-token', newToken)
 
         next()
 

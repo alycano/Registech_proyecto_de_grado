@@ -1,4 +1,6 @@
 import { createContext, useContext, useState, useCallback } from 'react'
+import axios from 'axios'
+import { API_ROUTES } from '../api/apiRoutes'
 
 const AuthContext = createContext(null)
 
@@ -20,7 +22,7 @@ export function AuthProvider({ children }) {
     }, [])
 
     const logout = useCallback(() => {
-        localStorage.removeItem('token')
+        axios.post(API_ROUTES.LOGOUT).catch(() => {})
         localStorage.removeItem('usuario')
         localStorage.removeItem('csrf_token')
         setUsuario(null)

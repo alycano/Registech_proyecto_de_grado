@@ -4,6 +4,7 @@ const router = express.Router()
 
 const {
     login,
+    logout,
     getUsuarios,
     createUsuario,
     updateUsuario,
@@ -27,6 +28,8 @@ const {
 
 
 router.post('/login', validate(loginSchema), login)
+
+router.post('/logout', logout)
 
 router.post(
     '/usuarios/solicitar-recuperacion',

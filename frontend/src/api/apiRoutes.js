@@ -12,12 +12,6 @@ function getCookie(name) {
 }
 
 axios.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token')
-
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`
-    }
-
     const method = config.method?.toUpperCase()
     if (method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH') {
         const csrf = getCsrfToken() || getCookie('csrf_token')
@@ -36,11 +30,6 @@ axios.interceptors.response.use(
             localStorage.setItem('csrf_token', newCsrf)
         }
 
-        const newToken = response.headers['x-refresh-token']
-        if (newToken) {
-            localStorage.setItem('token', newToken)
-        }
-
         return response
     },
     (error) => {
@@ -52,7 +41,6 @@ axios.interceptors.response.use(
 
         if (error.response) {
             if (error.response.status === 401 && !esLogin) {
-                localStorage.removeItem('token')
                 localStorage.removeItem('usuario')
                 localStorage.removeItem('csrf_token')
                 window.location.href = '/login'
@@ -75,6 +63,7 @@ const BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
 export const API_ROUTES = {
     LOGIN: `${BASE_URL}/login`,
+    LOGOUT: `${BASE_URL}/logout`,
     SOLICITAR_RECUPERACION: `${BASE_URL}/usuarios/solicitar-recuperacion`,
     RESTABLECER_PASSWORD: `${BASE_URL}/usuarios/restablecer-password`,
 
