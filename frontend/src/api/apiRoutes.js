@@ -12,6 +12,10 @@ function getCookie(name) {
 }
 
 axios.interceptors.request.use((config) => {
+    const token = localStorage.getItem('token')
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+    }
     const method = config.method?.toUpperCase()
     if (method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH') {
         const csrf = getCsrfToken() || getCookie('csrf_token')
@@ -43,6 +47,7 @@ axios.interceptors.response.use(
             if (error.response.status === 401 && !esLogin) {
                 localStorage.removeItem('usuario')
                 localStorage.removeItem('csrf_token')
+                localStorage.removeItem('token')
                 window.location.href = '/login'
             }
 

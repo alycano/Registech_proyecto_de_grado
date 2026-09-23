@@ -25,6 +25,7 @@ export function AuthProvider({ children }) {
         axios.post(API_ROUTES.LOGOUT).catch(() => {})
         localStorage.removeItem('usuario')
         localStorage.removeItem('csrf_token')
+        localStorage.removeItem('token')
         setUsuario(null)
     }, [])
 

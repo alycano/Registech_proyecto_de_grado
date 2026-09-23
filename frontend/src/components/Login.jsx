@@ -95,6 +95,7 @@ const Login = () => {
                     localStorage.removeItem('registech_recordar_correo')
                 }
 
+                localStorage.setItem('token', response.data.token);
                 login(response.data.usuario)
 
                 Swal.fire({
